@@ -21,7 +21,7 @@ android {
         targetSdk = 28
         minSdk = 26
         versionCode = 150
-        versionName = "v7.0.0-daydream-${shortCommitHash}"
+        versionName = "v8.0.0-daydream-${shortCommitHash}"
 
         buildConfigField("String", "GIT_HASH", "\"${gitCommitHash}\"")
 
