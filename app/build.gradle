@@ -17,8 +17,8 @@ android {
     def shortCommitHash = "git rev-parse --short HEAD".execute().text.trim()
 
     defaultConfig {
-        applicationId = "ro.sketchware"
-        namespace = "ro.sketchware"
+        applicationId = "pro.sketchware"
+        namespace = "pro.sketchware"
         targetSdk = 28
         minSdk = 26
         versionCode = 150
