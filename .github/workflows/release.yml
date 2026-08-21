@@ -1,12 +1,14 @@
-name: Build and Create Release
+name: Android Build
 
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
-  build-and-release:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,26 +20,33 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Debug & Release APKs
+      - name: Build debug and release APKs
         run: ./gradlew assembleDebug assembleRelease --stacktrace
 
-      - name: Create GitHub Release and Upload APKs
-        uses: softprops/action-gh-release@v2
+      - name: Upload android26 debug APK
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: "v1.0.${{ github.run_number }}"
-          name: "Release v1.0.${{ github.run_number }}"
-          body: "Otomatis di buat dari commit: ${{ github.sha }}"
-          draft: false
-          prerelease: false
-          files: |
-            app/build/outputs/apk/android26/debug/*.apk
-            app/build/outputs/apk/android33/debug/*.apk
-            app/build/outputs/apk/android26/release/*.apk
-            app/build/outputs/apk/android33/release/*.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: app-android26-debug
+          path: app/build/outputs/apk/android26/debug/*.apk
+
+      - name: Upload android33 debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-android33-debug
+          path: app/build/outputs/apk/android33/debug/*.apk
+
+      - name: Upload android26 release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-android26-release
+          path: app/build/outputs/apk/android26/release/*.apk
+
+      - name: Upload android33 release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-android33-release
+          path: app/build/outputs/apk/android33/release/*.apk
