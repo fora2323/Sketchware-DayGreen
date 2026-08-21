@@ -3,7 +3,7 @@
     <color name="primary">#FFABEDD5</color>
     <color name="onPrimary">#FF12543C</color>
     <color name="primaryContainer">#FF1C7D5A</color>
-    <color name="onPrimaryContainer"># FFD5F6EA</color>
+    <color name="onPrimaryContainer">#FFD5F6EA</color>
     <color name="inversePrimary">#FF25A778</color>
     <color name="secondary">#FFC2D6CF</color>
     <color name="onSecondary">#FF293D36</color>
