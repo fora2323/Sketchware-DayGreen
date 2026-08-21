@@ -74,10 +74,6 @@ android {
         compose = true
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     configurations.implementation {
         exclude group: 'javax.inject', module: 'javax.inject'
         exclude group: "org.jetbrains.kotlin", module: "kotlin-scripting-compiler-embeddable"
@@ -103,6 +99,10 @@ android {
             resValue "bool", "enable_r8", "true"
         }
     }
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 androidComponents {
