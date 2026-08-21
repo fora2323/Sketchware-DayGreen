@@ -27,8 +27,14 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Upload APK artifact
+      - name: Upload android26 APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/*.apk
+          name: app-android26-debug
+          path: app/build/outputs/apk/android26/debug/*.apk
+
+      - name: Upload android33 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-android33-debug
+          path: app/build/outputs/apk/android33/debug/*.apk
