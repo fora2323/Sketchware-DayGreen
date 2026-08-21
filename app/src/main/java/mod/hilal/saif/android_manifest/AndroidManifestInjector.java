@@ -53,6 +53,33 @@ public class AndroidManifestInjector {
                 ".sketchware" + File.separator + "data" + File.separator + sc_id + File.separator +
                         "Injection" + File.separator + "androidmanifest" + File.separator + "app_components.txt");
     }
+    
+    /**
+ * Cek apakah ada manual manifest yang udah diedit
+ */
+public static boolean hasManualManifest(String sc_id) {
+    if (!isManualEditEnabled(sc_id)) return false;
+    
+    File manualManifest = new File(
+        Environment.getExternalStorageDirectory(),
+        ".sketchware/data/" + sc_id + "/Injection/androidmanifest/manual_manifest.xml"
+    );
+    return manualManifest.exists();
+}
+
+/**
+ * Ambil manual manifest yang udah diedit
+ */
+public static String getManualManifest(String sc_id) {
+    File manualManifest = new File(
+        Environment.getExternalStorageDirectory(),
+        ".sketchware/data/" + sc_id + "/Injection/androidmanifest/manual_manifest.xml"
+    );
+    if (manualManifest.exists() && isManualEditEnabled(sc_id)) {
+        return FileUtil.readFile(manualManifest.getAbsolutePath());
+    }
+    return null;
+}
 
     private static ArrayList<HashMap<String, Object>> readAndroidManifestAttributeInjections(String sc_id) {
         ArrayList<HashMap<String, Object>> attributes;
@@ -220,6 +247,12 @@ public class AndroidManifestInjector {
         if (!isManualEditEnabled(projectId)) {
             return m;
         }
+        
+        String manualManifest = getManualManifest(projectId);
+    if (manualManifest != null) {
+        return manualManifest; // Switch ON + ada manual edit → pake manual
+    }
+    
 
         ArrayList<String> manifestLines = new ArrayList<>(Arrays.asList(m.split("\n")));
 

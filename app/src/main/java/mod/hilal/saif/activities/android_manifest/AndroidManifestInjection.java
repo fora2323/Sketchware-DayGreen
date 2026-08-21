@@ -20,6 +20,7 @@ import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -59,24 +60,25 @@ public class AndroidManifestInjection extends BaseAppCompatActivity {
             currentActivityName = getIntent().getStringExtra("file_name").replaceAll(".java", "");
         }
 
-        // ✅ Init ProjectSettings
+        // Init ProjectSettings
         projectSettings = new ProjectSettings(sc_id);
 
         setupCustomToolbar();
-        checkAttrs();
         setupOptions();
         setupToggleManualEdit();
-        refreshList();
-        checkAttrs();
 
+        binding.btnOpenXmlEditor.setOnClickListener(v -> openManifestXmlEditor());
         binding.addActivity.setOnClickListener(v -> showAddActivityDialog());
+
+        checkAttrs();
+        refreshList();
     }
 
-    // ✅ Method baru untuk setup toggle
+    // Setup toggle manual edit
     private void setupToggleManualEdit() {
         boolean isEnabled = projectSettings.getValue(
-            ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED,
-            ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED_DEFAULT
+                ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED,
+                ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED_DEFAULT
         ).equals("true");
 
         binding.toggleManualEdit.setChecked(isEnabled);
@@ -84,19 +86,53 @@ public class AndroidManifestInjection extends BaseAppCompatActivity {
 
         binding.toggleManualEdit.setOnCheckedChangeListener((buttonView, isChecked) -> {
             projectSettings.setValue(
-                ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED,
-                isChecked ? "true" : "false"
+                    ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED,
+                    isChecked ? "true" : "false"
             );
             updateManualEditUI(isChecked);
             refreshList();
         });
     }
 
-    // ✅ Method untuk disable/enable UI elements
+    // Enable/disable UI elements sesuai status toggle
     private void updateManualEditUI(boolean enabled) {
         binding.addActivity.setEnabled(enabled);
         binding.cards.setEnabled(enabled);
         binding.content.setEnabled(enabled);
+
+        // setEnabled di parent LinearLayout tidak otomatis nurun ke children,
+        // jadi ListView-nya perlu di-disable manual
+        binding.activitiesListView.setEnabled(enabled);
+        binding.activitiesListView.setClickable(enabled);
+
+        binding.cardEditManifest.setEnabled(enabled);
+        binding.btnOpenXmlEditor.setEnabled(enabled);
+    }
+
+    private void openManifestXmlEditor() {
+        // Generate manifest terbaru (dari Ix.java + injection)
+        String currentManifest = new yq(getApplicationContext(), sc_id)
+                .getFileSrc("AndroidManifest.xml", jC.b(sc_id), jC.a(sc_id), jC.c(sc_id));
+
+        // Path untuk simpan manual edit
+        String manualManifestPath = FileUtil.getExternalStorageDir() + "/.sketchware/data/" + sc_id +
+                "/Injection/androidmanifest/manual_manifest.xml";
+
+        // Pastikan folder ada
+        File manualDir = new File(manualManifestPath).getParentFile();
+        if (manualDir != null && !manualDir.exists()) manualDir.mkdirs();
+
+        // Kalau belum ada manual manifest, isi dengan hasil auto-generate sebagai starting point
+        if (!FileUtil.isExistFile(manualManifestPath)) {
+            FileUtil.writeFile(manualManifestPath, currentManifest);
+        }
+
+        // Buka di SrcCodeEditor (ikut pola yang sama dengan showAppComponentDialog di bawah)
+        Intent intent = new Intent(this, SrcCodeEditor.class);
+        intent.putExtra("content", manualManifestPath);
+        intent.putExtra("xml", "");
+        intent.putExtra("title", "Edit AndroidManifest.xml");
+        startActivity(intent);
     }
 
     @Override
