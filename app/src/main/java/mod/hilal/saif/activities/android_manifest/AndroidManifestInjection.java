@@ -29,6 +29,7 @@ import a.a.a.jC;
 import a.a.a.wB;
 import a.a.a.yq;
 import mod.hey.studios.code.SrcCodeEditor;
+import mod.hey.studios.project.ProjectSettings;
 import mod.hey.studios.util.Helper;
 import mod.hilal.saif.android_manifest.AndroidManifestInjector;
 import mod.remaker.view.CustomAttributeView;
@@ -45,6 +46,7 @@ public class AndroidManifestInjection extends BaseAppCompatActivity {
     private AndroidManifestInjectionBinding binding;
     private String sc_id;
     private String currentActivityName;
+    private ProjectSettings projectSettings;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -57,13 +59,44 @@ public class AndroidManifestInjection extends BaseAppCompatActivity {
             currentActivityName = getIntent().getStringExtra("file_name").replaceAll(".java", "");
         }
 
+        // ✅ Init ProjectSettings
+        projectSettings = new ProjectSettings(sc_id);
+
         setupCustomToolbar();
         checkAttrs();
         setupOptions();
+        setupToggleManualEdit();
         refreshList();
         checkAttrs();
 
         binding.addActivity.setOnClickListener(v -> showAddActivityDialog());
+    }
+
+    // ✅ Method baru untuk setup toggle
+    private void setupToggleManualEdit() {
+        boolean isEnabled = projectSettings.getValue(
+            ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED,
+            ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED_DEFAULT
+        ).equals("true");
+
+        binding.toggleManualEdit.setChecked(isEnabled);
+        updateManualEditUI(isEnabled);
+
+        binding.toggleManualEdit.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            projectSettings.setValue(
+                ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED,
+                isChecked ? "true" : "false"
+            );
+            updateManualEditUI(isChecked);
+            refreshList();
+        });
+    }
+
+    // ✅ Method untuk disable/enable UI elements
+    private void updateManualEditUI(boolean enabled) {
+        binding.addActivity.setEnabled(enabled);
+        binding.cards.setEnabled(enabled);
+        binding.content.setEnabled(enabled);
     }
 
     @Override
@@ -212,15 +245,6 @@ public class AndroidManifestInjection extends BaseAppCompatActivity {
 
             data.add(_item);
         }
-
-//        It's not necessary because Android 4.0+ already has it enabled by default.
-//        {
-//            HashMap<String, Object> _item = new HashMap<>();
-//            _item.put("name", componentName);
-//            _item.put("value", "android:hardwareAccelerated=\"true\"");
-//
-//            data.add(_item);
-//        }
 
         {
             HashMap<String, Object> _item = new HashMap<>();

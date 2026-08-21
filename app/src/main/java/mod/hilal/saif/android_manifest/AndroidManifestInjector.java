@@ -12,11 +12,23 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import mod.hey.studios.util.Helper;
+import mod.hey.studios.project.ProjectSettings;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.xml.XmlBuilder;
 
 public class AndroidManifestInjector {
+
+    /**
+     * Cek apakah manual edit manifest diaktifkan untuk project ini
+     */
+    private static boolean isManualEditEnabled(String sc_id) {
+        ProjectSettings settings = new ProjectSettings(sc_id);
+        return settings.getValue(
+            ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED,
+            ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED_DEFAULT
+        ).equals("true");
+    }
 
     public static File getPathAndroidManifestAttributeInjection(String sc_id) {
         return new File(Environment.getExternalStorageDirectory(),
@@ -77,6 +89,8 @@ public class AndroidManifestInjector {
     }
 
     public static void getP(XmlBuilder nx, String id) {
+        if (!isManualEditEnabled(id)) return;
+
         ArrayList<HashMap<String, Object>> attributes = readAndroidManifestAttributeInjections(id);
 
         for (int i = 0; i < attributes.size(); i++) {
@@ -102,10 +116,13 @@ public class AndroidManifestInjector {
     }
 
     public static void getAppAttrs(XmlBuilder nx, String projectId) {
+        if (!isManualEditEnabled(projectId)) return;
         addToApp(nx, projectId);
     }
 
     public static boolean getActivityAttrs(XmlBuilder nx, String projectId, String actName) {
+        if (!isManualEditEnabled(projectId)) return false;
+
         ArrayList<HashMap<String, Object>> attributes = readAndroidManifestAttributeInjections(projectId);
         String className = actName.substring(0, actName.indexOf(".java"));
 
@@ -127,22 +144,28 @@ public class AndroidManifestInjector {
     }
 
     public static boolean isActivityThemeUsed(XmlBuilder nx, String projectId, String actName) {
+        if (!isManualEditEnabled(projectId)) return false;
         return isActivityAttributeUsed("android:theme", projectId, actName);
     }
 
     public static boolean isActivityOrientationUsed(XmlBuilder nx, String projectId, String actName) {
+        if (!isManualEditEnabled(projectId)) return false;
         return isActivityAttributeUsed("android:screenOrientation", projectId, actName);
     }
 
     public static boolean isActivityKeyboardUsed(XmlBuilder nx, String projectId, String actName) {
+        if (!isManualEditEnabled(projectId)) return false;
         return isActivityAttributeUsed("android:windowSoftInputMode", projectId, actName);
     }
 
     public static boolean isActivityExportedUsed(String sc_id, String activityName) {
+        if (!isManualEditEnabled(sc_id)) return false;
         return isActivityAttributeUsed("android:exported", sc_id, activityName);
     }
 
     public static boolean isActivityAttributeUsed(String attribute, String sc_id, String activityName) {
+        if (!isManualEditEnabled(sc_id)) return false;
+
         ArrayList<HashMap<String, Object>> attributes = readAndroidManifestAttributeInjections(sc_id);
         String className = activityName.substring(0, activityName.indexOf(".java"));
 
@@ -171,6 +194,10 @@ public class AndroidManifestInjector {
     }
 
     public static String getLauncherActivity(String projectId) {
+        if (!isManualEditEnabled(projectId)) {
+            return "main";
+        }
+
         File launcherActivityFile = getPathAndroidManifestLauncherActivity(projectId);
 
         if (launcherActivityFile.exists()) {
@@ -190,6 +217,10 @@ public class AndroidManifestInjector {
     }
 
     public static String mHolder(String m, String projectId) {
+        if (!isManualEditEnabled(projectId)) {
+            return m;
+        }
+
         ArrayList<String> manifestLines = new ArrayList<>(Arrays.asList(m.split("\n")));
 
         String path = getPathAndroidManifestActivitiesComponents(projectId).getAbsolutePath();
@@ -212,7 +243,7 @@ public class AndroidManifestInjector {
                                     for (int q = k; q < manifestLines.size(); q++) {
                                         String v = manifestLines.get(q);
                                         String v2 = manifestLines.get(q - 1);
-                                        if (v.matches("^		<[a-zA-Z_-]+[^>]")) {
+                                        if (v.matches("^	\t<[a-zA-Z_-]+[^>]")) {
                                             boolean hasShortClosing = false, spaceBeforeClosing = false;
 
                                             if (v2.contains("\"/>")) {
@@ -258,6 +289,8 @@ public class AndroidManifestInjector {
     }
 
     public static void addToApp(XmlBuilder nx, String projectId) {
+        if (!isManualEditEnabled(projectId)) return;
+
         ArrayList<HashMap<String, Object>> attributes = readAndroidManifestAttributeInjections(projectId);
 
         boolean themeInjected = false;
@@ -290,6 +323,8 @@ public class AndroidManifestInjector {
     }
 
     public static void addToAct(XmlBuilder nx, String projectId, String actName) {
+        if (!isManualEditEnabled(projectId)) return;
+
         ArrayList<HashMap<String, Object>> attributes = readAndroidManifestAttributeInjections(projectId);
         String className = actName.substring(0, actName.indexOf(".java"));
 

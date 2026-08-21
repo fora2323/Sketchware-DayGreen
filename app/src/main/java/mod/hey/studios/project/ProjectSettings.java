@@ -44,6 +44,10 @@ public class ProjectSettings {
      * @see Application
      */
     public static final String SETTING_APPLICATION_CLASS = "app_class";
+    
+    // ✅ Tambah constant untuk toggle manual manifest edit
+    public static final String SETTING_MANIFEST_MANUAL_EDIT_ENABLED = "manifest_manual_edit_enabled";
+    public static final String SETTING_MANIFEST_MANUAL_EDIT_ENABLED_DEFAULT = "true";
 
     /**
      * Setting for the final app's {@code targetSdkVersion}
