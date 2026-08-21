@@ -2,6 +2,8 @@ def secrets = System.getenv("GOOGLE_SERVICES_JSON")
 def analyticsEnabled = secrets != null
 
 apply plugin: "com.android.application"
+apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "org.jetbrains.kotlin.plugin.compose"
 
 if (analyticsEnabled) {
     apply plugin: "com.google.gms.google-services"
@@ -15,24 +17,22 @@ android {
     def shortCommitHash = "git rev-parse --short HEAD".execute().text.trim()
 
     defaultConfig {
-        applicationId = "pro.sketchware"
-        namespace = "pro.sketchware"
-        //noinspection ExpiredTargetSdkVersion since we don't target getting Sketchware Pro on Google Play.
+        applicationId = "ro.sketchware"
+        namespace = "ro.sketchware"
         targetSdk = 28
         minSdk = 26
         versionCode = 150
-        versionName = "v8.0.0-daydream-${shortCommitHash}"
+        versionName = "v8.0.0-daygreen-${shortCommitHash}"
 
         buildConfigField("String", "GIT_HASH", "\"${gitCommitHash}\"")
-
         buildConfigField("String", "SKETCHUB_API_KEY", "\"${System.getenv("SKETCHUB_API_KEY")}\"")
     }
 
     buildTypes {
         release {
             minifyEnabled = false
-            proguardFiles (getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.debug
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.release
         }
     }
 
@@ -59,12 +59,23 @@ android {
             keyAlias = "testkey"
             keyPassword = "testkey"
         }
+        release {
+            storeFile = file("../keybali-store.jks")
+            storePassword = "bali23"
+            keyAlias = "Bali"
+            keyPassword = "bali23"
+        }
     }
 
     buildFeatures {
         viewBinding = true
         buildConfig = true
         resValues = true
+        compose = true
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
     }
 
     configurations.implementation {
@@ -78,14 +89,14 @@ android {
     flavorDimensions "default"
     productFlavors {
         android26 {
-            versionName "v7.0.0-daydream-android26-${shortCommitHash}"
+            versionName "v8.0.0-daygreen-android26-${shortCommitHash}"
             dimension "default"
             resValue "integer", "for_min_sdk", "26"
             resValue "bool", "enable_relase_app", "true"
             resValue "bool", "enable_r8", "true"
         }
         android33 {
-            versionName "v7.0.0-daydream-android33-${shortCommitHash}"
+            versionName "v8.0.0-daygreen-android33-${shortCommitHash}"
             dimension "default"
             resValue "integer", "for_min_sdk", "33"
             resValue "bool", "enable_relase_app", "true"
@@ -96,17 +107,10 @@ android {
 
 androidComponents {
     onVariants(selector().all()) { variant ->
-
-        def flavorName = variant.productFlavors.isEmpty()
-                ? "noflavor"
-                : variant.productFlavors.collect { it.second }.join("-")
-
+        def flavorName = variant.productFlavors.isEmpty() ? "noflavor" : variant.productFlavors.collect { it.second }.join("-")
         def buildType = variant.buildType
-
         variant.outputs.forEach { output ->
-            output.outputFileName.set(
-                    "app-${buildType}-${flavorName}.apk"
-            )
+            output.outputFileName.set("app-${buildType}-${flavorName}.apk")
         }
     }
 }
@@ -193,6 +197,15 @@ dependencies {
     android33Implementation("com.github.javaparser:javaparser-symbol-solver-core:3.28.1") {
         exclude group: "com.google.guava", module: "guava"
     }
+
+    // Jetpack Compose
+    def composeBom = platform("androidx.compose:compose-bom:2026.08.00")
+    implementation composeBom
+    implementation "androidx.compose.ui:ui"
+    implementation "androidx.compose.ui:ui-graphics"
+    implementation "androidx.compose.ui:ui-tooling-preview"
+    implementation "androidx.compose.material3:material3"
+    debugImplementation "androidx.compose.ui:ui-tooling"
 
     // Analytics and Crashlytics
     if (analyticsEnabled) {

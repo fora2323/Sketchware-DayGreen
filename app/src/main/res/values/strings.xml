@@ -1,5 +1,10 @@
 <resources>
-    <string name="app_name">Sketchware DayDream</string>
+    <string name="app_name">Sketchware DayGreen</string>
+    <!--new atribut 2026-->
+    <string name="menu_manifest_manager_manual_enable">Enable Editor Manifest</string>
+    <string name="menu_manifest_manager_manual_enable_dec">Enable it so you can edit the manifest in full mode.</string>
+    
+    <!--atribut lagecy-->
     <string name="appbar_scrolling_view_behavior">com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior</string>
     <string name="besome_blog_url">http://medium.com/sketchware</string>
     <string name="block_add_list_int_body_1">to</string>
