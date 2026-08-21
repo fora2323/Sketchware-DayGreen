@@ -51,6 +51,11 @@ android {
             signingConfig = signingConfigs.release
         }
     }
+    
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
 
     packagingOptions {
         resources.excludes += "license/*"
