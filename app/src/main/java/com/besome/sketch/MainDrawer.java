@@ -74,13 +74,9 @@ public class MainDrawer extends NavigationView {
         if (!mB.a()) {
             @StringRes int url = -1;
             if (id == R.id.social_discord) {
-                url = R.string.link_discord_invite;
-            } else if (id == R.id.social_telegram) {
-                url = R.string.link_telegram_invite;
+                url = R.string.link_discord_new;
             } else if (id == R.id.social_github) {
-                url = R.string.link_github_url;
-            } else if (id == R.id.app_sw_assist) {
-                url = R.string.link_sw_assist;
+                url = R.string.link_github_new;
             }
 
             if (url != -1) {
@@ -115,6 +111,7 @@ public class MainDrawer extends NavigationView {
             intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             activity.startActivity(intent);
         } else if (id == R.id.daydream_settings) {
+            //open daydream settings
             Intent intent = new Intent(activity, DayDreamUniversalSettingsActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             activity.startActivity(intent);

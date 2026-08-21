@@ -4,7 +4,9 @@
     <string name="menu_manifest_manager_manual_enable">Enable Editor Manifest</string>
     <string name="menu_manifest_manager_manual_enable_dec">Enable it so you can edit the manifest in full mode.</string>
     <string name="menu_manifest_open">Open Xml Editor</string>
-    
+    <string name="link_discord_new">https://discord.gg/ukRxYdXVF</string>
+    <string name="link_github_new">https://github.com/fora2323/Sketchware-DayGreen.git</string>
+    <string name="name_menu_green">DayGreen Settings</string>
     <!--atribut lagecy-->
     <string name="appbar_scrolling_view_behavior">com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior</string>
     <string name="besome_blog_url">http://medium.com/sketchware</string>
