@@ -1,4 +1,43 @@
 <resources>
+    <!--new attribute color-->
+    <color name="primary">#FF25A778</color>
+    <color name="onPrimary">#FFFFFFFF</color>
+    <color name="primaryContainer">#FFD5F6EA</color>
+    <color name="onPrimaryContainer">#FF092A1E</color>
+    <color name="inversePrimary">#FFABEDD5</color>
+    <color name="secondary">#FF527A6B</color>
+    <color name="onSecondary">#FFFFFFFF</color>
+    <color name="secondaryContainer">#FFE1EAE7</color>
+    <color name="onSecondaryContainer">#FF151E1B</color>
+    <color name="tertiary">#FF2554A7</color>
+    <color name="onTertiary">#FFFFFFFF</color>
+    <color name="tertiaryContainer">#FFD5E1F6</color>
+    <color name="onTertiaryContainer">#FF09152A</color>
+    <color name="background">#FFFAFAFA</color>
+    <color name="onBackground">#FF181B1A</color>
+    <color name="surface">#FFFAFAFA</color>
+    <color name="onSurface">#FF181B1A</color>
+    <color name="surfaceVariant">#FFE3E8E6</color>
+    <color name="onSurfaceVariant">#FF45544E</color>
+    <color name="surfaceTint">#FF25A778</color>
+    <color name="inverseSurface">#FF303634</color>
+    <color name="inverseOnSurface">#FFF1F3F2</color>
+    <color name="surfaceDim">#FFDCE0DE</color>
+    <color name="surfaceBright">#FFFAFAFA</color>
+    <color name="surfaceContainerLowest">#FFFFFFFF</color>
+    <color name="surfaceContainerLow">#FFF4F5F5</color>
+    <color name="surfaceContainer">#FFEFF1F0</color>
+    <color name="surfaceContainerHigh">#FFE9ECEB</color>
+    <color name="surfaceContainerHighest">#FFE4E7E6</color>
+    <color name="error">#FFB81414</color>
+    <color name="onError">#FFFFFFFF</color>
+    <color name="errorContainer">#FFFAD1D1</color>
+    <color name="onErrorContainer">#FF2E0505</color>
+    <color name="outline">#FF738C83</color>
+    <color name="outlineVariant">#FFC7D1CD</color>
+    <color name="scrim">#FF000000</color>
+    
+    <!--legacy color-->
     <color name="color_accent">#ff008dcd</color>
     <color name="color_btn_blue_highlight">#ff005e8a</color>
     <color name="color_btn_blue_normal">#ff008dce</color>
