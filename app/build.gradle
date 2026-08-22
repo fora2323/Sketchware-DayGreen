@@ -16,6 +16,35 @@ try {
 } catch (Exception e) {
     gitCommitHash = "unknown"
 }
+
+def repairedJarDir = layout.buildDirectory.dir("repaired-libs")
+
+tasks.register("repairApksignerJar") {
+    def originalJar = file("libs/build-tools_apksigner_32.0.0.jar")
+    def outputDir = repairedJarDir.get().asFile
+
+    outputs.dir(outputDir)
+
+    doLast {
+        outputDir.mkdirs()
+        def extractDir = new File(outputDir, "extracted")
+        extractDir.deleteDir()
+        extractDir.mkdirs()
+
+        exec {
+            commandLine "unzip", "-o", "-q", originalJar.absolutePath, "-d", extractDir.absolutePath
+        }
+
+        def repairedJar = new File(outputDir, "build-tools_apksigner_32.0.0.jar")
+        repairedJar.delete()
+
+        exec {
+            workingDir extractDir
+            commandLine "zip", "-X", "-r", "-q", repairedJar.absolutePath, "."
+        }
+    }
+}
+
 def shortCommitHash = gitCommitHash.take(7)
 
 android {
@@ -129,6 +158,9 @@ androidComponents {
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
+    implementation(files("${repairedJarDir.get().asFile}/build-tools_apksigner_32.0.0.jar")) {
+        builtBy tasks.named("repairApksignerJar")
+    }
 
     implementation "androidx.appcompat:appcompat:1.7.1"
     implementation "androidx.core:core-splashscreen:1.2.0"
