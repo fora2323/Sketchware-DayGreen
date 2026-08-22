@@ -20,38 +20,6 @@ def shortCommitHash = gitCommitHash.take(7)
 
 def repairedJarDir = layout.buildDirectory.dir("repaired-libs")
 
-tasks.register("repairApksignerJar") {
-    def originalJar = file("libs/build-tools_apksigner_32.0.0.jar")
-    def outputDir = repairedJarDir.get().asFile
-
-    outputs.dir(outputDir)
-
-    doLast {
-        outputDir.mkdirs()
-        def extractDir = new File(outputDir, "extracted")
-        extractDir.deleteDir()
-        extractDir.mkdirs()
-
-        project.exec {
-            commandLine "unzip", "-o", "-q", originalJar.absolutePath, "-d", extractDir.absolutePath
-        }
-
-        def repairedJar = new File(outputDir, "build-tools_apksigner_32.0.0.jar")
-        repairedJar.delete()
-
-        project.exec {
-            workingDir extractDir
-            commandLine "zip", "-X", "-r", "-q", repairedJar.absolutePath, "."
-        }
-    }
-}
-
-afterEvaluate {
-    tasks.matching { it.name.startsWith("javaPreCompile") || it.name.startsWith("compile") || it.name.startsWith("minify") }.configureEach {
-        dependsOn("repairApksignerJar")
-    }
-}
-
 android {
     compileSdk = 37
 
@@ -85,8 +53,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled = true
-            shrinkResources true
+            minifyEnabled = false
+            shrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.release
         }
@@ -163,8 +131,7 @@ androidComponents {
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"], exclude: ["build-tools_apksigner_32.0.0.jar"])
-    implementation files("${repairedJarDir.get().asFile}/build-tools_apksigner_32.0.0.jar")
-
+    
     implementation "androidx.appcompat:appcompat:1.7.1"
     implementation "androidx.core:core-splashscreen:1.2.0"
     implementation "androidx.activity:activity-ktx:1.13.0"
