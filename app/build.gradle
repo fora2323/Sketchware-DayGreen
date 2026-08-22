@@ -32,14 +32,14 @@ tasks.register("repairApksignerJar") {
         extractDir.deleteDir()
         extractDir.mkdirs()
 
-        exec {
+        project.exec {
             commandLine "unzip", "-o", "-q", originalJar.absolutePath, "-d", extractDir.absolutePath
         }
 
         def repairedJar = new File(outputDir, "build-tools_apksigner_32.0.0.jar")
         repairedJar.delete()
 
-        exec {
+        project.exec {
             workingDir extractDir
             commandLine "zip", "-X", "-r", "-q", repairedJar.absolutePath, "."
         }
