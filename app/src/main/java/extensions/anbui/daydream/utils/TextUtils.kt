@@ -33,7 +33,7 @@ object TextUtils {
     @JvmStatic
     fun copyToClipboard(context: Context, text: String?) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText("From Sketchware DayDream", text)
+        val clip = ClipData.newPlainText("From Sketchware DayGreen", text)
         clipboard.setPrimaryClip(clip)
         Toast.makeText(context, "Copied.", Toast.LENGTH_SHORT).show()
     }
