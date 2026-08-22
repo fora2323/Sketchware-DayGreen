@@ -3,6 +3,7 @@ package mod.hilal.saif.android_manifest;
 import static pro.sketchware.utility.GsonUtils.getGson;
 
 import android.os.Environment;
+import android.util.Log;
 
 import com.google.gson.JsonParseException;
 
@@ -19,15 +20,22 @@ import pro.sketchware.xml.XmlBuilder;
 
 public class AndroidManifestInjector {
 
+    private static final String TAG = "AndroidManifestInjector";
+
     /**
      * Cek apakah manual edit manifest diaktifkan untuk project ini
      */
     private static boolean isManualEditEnabled(String sc_id) {
-        ProjectSettings settings = new ProjectSettings(sc_id);
-        return settings.getValue(
-            ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED,
-            ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED_DEFAULT
-        ).equals("true");
+        try {
+            ProjectSettings settings = new ProjectSettings(sc_id);
+            return settings.getValue(
+                ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED,
+                ProjectSettings.SETTING_MANIFEST_MANUAL_EDIT_ENABLED_DEFAULT
+            ).equals("true");
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking manual edit setting", e);
+            return false; // Default OFF jika error
+        }
     }
 
     public static File getPathAndroidManifestAttributeInjection(String sc_id) {
@@ -53,33 +61,51 @@ public class AndroidManifestInjector {
                 ".sketchware" + File.separator + "data" + File.separator + sc_id + File.separator +
                         "Injection" + File.separator + "androidmanifest" + File.separator + "app_components.txt");
     }
-    
-    /**
- * Cek apakah ada manual manifest yang udah diedit
- */
-public static boolean hasManualManifest(String sc_id) {
-    if (!isManualEditEnabled(sc_id)) return false;
-    
-    File manualManifest = new File(
-        Environment.getExternalStorageDirectory(),
-        ".sketchware/data/" + sc_id + "/Injection/androidmanifest/manual_manifest.xml"
-    );
-    return manualManifest.exists();
-}
 
-/**
- * Ambil manual manifest yang udah diedit
- */
-public static String getManualManifest(String sc_id) {
-    File manualManifest = new File(
-        Environment.getExternalStorageDirectory(),
-        ".sketchware/data/" + sc_id + "/Injection/androidmanifest/manual_manifest.xml"
-    );
-    if (manualManifest.exists() && isManualEditEnabled(sc_id)) {
-        return FileUtil.readFile(manualManifest.getAbsolutePath());
+    /**
+     * Path untuk manual manifest XML
+     */
+    public static File getPathManualManifest(String sc_id) {
+        return new File(Environment.getExternalStorageDirectory(),
+                ".sketchware" + File.separator + "data" + File.separator + sc_id + File.separator +
+                        "Injection" + File.separator + "androidmanifest" + File.separator + "manual_manifest.xml");
     }
-    return null;
-}
+
+    /**
+     * Cek apakah ada manual manifest yang valid
+     */
+    public static boolean hasManualManifest(String sc_id) {
+        if (!isManualEditEnabled(sc_id)) return false;
+
+        File manualManifest = getPathManualManifest(sc_id);
+        return manualManifest.exists() && manualManifest.length() > 0;
+    }
+
+    /**
+     * Ambil manual manifest yang udah diedit
+     * Returns null jika gak ada atau invalid
+     */
+    public static String getManualManifest(String sc_id) {
+        if (!isManualEditEnabled(sc_id)) return null;
+
+        File manualManifest = getPathManualManifest(sc_id);
+        if (!manualManifest.exists() || manualManifest.length() == 0) {
+            return null;
+        }
+
+        try {
+            String content = FileUtil.readFile(manualManifest.getAbsolutePath());
+            // Validasi basic XML
+            if (content != null && content.trim().startsWith("<?xml") &&
+                content.contains("<manifest") && content.contains("</manifest>")) {
+                return content;
+            }
+            Log.e(TAG, "Manual manifest is invalid or empty for project: " + sc_id);
+        } catch (Exception e) {
+            Log.e(TAG, "Error reading manual manifest for project: " + sc_id, e);
+        }
+        return null;
+    }
 
     private static ArrayList<HashMap<String, Object>> readAndroidManifestAttributeInjections(String sc_id) {
         ArrayList<HashMap<String, Object>> attributes;
@@ -96,7 +122,6 @@ public static String getManualManifest(String sc_id) {
 
                     if (attributes == null) {
                         errorMessage = "result == null";
-                        // fall-through for shared error handling
                     } else {
                         break parseAttributes;
                     }
@@ -105,7 +130,6 @@ public static String getManualManifest(String sc_id) {
                 }
             } catch (JsonParseException e) {
                 errorMessage = e.toString();
-                // fall-through for shared error handling
             }
 
             attributes = new ArrayList<>();
@@ -239,21 +263,30 @@ public static String getManualManifest(String sc_id) {
     }
 
     public static void setLauncherActivity(String projectId, String a) {
-        FileUtil.writeFile(getPathAndroidManifestLauncherActivity(projectId).getAbsolutePath(),
-                a);
+        FileUtil.writeFile(getPathAndroidManifestLauncherActivity(projectId).getAbsolutePath(), a);
     }
 
+    /**
+     * METHOD PENTING: mHolder
+     * - Switch OFF: Pakai manifest default (m)
+     * - Switch ON + Ada manual: Pakai manual_manifest.xml
+     * - Switch ON + Gak ada manual: Pakai default + injection
+     */
     public static String mHolder(String m, String projectId) {
+        // ✅ Priority 1: Manual manifest (jika switch ON + file valid)
+        if (isManualEditEnabled(projectId)) {
+            String manualManifest = getManualManifest(projectId);
+            if (manualManifest != null) {
+                return manualManifest; // Pakai manual edit 100%
+            }
+        }
+
+        // ✅ Priority 2: Switch OFF → return asli tanpa injection
         if (!isManualEditEnabled(projectId)) {
             return m;
         }
-        
-        String manualManifest = getManualManifest(projectId);
-    if (manualManifest != null) {
-        return manualManifest; // Switch ON + ada manual edit → pake manual
-    }
-    
 
+        // ✅ Priority 3: Switch ON tapi gak ada manual → lanjut pake injection
         ArrayList<String> manifestLines = new ArrayList<>(Arrays.asList(m.split("\n")));
 
         String path = getPathAndroidManifestActivitiesComponents(projectId).getAbsolutePath();
@@ -276,7 +309,7 @@ public static String getManualManifest(String sc_id) {
                                     for (int q = k; q < manifestLines.size(); q++) {
                                         String v = manifestLines.get(q);
                                         String v2 = manifestLines.get(q - 1);
-                                        if (v.matches("^	\t<[a-zA-Z_-]+[^>]")) {
+                                        if (v.matches("^\t\t<[a-zA-Z_-]+[^>]")) {
                                             boolean hasShortClosing = false, spaceBeforeClosing = false;
 
                                             if (v2.contains("\"/>")) {
@@ -313,7 +346,7 @@ public static String getManualManifest(String sc_id) {
             }
         }
 
-        //assemble
+        // Assemble
         StringBuilder returnValue = new StringBuilder();
         for (String manifestLine : manifestLines) {
             returnValue.append("\n").append(manifestLine);
