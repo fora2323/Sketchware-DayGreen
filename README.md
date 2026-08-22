@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="96" alt="App Icon">
+  <img src="assets/Sketchware-DayGreen.png" width="96" alt="App Icon">
 </p>
 
 <h1 align="center">Sketchware DayGreen</h1>
