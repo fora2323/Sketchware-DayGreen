@@ -1,0 +1,158 @@
+package mod.hey.studios.project.proguard;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.CompoundButton;
+
+import com.besome.sketch.lib.base.BaseAppCompatActivity;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import extensions.anbui.daydream.library.DRFeatureManager;
+import mod.agus.jcoderz.editor.manage.library.locallibrary.ManageLocalLibrary;
+import mod.hey.studios.code.SrcCodeEditor;
+import pro.sketchware.R;
+import pro.sketchware.databinding.ManageProguardBinding;
+
+public class ManageProguardActivity extends BaseAppCompatActivity
+        implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
+
+    private ProguardHandler pg;
+
+    private ManageProguardBinding binding;
+
+    @Override
+    public void onClick(View v) {
+        int id = v.getId();
+        if (id == R.id.ig_toolbar_back) {
+            finish();
+        } else if (id == R.id.ln_pg_rules) {
+            Intent intent = new Intent(this, SrcCodeEditor.class);
+            intent.putExtra("title", "proguard-rules.pro");
+            intent.putExtra("content", pg.getCustomProguardRules());
+            startActivity(intent);
+        } else if (id == R.id.ln_pg_fm) {
+            fmDialog();
+        } else if (id == R.id.ln_pg_enabled) {
+            binding.swPgEnabled.setChecked(!binding.swPgEnabled.isChecked());
+        } else if (id == R.id.ln_r8_enabled) {
+            binding.r8Enabled.setChecked(!binding.r8Enabled.isChecked());
+        } else if (id == R.id.ln_sw_pg_debug) {
+            binding.swPgDebug.setChecked(!binding.swPgDebug.isChecked());
+        }
+    }
+
+    private void fmDialog() {
+        ManageLocalLibrary mll = new ManageLocalLibrary(getIntent().getStringExtra("sc_id"));
+
+        String[] libraries = new String[mll.list.size()];
+        boolean[] enabledLibraries = new boolean[mll.list.size()];
+
+        for (int i = 0; i < mll.list.size(); i++) {
+            HashMap<String, Object> current = mll.list.get(i);
+
+            Object name = current.get("name");
+            if (name instanceof String) {
+                libraries[i] = (String) name;
+                enabledLibraries[i] = pg.libIsProguardFMEnabled(libraries[i]);
+            } else {
+                libraries[i] = "(broken library configuration)";
+                enabledLibraries[i] = false;
+            }
+        }
+
+        MaterialAlertDialogBuilder bld = new MaterialAlertDialogBuilder(this);
+        bld.setTitle("Select Local libraries");
+        bld.setMultiChoiceItems(
+                libraries,
+                enabledLibraries,
+                (dialog, which, isChecked) -> enabledLibraries[which] = isChecked);
+        bld.setPositiveButton(
+                R.string.common_word_save,
+                (dialog, which) -> {
+                    ArrayList<String> finalList = new ArrayList<>();
+
+                    for (int i = 0; i < libraries.length; i++) {
+                        if (enabledLibraries[i]) {
+                            finalList.add(libraries[i]);
+                        }
+                    }
+
+                    pg.setProguardFMLibs(finalList);
+                });
+        bld.setNegativeButton(R.string.common_word_cancel, null);
+        bld.create().show();
+    }
+
+    @Override
+    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        int id = buttonView.getId();
+        if (id == binding.swPgEnabled.getId()) {
+            pg.setProguardEnabled(isChecked);
+            allOptionsUIController(isChecked);
+        } else if (id == binding.r8Enabled.getId()) {
+            pg.setR8Enabled(isChecked);
+        } else if (id == binding.swPgDebug.getId()) {
+            pg.setDebugEnabled(isChecked);
+        }
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        enableEdgeToEdgeNoContrast();
+        binding = ManageProguardBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+        initialize();
+        initializeLogic();
+
+        if (!DRFeatureManager.isAllowR8()) {
+            binding.lnPgEnabled.setAlpha(0.5f);
+            binding.lnPgEnabled.setEnabled(false);
+        }
+    }
+
+    private void initialize() {
+        binding.swPgEnabled.setOnCheckedChangeListener(this);
+        binding.lnPgRules.setOnClickListener(this);
+        binding.r8Enabled.setOnCheckedChangeListener(this);
+        binding.swPgDebug.setOnCheckedChangeListener(this);
+        binding.lnPgFm.setOnClickListener(this);
+        binding.lnPgEnabled.setOnClickListener(this);
+        binding.lnR8Enabled.setOnClickListener(this);
+        binding.lnSwPgDebug.setOnClickListener(this);
+    }
+
+    private void initializeLogic() {
+        _initToolbar();
+        pg = new ProguardHandler(getIntent().getStringExtra("sc_id"));
+        binding.swPgEnabled.setChecked(pg.isShrinkingEnabled());
+        binding.swPgDebug.setChecked(pg.isDebugFilesEnabled());
+        binding.r8Enabled.setChecked(pg.isR8Enabled());
+    }
+
+    private void _initToolbar() {
+        setSupportActionBar(binding.toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        binding.toolbar.setNavigationOnClickListener(view -> onBackPressed());
+    }
+
+    private void allOptionsUIController (boolean isEnabled) {
+        if (isEnabled) {
+            binding.lnAllOptions.setAlpha(1f);
+        } else {
+            binding.lnAllOptions.setAlpha(0.5f);
+        }
+
+        binding.lnPgRules.setEnabled(isEnabled);
+        binding.lnPgFm.setEnabled(isEnabled);
+        binding.r8Enabled.setEnabled(isEnabled);
+        binding.swPgDebug.setEnabled(isEnabled);
+        binding.lnR8Enabled.setEnabled(isEnabled);
+        binding.lnSwPgDebug.setEnabled(isEnabled);
+    }
+}
