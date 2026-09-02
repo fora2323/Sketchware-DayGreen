@@ -17,7 +17,7 @@ android {
         namespace = "pro.sketchware"
         targetSdk = 28
         minSdk = 26
-        versionCode = 162
+        versionCode = 163
         versionName = "v8.0.2-daygreen"
 
         buildConfigField("String", "SKETCHUB_API_KEY", "\"${System.getenv("SKETCHUB_API_KEY")}\"")
