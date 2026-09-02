@@ -1,0 +1,87 @@
+image: thyrlian/android-sdk:latest
+
+stages:
+  - build
+  - deploy
+
+cache:
+  key: "${CI_COMMIT_REF_SLUG}"
+  paths:
+    - .gradle/wrapper/
+    - .gradle/caches/
+    - app/.gradle/
+
+
+before_script:
+  - apt-get update -qq && apt-get install -y curl
+  - chmod +x gradlew
+
+buildAndroid26:
+  stage: build
+  script:
+    - ./gradlew assembleAndroid26Release
+  artifacts:
+    paths:
+      - app/build/outputs/apk/android26/release/*.apk
+    expire_in: 1 day
+
+buildAndroid33:
+  stage: build
+  script:
+    - |
+      curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+           -d "chat_id=$TELEGRAM_CHAT_ID" \
+           -d message_thread_id=2 \
+           -d $'text=New update available and building APK.\nPlease wait about 15 minutes.\nPipeline ID: '${CI_PIPELINE_ID}
+    - ./gradlew assembleAndroid33Release
+  artifacts:
+    paths:
+      - app/build/outputs/apk/android33/release/*.apk
+    expire_in: 1 day
+
+upload_to_telegram:
+  stage: deploy
+  dependencies:
+    - buildAndroid26
+    - buildAndroid33
+  script:
+    - mkdir public
+    - cp app/build/outputs/apk/*/release/*.apk public/
+    - echo "Uploading APKs..."
+    - |
+      success=true
+
+      for file in public/*.apk; do
+        echo "Uploading $(basename "$file")"
+        tries=0
+        success_file=false
+        until [ $tries -ge 5 ]; do
+          if curl -F "file=@$file" -H "X-Upload-Token:$UPLOAD_KEY" $STORAGE_SERVER_ADDR; then
+            success_file=true
+            break
+          else
+            echo "Retrying upload for $file..."
+            sleep 2
+          fi
+          tries=$((tries+1))
+        done
+        if ! $success_file; then
+          echo "Upload failed for $file"
+          success=false
+        fi
+      done
+
+      if [ "$success" = true ]; then
+        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+             -d "chat_id=$TELEGRAM_CHAT_ID" \
+             -d message_thread_id=2 \
+             -d "text=Done! Please backup all your projects before installing and updating Sketchware Pro. You should also backup your project before editing it. We will not be responsible for any unexpected problems that may occur. Download here: https://go.anbui.ovh/skdr?p=${CI_PIPELINE_ID}"
+      else
+        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+             -d "chat_id=$TELEGRAM_CHAT_ID" \
+             -d message_thread_id=2 \
+             -d "text=Something went wrong and a new version could not be prepared. You can still download the older version here: https://go.anbui.ovh/skdr?p=${CI_PIPELINE_ID}"
+      fi
+  artifacts:
+    paths:
+      - public
