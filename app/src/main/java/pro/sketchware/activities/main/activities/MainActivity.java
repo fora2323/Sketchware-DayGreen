@@ -29,6 +29,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.besome.sketch.lib.base.BasePermissionAppCompatActivity;
+import com.google.android.material.color.DynamicColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.analytics.FirebaseAnalytics;
@@ -52,6 +53,7 @@ import pro.sketchware.utility.DataResetter;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.UI;
+import pro.sketchware.utility.theme.ThemeManager;
 
 public class MainActivity extends BasePermissionAppCompatActivity {
     private static final String PROJECTS_FRAGMENT_TAG = "projects_fragment";
@@ -147,8 +149,8 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
         
-        if (pro.sketchware.utility.theme.ThemeManager.isIdeDynamicColorEnabled(this)) {
-            com.google.android.material.color.DynamicColors.applyToActivityIfAvailable(this);
+        if (ThemeManager.isIdeDynamicColorEnabled(this)) {
+            DynamicColors.applyToActivityIfAvailable(this);
         }
         
         enableEdgeToEdgeNoContrast();
@@ -175,9 +177,13 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
         drawerToggle = new ActionBarDrawerToggle(this, binding.drawerLayout, R.string.app_name, R.string.app_name);
         binding.drawerLayout.addDrawerListener(drawerToggle);
+        binding.drawerLayout.setScrimColor(Color.TRANSPARENT);
+        binding.drawerLayout.setDrawerElevation(0f);
         binding.drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
             @Override
             public void onDrawerSlide(@NonNull View drawerView, float slideOffset) {
+                float moveFactor = drawerView.getWidth() * slideOffset;
+                binding.layoutCoordinator.setTranslationX(moveFactor);
             }
 
             @Override
@@ -188,6 +194,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
             @Override
             public void onDrawerClosed(@NonNull View drawerView) {
+                binding.layoutCoordinator.setTranslationX(0f);
             }
 
             @Override
