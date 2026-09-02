@@ -148,6 +148,7 @@ public class ProjectsFragment extends DA {
         Insetter.builder().margin(WindowInsetsCompat.Type.navigationBars()).applyToView(fab);
 
         binding.swipeRefresh.setOnRefreshListener(this::refreshProjectsList);
+        binding.swipeRefresh.setTargetView(binding.nestedScroll);
 
         projectsAdapter = new ProjectsAdapter(this, projectsList);
         binding.myprojects.setAdapter(projectsAdapter);
