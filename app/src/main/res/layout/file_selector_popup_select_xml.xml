@@ -1,0 +1,113 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#BF000000"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:orientation="vertical"
+    android:paddingTop="36dp">
+
+    <LinearLayout
+        android:id="@+id/ln_tabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <HorizontalScrollView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/options_selector"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="32dp"
+                app:checkedButton="@id/option_view"
+                app:selectionRequired="true"
+                app:singleSelection="true">
+
+                <Button
+                    android:id="@+id/option_view"
+                    style="@style/Widget.Material3Expressive.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Activity"
+                    android:textColor="@color/toggle_button_text_color" />
+
+                <Button
+                    android:id="@+id/option_fragment_view"
+                    style="@style/Widget.Material3Expressive.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Fragment"
+                    android:textColor="@color/toggle_button_text_color" />
+
+                <Button
+                    android:id="@+id/option_custom_view"
+                    style="@style/Widget.Material3Expressive.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/common_word_custom_view"
+                    android:textColor="@color/toggle_button_text_color" />
+
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        </HorizontalScrollView>
+
+    </LinearLayout>
+
+
+
+    <TextView
+        android:id="@+id/empty_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:textColor="#ffffffff"
+        android:textSize="12sp"
+        android:text="@string/design_manager_view_message_no_view"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/list_xml"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/ln_tabs"
+        android:layout_marginTop="20dp"
+        android:paddingBottom="96dp"
+        android:clipToPadding="false"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        tools:itemCount="4"
+        tools:listitem="@layout/file_selector_popup_select_xml_activity_item" />
+
+<!--    <RelativeLayout-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="172dp"-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_centerHorizontal="true"-->
+<!--        android:background="@drawable/shadow_gradient_bottom_top"-->
+<!--        android:gravity="center_horizontal|bottom">-->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="172dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:gravity="center_horizontal|bottom">
+
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/createNewView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Create"
+            app:icon="@drawable/ic_add_white_24dp" />
+
+    </RelativeLayout>
+
+</RelativeLayout>

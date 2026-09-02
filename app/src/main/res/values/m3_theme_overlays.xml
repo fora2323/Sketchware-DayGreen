@@ -1,0 +1,123 @@
+<resources>
+    <!-- Light Overlays -->
+    <style name="ThemeOverlay.AppTheme.Light.MediumContrast" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/md_theme_light_primary_medium_contrast</item>
+        <item name="colorOnPrimary">@color/md_theme_light_on_primary_medium_contrast</item>
+        <item name="colorPrimaryContainer">@color/md_theme_light_primary_container_medium_contrast</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_light_on_primary_container_medium_contrast</item>
+        <item name="colorSecondary">@color/md_theme_light_secondary_medium_contrast</item>
+        <item name="colorOnSecondary">@color/md_theme_light_on_secondary_medium_contrast</item>
+        <item name="colorSecondaryContainer">@color/md_theme_light_secondary_container_medium_contrast</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_light_on_secondary_container_medium_contrast</item>
+        <item name="colorTertiary">@color/md_theme_light_tertiary_medium_contrast</item>
+        <item name="colorOnTertiary">@color/md_theme_light_on_tertiary_medium_contrast</item>
+        <item name="colorTertiaryContainer">@color/md_theme_light_tertiary_container_medium_contrast</item>
+        <item name="colorOnTertiaryContainer">@color/md_theme_light_on_tertiary_container_medium_contrast</item>
+        <item name="colorError">@color/md_theme_light_error_medium_contrast</item>
+        <item name="colorOnError">@color/md_theme_light_on_error_medium_contrast</item>
+        <item name="colorErrorContainer">@color/md_theme_light_error_container_medium_contrast</item>
+        <item name="colorOnErrorContainer">@color/md_theme_light_on_error_container_medium_contrast</item>
+        <item name="android:colorBackground">@color/md_theme_light_background_medium_contrast</item>
+        <item name="colorOnBackground">@color/md_theme_light_on_background_medium_contrast</item>
+        <item name="colorSurface">@color/md_theme_light_surface_medium_contrast</item>
+        <item name="colorOnSurface">@color/md_theme_light_on_surface_medium_contrast</item>
+        <item name="colorSurfaceVariant">@color/md_theme_light_surface_variant_medium_contrast</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_light_on_surface_variant_medium_contrast</item>
+        <item name="colorOutline">@color/md_theme_light_outline_medium_contrast</item>
+        <item name="colorOutlineVariant">@color/md_theme_light_outline_variant_medium_contrast</item>
+        <item name="colorSurfaceInverse">@color/md_theme_light_inverse_surface_medium_contrast</item>
+        <item name="colorOnSurfaceInverse">@color/md_theme_light_inverse_on_surface_medium_contrast</item>
+        <item name="colorPrimaryInverse">@color/md_theme_light_inverse_primary_medium_contrast</item>
+    </style>
+
+    <style name="ThemeOverlay.AppTheme.Light.HighContrast" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/md_theme_light_primary_high_contrast</item>
+        <item name="colorOnPrimary">@color/md_theme_light_on_primary_high_contrast</item>
+        <item name="colorPrimaryContainer">@color/md_theme_light_primary_container_high_contrast</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_light_on_primary_container_high_contrast</item>
+        <item name="colorSecondary">@color/md_theme_light_secondary_high_contrast</item>
+        <item name="colorOnSecondary">@color/md_theme_light_on_secondary_high_contrast</item>
+        <item name="colorSecondaryContainer">@color/md_theme_light_secondary_container_high_contrast</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_light_on_secondary_container_high_contrast</item>
+        <item name="colorTertiary">@color/md_theme_light_tertiary_high_contrast</item>
+        <item name="colorOnTertiary">@color/md_theme_light_on_tertiary_high_contrast</item>
+        <item name="colorTertiaryContainer">@color/md_theme_light_tertiary_container_high_contrast</item>
+        <item name="colorOnTertiaryContainer">@color/md_theme_light_on_tertiary_container_high_contrast</item>
+        <item name="colorError">@color/md_theme_light_error_high_contrast</item>
+        <item name="colorOnError">@color/md_theme_light_on_error_high_contrast</item>
+        <item name="colorErrorContainer">@color/md_theme_light_error_container_high_contrast</item>
+        <item name="colorOnErrorContainer">@color/md_theme_light_on_error_container_high_contrast</item>
+        <item name="android:colorBackground">@color/md_theme_light_background_high_contrast</item>
+        <item name="colorOnBackground">@color/md_theme_light_on_background_high_contrast</item>
+        <item name="colorSurface">@color/md_theme_light_surface_high_contrast</item>
+        <item name="colorOnSurface">@color/md_theme_light_on_surface_high_contrast</item>
+        <item name="colorSurfaceVariant">@color/md_theme_light_surface_variant_high_contrast</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_light_on_surface_variant_high_contrast</item>
+        <item name="colorOutline">@color/md_theme_light_outline_high_contrast</item>
+        <item name="colorOutlineVariant">@color/md_theme_light_outline_variant_high_contrast</item>
+        <item name="colorSurfaceInverse">@color/md_theme_light_inverse_surface_high_contrast</item>
+        <item name="colorOnSurfaceInverse">@color/md_theme_light_inverse_on_surface_high_contrast</item>
+        <item name="colorPrimaryInverse">@color/md_theme_light_inverse_primary_high_contrast</item>
+    </style>
+
+    <!-- Dark Overlays -->
+    <style name="ThemeOverlay.AppTheme.Dark.MediumContrast" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/md_theme_dark_primary_medium_contrast</item>
+        <item name="colorOnPrimary">@color/md_theme_dark_on_primary_medium_contrast</item>
+        <item name="colorPrimaryContainer">@color/md_theme_dark_primary_container_medium_contrast</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_dark_on_primary_container_medium_contrast</item>
+        <item name="colorSecondary">@color/md_theme_dark_secondary_medium_contrast</item>
+        <item name="colorOnSecondary">@color/md_theme_dark_on_secondary_medium_contrast</item>
+        <item name="colorSecondaryContainer">@color/md_theme_dark_secondary_container_medium_contrast</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_dark_on_secondary_container_medium_contrast</item>
+        <item name="colorTertiary">@color/md_theme_dark_tertiary_medium_contrast</item>
+        <item name="colorOnTertiary">@color/md_theme_dark_on_tertiary_medium_contrast</item>
+        <item name="colorTertiaryContainer">@color/md_theme_dark_tertiary_container_medium_contrast</item>
+        <item name="colorOnTertiaryContainer">@color/md_theme_dark_on_tertiary_container_medium_contrast</item>
+        <item name="colorError">@color/md_theme_dark_error_medium_contrast</item>
+        <item name="colorOnError">@color/md_theme_dark_on_error_medium_contrast</item>
+        <item name="colorErrorContainer">@color/md_theme_dark_error_container_medium_contrast</item>
+        <item name="colorOnErrorContainer">@color/md_theme_dark_on_error_container_medium_contrast</item>
+        <item name="android:colorBackground">@color/md_theme_dark_background_medium_contrast</item>
+        <item name="colorOnBackground">@color/md_theme_dark_on_background_medium_contrast</item>
+        <item name="colorSurface">@color/md_theme_dark_surface_medium_contrast</item>
+        <item name="colorOnSurface">@color/md_theme_dark_on_surface_medium_contrast</item>
+        <item name="colorSurfaceVariant">@color/md_theme_dark_surface_variant_medium_contrast</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_dark_on_surface_variant_medium_contrast</item>
+        <item name="colorOutline">@color/md_theme_dark_outline_medium_contrast</item>
+        <item name="colorOutlineVariant">@color/md_theme_dark_outline_variant_medium_contrast</item>
+        <item name="colorSurfaceInverse">@color/md_theme_dark_inverse_surface_medium_contrast</item>
+        <item name="colorOnSurfaceInverse">@color/md_theme_dark_inverse_on_surface_medium_contrast</item>
+        <item name="colorPrimaryInverse">@color/md_theme_dark_inverse_primary_medium_contrast</item>
+    </style>
+
+    <style name="ThemeOverlay.AppTheme.Dark.HighContrast" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/md_theme_dark_primary_high_contrast</item>
+        <item name="colorOnPrimary">@color/md_theme_dark_on_primary_high_contrast</item>
+        <item name="colorPrimaryContainer">@color/md_theme_dark_primary_container_high_contrast</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_dark_on_primary_container_high_contrast</item>
+        <item name="colorSecondary">@color/md_theme_dark_secondary_high_contrast</item>
+        <item name="colorOnSecondary">@color/md_theme_dark_on_secondary_high_contrast</item>
+        <item name="colorSecondaryContainer">@color/md_theme_dark_secondary_container_high_contrast</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_dark_on_secondary_container_high_contrast</item>
+        <item name="colorTertiary">@color/md_theme_dark_tertiary_high_contrast</item>
+        <item name="colorOnTertiary">@color/md_theme_dark_on_tertiary_high_contrast</item>
+        <item name="colorTertiaryContainer">@color/md_theme_dark_tertiary_container_high_contrast</item>
+        <item name="colorOnTertiaryContainer">@color/md_theme_dark_on_tertiary_container_high_contrast</item>
+        <item name="colorError">@color/md_theme_dark_error_high_contrast</item>
+        <item name="colorOnError">@color/md_theme_dark_on_error_high_contrast</item>
+        <item name="colorErrorContainer">@color/md_theme_dark_error_container_high_contrast</item>
+        <item name="colorOnErrorContainer">@color/md_theme_dark_on_error_container_high_contrast</item>
+        <item name="android:colorBackground">@color/md_theme_dark_background_high_contrast</item>
+        <item name="colorOnBackground">@color/md_theme_dark_on_background_high_contrast</item>
+        <item name="colorSurface">@color/md_theme_dark_surface_high_contrast</item>
+        <item name="colorOnSurface">@color/md_theme_dark_on_surface_high_contrast</item>
+        <item name="colorSurfaceVariant">@color/md_theme_dark_surface_variant_high_contrast</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_dark_on_surface_variant_high_contrast</item>
+        <item name="colorOutline">@color/md_theme_dark_outline_high_contrast</item>
+        <item name="colorOutlineVariant">@color/md_theme_dark_outline_variant_high_contrast</item>
+        <item name="colorSurfaceInverse">@color/md_theme_dark_inverse_surface_high_contrast</item>
+        <item name="colorOnSurfaceInverse">@color/md_theme_dark_inverse_on_surface_high_contrast</item>
+        <item name="colorPrimaryInverse">@color/md_theme_dark_inverse_primary_high_contrast</item>
+    </style>
+</resources>

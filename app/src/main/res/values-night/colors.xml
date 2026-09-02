@@ -1,0 +1,71 @@
+<resources>
+    <!--new attribute color-->
+    <color name="primary">#FFABEDD5</color>
+    <color name="onPrimary">#FF12543C</color>
+    <color name="primaryContainer">#FF1C7D5A</color>
+    <color name="onPrimaryContainer">#FFD5F6EA</color>
+    <color name="inversePrimary">#FF25A778</color>
+    <color name="secondary">#FFC2D6CF</color>
+    <color name="onSecondary">#FF293D36</color>
+    <color name="secondaryContainer">#FF3E5B50</color>
+    <color name="onSecondaryContainer">#FFE1EAE7</color>
+    <color name="tertiary">#FFABC3ED</color>
+    <color name="onTertiary">#FF122A54</color>
+    <color name="tertiaryContainer">#FF1C3F7D</color>
+    <color name="onTertiaryContainer">#FFD5E1F6</color>
+    <color name="background">#FF0E1010</color>
+    <color name="onBackground">#FFE4E7E6</color>
+    <color name="surface">#FF0E1010</color>
+    <color name="onSurface">#FFE4E7E6</color>
+    <color name="surfaceVariant">#FF45544E</color>
+    <color name="onSurfaceVariant">#FFC7D1CD</color>
+    <color name="surfaceTint">#FFABEDD5</color>
+    <color name="inverseSurface">#FFE4E7E6</color>
+    <color name="inverseOnSurface">#FF303634</color>
+    <color name="surfaceDim">#FF0E1010</color>
+    <color name="surfaceBright">#FF39413E</color>
+    <color name="surfaceContainerLowest">#FF0A0B0A</color>
+    <color name="surfaceContainerLow">#FF181B1A</color>
+    <color name="surfaceContainer">#FF1D211F</color>
+    <color name="surfaceContainerHigh">#FF292E2C</color>
+    <color name="surfaceContainerHighest">#FF353C39</color>
+    <color name="error">#FFF5A3A3</color>
+    <color name="onError">#FF5C0A0A</color>
+    <color name="errorContainer">#FF8A0F0F</color>
+    <color name="onErrorContainer">#FFFAD1D1</color>
+    <color name="outline">#FF8FA39C</color>
+    <color name="outlineVariant">#FF45544E</color>
+    <color name="scrim">#FF000000</color>
+    
+    <!--lagecy color-->
+    <color name="color_accent">#ff008dcd</color>
+
+    <color name="color_text_onSurface">#E2E2E5</color>
+    <color name="color_text_onSurfaceVariant">#C1C7CE</color>
+
+    <!--  input layout  -->
+    <color name="inputLayoutBackgroundColor">#2e2e2e</color>
+    <color name="inputLayoutStrokeColor">#505050</color>
+
+    <!--  main layouts  -->
+    <color name="backgroundColor">#1C1C1C</color>
+    <color name="backgroundOpenColor">#252729</color>
+    <color name="dialogBackgroundColor">#2E2E2E</color>
+
+    <!--  views  -->
+    <color name="cardStrokeColor">#2E2E2E</color>
+
+    <color name="view_property_background_color">#292929</color>
+    <color name="view_property_tab_active">#525252</color>
+    <color name="view_property_tab_deactive">#60525252</color>
+    <color name="view_property_tab_active_text">#ff000000</color>
+    <color name="view_property_tab_deactive_text">#ffffffff</color>
+    <color name="view_property_grid_background">#60525252</color>
+    <color name="view_property_spinner_filter">#ffffffff</color>
+
+    <color name="splash_bg_color">@color/md_theme_dark_background</color>
+    <color name="splash_content_color">@color/md_theme_dark_on_background</color>
+
+    <color name="color_error_bg">#261008</color>
+
+</resources>

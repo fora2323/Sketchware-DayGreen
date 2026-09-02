@@ -1,0 +1,46 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/program_info"
+        android:icon="@drawable/ic_sketchware_24"
+        android:title="Daygreen information" />
+
+    <item
+        android:id="@+id/daydream_cleanup"
+        android:icon="@drawable/cleaning_services_24px"
+        android:title="Clean up" />
+
+    <item
+        android:id="@+id/app_settings"
+        android:icon="@drawable/ic_mtrl_settings"
+        android:title="Settings" />
+
+    <item
+        android:id="@+id/daydream_settings"
+        android:icon="@drawable/wand_stars_24px"
+        android:title="@string/name_menu_green" />
+        
+    <item
+        android:id="@+id/create_release_keystore"
+        android:icon="@drawable/ic_mtrl_key"
+        android:title="Create keystore" />    
+
+    <item android:title="Related links"
+        android:visible="true">
+        <menu>
+            <item
+                android:id="@+id/social_discord"
+                android:icon="@drawable/discord_logo"
+                android:title="@string/name_tag_discord_new" />
+            <item
+                android:id="@+id/social_github"
+                android:icon="@drawable/github_logo"
+                android:title="@string/name_tag_github_new" />
+            <item
+                android:id="@+id/social_telegram"
+                android:icon="@drawable/telegram_logo"
+                android:title="@string/title_telegram_community" />    
+        </menu>
+    </item>
+
+</menu>
