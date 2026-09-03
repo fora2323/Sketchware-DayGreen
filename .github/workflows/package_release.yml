@@ -83,7 +83,7 @@ jobs:
 
       - name: Install Pyrogram & Dependencies
         if: steps.check_tag.outputs.exists == 'false'
-        run: pip install pyrogram tgcrypto
+        run: pip install pyrofork tgcrypto
 
       - name: Send APKs to Telegram (Userbot)
         if: steps.check_tag.outputs.exists == 'false'
