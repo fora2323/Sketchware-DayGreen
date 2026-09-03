@@ -2507,6 +2507,17 @@ public class BlocksHandler {
         hashMap.put("palette", "-1");
         hashMap.put("spec", "string %s.inputOnly");
         arrayList.add(hashMap);
+        
+        //new block @fora2323
+        hashMap = new HashMap<>();
+        hashMap.put("name", "addSourceDirectlyIf");
+        hashMap.put("type", "c");
+        hashMap.put("typeName", "");
+        hashMap.put("code", "if (%1$s) {\n%2$s\n}");
+        hashMap.put("color", "#5cb722");
+        hashMap.put("palette", "-1");
+        hashMap.put("spec", "add source directly %s.inputOnly");
+        arrayList.add(hashMap);
 
         hashMap = new HashMap<>();
         hashMap.put("name", "RepeatKnownNumDescending");
@@ -2835,6 +2846,7 @@ public class BlocksHandler {
         logicEditorActivity.a("b", "asdBoolean");
         logicEditorActivity.a("d", "asdNumber");
         logicEditorActivity.a("s", "asdString");
+        logicEditorActivity.a("c", "addSourceDirectlyIf");
     }
 
     private static @ColorInt int getTitleBgColor(LogicEditorActivity logicEditorActivity) {
