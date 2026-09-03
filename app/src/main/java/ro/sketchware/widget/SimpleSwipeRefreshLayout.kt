@@ -129,7 +129,7 @@ class SimpleSwipeRefreshLayout @JvmOverloads constructor(context: Context, attrs
 
     fun setColorSchemeColors(@ColorInt vararg colors: Int) {
         if (colors.isNotEmpty()) {
-            progressBar.indicatorColor = colors
+            progressBar.setIndicatorColor(*colors)
         }
     }
 
