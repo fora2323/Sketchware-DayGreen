@@ -91,6 +91,14 @@ public class LibraryDownloaderDialogFragment extends BottomSheetDialogFragment {
 
         binding.btnDownload.setOnClickListener(v -> initDownloadFlow());
 
+        String[] options = new String[]{"21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                options
+        );
+        binding.actChooseminapi.setAdapter(adapter);
+
         connectivityManager = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         registerNetworkCallback();
     }
@@ -122,14 +130,6 @@ public class LibraryDownloaderDialogFragment extends BottomSheetDialogFragment {
         if (connectivityManager != null && networkCallback != null) {
             connectivityManager.unregisterNetworkCallback(networkCallback);
         }
-
-        String[] options = new String[]{"21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                requireContext(),
-                android.R.layout.simple_dropdown_item_1line,
-                options
-        );
-        binding.actChooseminapi.setAdapter(adapter);
     }
 
     public void setOnLibraryDownloadedTask(OnLibraryDownloadedTask onLibraryDownloadedTask) {
