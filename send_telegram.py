@@ -6,6 +6,8 @@ from pyrogram import Client
 api_id = int(os.environ["API_ID"])
 api_hash = os.environ["API_HASH"]
 session_string = os.environ["SESSION_STRING"]
+
+# Pastikan di GitHub Secrets nilainya diawali -100 (misal: -1003790306525)
 chat_id = int(os.environ["TELEGRAM_CHAT_ID"])
 topic_id = int(os.environ["TELEGRAM_THREAD_ID"])
 
@@ -52,27 +54,23 @@ app = Client(
 )
 
 with app:
-    # PERBAIKAN: Fetch info grup dulu agar Pyrogram mendaftarkan ID grup di memori
-    chat = app.get_chat(chat_id)
-
     # 1. Kirim APK versi 33 (lengkap dengan info commit)
     if apk_v33:
         print(f"Mengirim APK v33: {apk_v33}")
         app.send_document(
-            chat_id=chat.id,
+            chat_id=chat_id,
             document=apk_v33,
             caption=f"📱 **Build APK (API 33)**\n\n{caption_main}",
-            reply_to_message_id=topic_id
+            message_thread_id=topic_id
         )
 
-    # 2. Kirim APK versi 26 (sebagai file tambahan)
     if apk_v26:
         print(f"Mengirim APK v26: {apk_v26}")
         app.send_document(
-            chat_id=chat.id,
+            chat_id=chat_id,
             document=apk_v26,
             caption="📱 **Build APK (API 26)**",
-            reply_to_message_id=topic_id
+            message_thread_id=topic_id
         )
 
     # Fallback: jika nama file tidak mengandung angka 26/33 spesifik
@@ -81,10 +79,10 @@ with app:
             print(f"Mengirim APK: {apk}")
             cap = f"📱 **Build APK**\n\n{caption_main}" if index == 0 else "📱 **Build APK**"
             app.send_document(
-                chat_id=chat.id,
+                chat_id=chat_id,
                 document=apk,
                 caption=cap,
-                reply_to_message_id=topic_id
+                message_thread_id=topic_id
             )
 
 print("Semua file APK berhasil diunggah ke topik Telegram!")
