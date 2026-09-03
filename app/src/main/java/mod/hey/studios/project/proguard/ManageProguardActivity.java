@@ -33,6 +33,7 @@ public class ManageProguardActivity extends BaseAppCompatActivity
             Intent intent = new Intent(this, SrcCodeEditor.class);
             intent.putExtra("title", "proguard-rules.pro");
             intent.putExtra("content", pg.getCustomProguardRules());
+            intent.putExtra("sc_id", getIntent().getStringExtra("sc_id"));
             startActivity(intent);
         } else if (id == R.id.ln_pg_fm) {
             fmDialog();

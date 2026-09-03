@@ -27,6 +27,7 @@ import com.besome.sketch.adapters.ProjectsAdapter;
 import com.besome.sketch.design.DesignActivity;
 import com.besome.sketch.editor.manage.library.ProjectComparator;
 import com.besome.sketch.projects.MyProjectSettingActivity;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.transition.MaterialFadeThrough;
@@ -148,7 +149,8 @@ public class ProjectsFragment extends DA {
         Insetter.builder().margin(WindowInsetsCompat.Type.navigationBars()).applyToView(fab);
 
         binding.swipeRefresh.setOnRefreshListener(this::refreshProjectsList);
-        binding.swipeRefresh.setTargetView(binding.myprojects);
+        binding.swipeRefresh.setColorSchemeColors(MaterialColors.getColor(requireContext(), R.attr.colorPrimary, 0));
+        binding.swipeRefresh.setProgressBackgroundColorSchemeColor(MaterialColors.getColor(requireContext(), R.attr.colorSurfaceContainer, 0));
 
         projectsAdapter = new ProjectsAdapter(this, projectsList);
         binding.myprojects.setAdapter(projectsAdapter);

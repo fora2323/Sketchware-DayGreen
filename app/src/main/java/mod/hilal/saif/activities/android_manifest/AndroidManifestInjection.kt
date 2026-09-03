@@ -121,6 +121,7 @@ class AndroidManifestInjection : BaseAppCompatActivity() {
         val intent = Intent(this, SrcCodeEditor::class.java)
         intent.putExtra("content", manualManifestPath)
         intent.putExtra("xml", "")
+        intent.putExtra("sc_id", sc_id)
         intent.putExtra("title", "AndroidManifest.xml")
         startActivity(intent)
     }
@@ -212,6 +213,7 @@ class AndroidManifestInjection : BaseAppCompatActivity() {
         if (!FileUtil.isExistFile(appComponentsPath)) FileUtil.writeFile(appComponentsPath, "")
         intent.putExtra("content", appComponentsPath)
         intent.putExtra("xml", "")
+        intent.putExtra("sc_id", sc_id)
         intent.putExtra("disableHeader", "")
         intent.putExtra("title", "App Components")
         startActivity(intent)
