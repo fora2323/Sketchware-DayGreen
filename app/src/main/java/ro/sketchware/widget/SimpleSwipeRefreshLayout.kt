@@ -4,8 +4,6 @@ import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ObjectAnimator
 import android.content.Context
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
 import android.util.AttributeSet
@@ -17,7 +15,6 @@ import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.ListView
-import android.view.ViewOutlineProvider
 
 import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
@@ -27,7 +24,11 @@ import kotlin.math.min
 
 import com.google.android.material.loadingindicator.LoadingIndicator
 
-class SimpleSwipeRefreshLayout @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) : FrameLayout(context, attrs, defStyleAttr) {
+class SimpleSwipeRefreshLayout @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : FrameLayout(context, attrs, defStyleAttr) {
 
     fun interface OnRefreshListener {
         fun onRefresh()
@@ -84,8 +85,6 @@ class SimpleSwipeRefreshLayout @JvmOverloads constructor(context: Context, attrs
             updatePresetSizes()
         }
 
-    private val circleBg: GradientDrawable
-
     init {
         touchSlop = ViewConfiguration.get(context).scaledTouchSlop
         val density = resources.displayMetrics.density
@@ -96,12 +95,6 @@ class SimpleSwipeRefreshLayout @JvmOverloads constructor(context: Context, attrs
         indicatorTotalSize = circleSize
 
         indicatorContainer = FrameLayout(context)
-        circleBg = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
-            setColor(Color.parseColor("#E8DEDF"))
-        }
-        indicatorContainer.background = circleBg
-        indicatorContainer.elevation = 6 * density
 
         progressBar = LoadingIndicator(context)
 
@@ -119,16 +112,9 @@ class SimpleSwipeRefreshLayout @JvmOverloads constructor(context: Context, attrs
         indicatorContainer.visibility = View.GONE
         indicatorContainer.scaleX = 0f
         indicatorContainer.scaleY = 0f
-        
-        indicatorContainer.outlineProvider = ViewOutlineProvider.BACKGROUND
-        indicatorContainer.clipToOutline = true
-        
+
         clipToPadding = false
         setWillNotDraw(false)
-    }
-
-    fun setProgressBackgroundColorSchemeColor(@ColorInt color: Int) {
-        circleBg.setColor(color)
     }
 
     fun setColorSchemeColors(@ColorInt vararg colors: Int) {
@@ -137,7 +123,11 @@ class SimpleSwipeRefreshLayout @JvmOverloads constructor(context: Context, attrs
         }
     }
 
-    fun setCustomSizeDp(@Dimension(unit = Dimension.DP) circleSizeDp: Int, @Dimension(unit = Dimension.DP) progressSizeDp: Int, @Dimension(unit = Dimension.DP) triggerDp: Int) {
+    fun setCustomSizeDp(
+        @Dimension(unit = Dimension.DP) circleSizeDp: Int,
+        @Dimension(unit = Dimension.DP) progressSizeDp: Int,
+        @Dimension(unit = Dimension.DP) triggerDp: Int
+    ) {
         val density = resources.displayMetrics.density
         val circlePx = (circleSizeDp * density + 0.5f).toInt()
         val progressPx = (progressSizeDp * density + 0.5f).toInt()
@@ -145,7 +135,11 @@ class SimpleSwipeRefreshLayout @JvmOverloads constructor(context: Context, attrs
         applyCustomSizes(circlePx, progressPx, triggerPx)
     }
 
-    fun setCustomSizePx(@Px circleSizePx: Int, @Px progressSizePx: Int, @Px triggerPx: Int) {
+    fun setCustomSizePx(
+        @Px circleSizePx: Int,
+        @Px progressSizePx: Int,
+        @Px triggerPx: Int
+    ) {
         applyCustomSizes(circleSizePx, progressSizePx, triggerPx)
     }
 
@@ -166,7 +160,11 @@ class SimpleSwipeRefreshLayout @JvmOverloads constructor(context: Context, attrs
         applyCustomSizes(circleSize, progressSize, refreshTrigger)
     }
 
-    private fun applyCustomSizes(@Px circlePx: Int, @Px progressPx: Int, @Px triggerPx: Int) {
+    private fun applyCustomSizes(
+        @Px circlePx: Int,
+        @Px progressPx: Int,
+        @Px triggerPx: Int
+    ) {
         refreshTrigger = triggerPx
         indicatorTotalSize = circlePx
 
@@ -182,6 +180,7 @@ class SimpleSwipeRefreshLayout @JvmOverloads constructor(context: Context, attrs
             width = progressPx
             height = progressPx
         }
+        progressBar.setIndicatorSize(progressPx)
 
         if (!isRefreshing) {
             indicatorContainer.translationY = 0f
@@ -307,8 +306,6 @@ class SimpleSwipeRefreshLayout @JvmOverloads constructor(context: Context, attrs
             val scale = min(1.0f, progress)
             indicatorContainer.scaleX = scale
             indicatorContainer.scaleY = scale
-
-            //progressBar.rotation = offset * 2.0f
         }
     }
 
