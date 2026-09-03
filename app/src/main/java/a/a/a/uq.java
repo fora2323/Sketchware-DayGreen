@@ -310,9 +310,36 @@ public class uq {
             "YAML",
             "ZEPHIR"
     };
-
+    
+    //new import add by @fora2323
     public static final String[] IMPORT_CLASS_PATH = {
-            "android.content.pm.*",
+            "android.content.pm.ActivityInfo",
+            "android.content.pm.ApplicationInfo",
+            "android.content.pm.ComponentInfo",
+            "android.content.pm.FeatureInfo",
+            "android.content.pm.PackageInfo",
+            "android.content.pm.PackageItemInfo",
+            "android.content.pm.PackageManager",
+            "android.content.pm.PermissionGroupInfo",
+            "android.content.pm.PermissionInfo",
+            "android.content.pm.ProviderInfo",
+            "android.content.pm.ResolveInfo",
+            "android.content.pm.ServiceInfo",
+            "android.content.pm.Signature",
+            "rikka.shizuku.Shizuku",
+            "rikka.shizuku.ShizukuProvider",
+            "rikka.shizuku.ShizukuBinderWrapper",
+            "rikka.shizuku.ShizukuRemoteProcess",
+            "rikka.shizuku.SystemServiceHelper",
+            "androidx.core.graphics.ColorUtils",
+            "androidx.core.graphics.BlendModeColorFilterCompat",
+            "androidx.core.graphics.BlendModeCompat",
+            "androidx.core.app.ActivityCompat",
+            "androidx.core.app.ActivityOptionsCompat",
+            "androidx.core.app.ComponentActivity",
+            "androidx.core.app.NotificationCompat",
+            "androidx.core.app.NotificationManagerCompat",
+            "androidx.core.content.ContextCompat",
             "android.database.sqlite.*",
             "android.gesture.*",
             "android.graphics.fonts.*",
