@@ -17,6 +17,7 @@ import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.ListView
+import android.view.ViewOutlineProvider
 
 import androidx.annotation.ColorInt
 import androidx.annotation.Dimension
@@ -118,7 +119,10 @@ class SimpleSwipeRefreshLayout @JvmOverloads constructor(context: Context, attrs
         indicatorContainer.visibility = View.GONE
         indicatorContainer.scaleX = 0f
         indicatorContainer.scaleY = 0f
-
+        
+        indicatorContainer.outlineProvider = ViewOutlineProvider.BACKGROUND
+        indicatorContainer.clipToOutline = true
+        
         clipToPadding = false
         setWillNotDraw(false)
     }
