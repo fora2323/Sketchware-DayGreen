@@ -63,6 +63,8 @@ public class ExtraBlocks {
         //new block fora2323
         arrayList.add(addBlock("addOnCreateCodeTop", " ", "", "", "#493F5A", "OnCreate Block: add oncreate code top %s"));
         arrayList.add(addBlock("addOnCreateCodeBottom", " ", "", "", "#493F5A", "OnCreate Block: add oncreate code bottom %s"));
+        arrayList.add(addBlock("replaceExtendsActivity", " ", "", "", "#493F5A", "Extends Block: replace Activity extends %s"));
+        arrayList.add(addBlock("replaceExtendsFragment", " ", "", "", "#493F5A", "Extends Block: replace Fragment extends %s"));
         //OtpView Blocks
         arrayList.add(addBlock("otpViewSetFieldCount", " ", "", "%1$s.setFieldCount(%2$s);", "#4a6cd4", "%m.otpview setFieldCount %d"));
         arrayList.add(addBlock("otpViewSetOTPText", " ", "", "%1$s.setOTPText(%2$s);", "#4a6cd4", "%m.otpview setOTPText %s"));

@@ -1196,6 +1196,8 @@ public class ExtraPaletteBlock {
                     //new block fora2323
                     logicEditor.a(" ", "addOnCreateCodeTop");
                     logicEditor.a(" ", "addOnCreateCodeBottom");
+                    logicEditor.a(" ", "replaceExtendsActivity");
+                    logicEditor.a(" ", "replaceExtendsFragment");
                     return;
                 }
                 return;
