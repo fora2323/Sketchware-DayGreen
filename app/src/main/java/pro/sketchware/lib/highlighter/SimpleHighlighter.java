@@ -23,7 +23,7 @@ public class SimpleHighlighter {
 
     public SimpleHighlighter(EditText editor) {
         mEditor = editor;
-        syntaxList = SyntaxScheme.JAVA();
+        syntaxList = SyntaxScheme.DYNAMIC_JAVA(editor.getContext());
         init();
     }
 

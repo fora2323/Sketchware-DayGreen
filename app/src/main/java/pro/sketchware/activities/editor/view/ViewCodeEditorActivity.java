@@ -22,6 +22,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import a.a.a.cC;
 import a.a.a.jC;
 import io.github.rosemoe.sora.widget.CodeEditor;
+import mod.hey.studios.code.SrcCodeEditor;
 import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 import pro.sketchware.editor.SketchwareCodeEditor;
@@ -148,6 +149,7 @@ public class ViewCodeEditorActivity extends BaseAppCompatActivity {
                 && projectLibrary.isEnabled()) {
             menu.add(Menu.NONE, 3, Menu.NONE, "Edit AppCompat");
         }
+        menu.add(Menu.NONE, 6, Menu.NONE, "Select theme");
         menu.add(Menu.NONE, 4, Menu.NONE, "Reload color schemes");
         menu.add(Menu.NONE, 5, Menu.NONE, "Layout Preview");
         return true;
@@ -170,6 +172,13 @@ public class ViewCodeEditorActivity extends BaseAppCompatActivity {
             }
             case 3 -> {
                 toAppCompat();
+                return true;
+            }
+            case 6 -> {
+                SrcCodeEditor.showSwitchThemeDialog(this, editor, (dialog, which) -> {
+                    SrcCodeEditor.selectTheme(editor, which);
+                    dialog.dismiss();
+                });
                 return true;
             }
             case 4 -> {

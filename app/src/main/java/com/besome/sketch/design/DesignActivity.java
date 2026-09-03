@@ -16,6 +16,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.util.Pair;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -23,7 +24,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupMenu;
+import androidx.appcompat.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -495,9 +496,13 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         });
 
         btnOptions = findViewById(R.id.btn_options);
-        btnOptions.setOnClickListener(v -> bottomPopupMenu.show());
+        View splitButton = findViewById(R.id.run_split_button);
+        btnOptions.setOnClickListener(v -> {
+            btnOptions.setIconResource(R.drawable.ic_mtrl_arrow_up);
+            bottomPopupMenu.show();
+        });
 
-        bottomPopupMenu = new PopupMenu(this, btnOptions);
+        bottomPopupMenu = new PopupMenu(this, splitButton != null ? splitButton : btnOptions, Gravity.TOP);
         bottomMenu = bottomPopupMenu.getMenu();
         bottomMenu.add(Menu.NONE, 1, Menu.NONE, "Build Settings").setOnMenuItemClickListener(item -> {
             BuildSettingsBottomSheet sheet = BuildSettingsBottomSheet.newInstance(sc_id);
@@ -540,6 +545,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             @Override
             public void onDismiss(PopupMenu menu) {
                 btnOptions.setChecked(false);
+                btnOptions.setIconResource(R.drawable.ic_mtrl_arrow_down);
             }
         });
 

@@ -152,6 +152,7 @@
                     </com.google.android.material.card.MaterialCardView>
 
                     <com.google.android.material.button.MaterialSplitButton
+                        android:id="@+id/run_split_button"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content">
 
@@ -168,8 +169,7 @@
                             style="?attr/materialSplitButtonIconFilledStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            app:icon="@drawable/m3_split_button_chevron_avd"
-                            app:iconSize="24dp" />
+                            app:icon="@drawable/ic_mtrl_arrow_down" />
                     </com.google.android.material.button.MaterialSplitButton>
                 </LinearLayout>
             </LinearLayout>

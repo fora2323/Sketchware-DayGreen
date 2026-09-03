@@ -12,6 +12,7 @@ import com.google.android.material.color.MaterialColors;
 
 import io.github.rosemoe.sora.lang.Language;
 import io.github.rosemoe.sora.langs.java.JavaLanguage;
+import io.github.rosemoe.sora.langs.textmate.TextMateLanguage;
 import io.github.rosemoe.sora.widget.CodeEditor;
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme;
 import io.github.rosemoe.sora.widget.schemes.SchemeDarcula;
@@ -25,6 +26,11 @@ public class EditorUtils {
 
     @NonNull
     public static EditorColorScheme getMaterialStyledScheme(CodeEditor editor) {
+        return getMaterialStyledScheme(editor, true);
+    }
+
+    @NonNull
+    public static EditorColorScheme getMaterialStyledScheme(CodeEditor editor, boolean fullOverride) {
         var scheme = editor.getColorScheme();
         var primary = MaterialColors.getColor(editor, R.attr.colorPrimary);
         var surface = MaterialColors.getColor(editor, R.attr.colorSurface);
@@ -33,15 +39,25 @@ public class EditorUtils {
         var surfaceContainerHighest = MaterialColors.getColor(editor, R.attr.colorSurfaceContainerHighest);
         var onSurface = MaterialColors.getColor(editor, R.attr.colorOnSurface);
         var onSurfaceVariant = MaterialColors.getColor(editor, R.attr.colorOnSurfaceVariant);
-        scheme.setColor(EditorColorScheme.KEYWORD, primary);
-        scheme.setColor(EditorColorScheme.FUNCTION_NAME, primary);
-        scheme.setColor(EditorColorScheme.WHOLE_BACKGROUND, surface);
-        scheme.setColor(EditorColorScheme.CURRENT_LINE, surfaceContainerLow);
-        scheme.setColor(EditorColorScheme.LINE_NUMBER_PANEL, surfaceContainer);
-        scheme.setColor(EditorColorScheme.LINE_NUMBER_BACKGROUND, surfaceContainer);
+
+        if (fullOverride) {
+            scheme.setColor(EditorColorScheme.WHOLE_BACKGROUND, surface);
+            scheme.setColor(EditorColorScheme.TEXT_NORMAL, onSurface);
+            scheme.setColor(EditorColorScheme.CURRENT_LINE, surfaceContainerLow);
+            scheme.setColor(EditorColorScheme.LINE_NUMBER_PANEL, surfaceContainer);
+            scheme.setColor(EditorColorScheme.LINE_NUMBER_BACKGROUND, surfaceContainer);
+        }
+
+        // Always style these to maintain IDE feel
         scheme.setColor(EditorColorScheme.LINE_DIVIDER, surfaceContainerHighest);
-        scheme.setColor(EditorColorScheme.TEXT_NORMAL, onSurface);
         scheme.setColor(EditorColorScheme.SELECTION_INSERT, onSurfaceVariant);
+
+        // Completion window styling - matches IDE panels
+        scheme.setColor(EditorColorScheme.COMPLETION_WND_BACKGROUND, surfaceContainer);
+        scheme.setColor(EditorColorScheme.COMPLETION_WND_TEXT_PRIMARY, onSurface);
+        scheme.setColor(EditorColorScheme.COMPLETION_WND_TEXT_SECONDARY, onSurfaceVariant);
+        scheme.setColor(EditorColorScheme.COMPLETION_WND_CORNER, primary);
+
         return scheme;
     }
 
@@ -55,25 +71,41 @@ public class EditorUtils {
     }
 
     public static void loadXmlConfig(CodeEditor editor) {
-        loadConfigByLanguage(editor, CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_XML), true);
+        Language language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_XML);
+        if (language instanceof TextMateLanguage tm) {
+            tm.setCompleterKeywords(new String[]{
+                    "LinearLayout", "RelativeLayout", "FrameLayout", "androidx.recyclerview.widget.RecyclerView",
+                    "Button", "TextView", "ImageView", "EditText", "CheckBox", "RadioButton",
+                    "android:id", "android:layout_width", "android:layout_height", "android:layout_margin",
+                    "android:padding", "android:text", "android:textColor", "android:textSize",
+                    "android:background", "android:gravity", "android:orientation", "android:visibility",
+                    "match_parent", "wrap_content", "@id/", "@+id/", "@string/", "@color/", "@drawable/"
+            });
+        }
+        loadConfigByLanguage(editor, language, true);
     }
 
     // todo: use dynamic color scheme for textmate language too
     private static void loadConfigByLanguage(CodeEditor editor, Language language, boolean isTextMate) {
         editor.setEditorLanguage(language);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (isDarkThemeEnabled(editor.getContext())) {
-                editor.setColorScheme(isTextMate ?
-                        CodeEditorColorSchemes.loadTextMateColorScheme(CodeEditorColorSchemes.THEME_DRACULA) : new SchemeDarcula());
+        boolean isDark = isDarkThemeEnabled(editor.getContext());
+        
+        if (isTextMate) {
+            String scopeName = ((TextMateLanguage) language).getAutoCompleter().getKeywords() != null ?
+                    CodeEditorLanguages.SCOPE_NAME_XML : CodeEditorLanguages.SCOPE_NAME_KOTLIN;
+            
+            String theme;
+            if (scopeName.equals(CodeEditorLanguages.SCOPE_NAME_XML)) {
+                theme = isDark ? CodeEditorColorSchemes.THEME_GITHUB_DARK : CodeEditorColorSchemes.THEME_GITHUB;
             } else {
-                editor.setColorScheme(isTextMate ?
-                        CodeEditorColorSchemes.loadTextMateColorScheme(CodeEditorColorSchemes.THEME_GITHUB) : new EditorColorScheme());
+                theme = isDark ? CodeEditorColorSchemes.THEME_DRACULA : CodeEditorColorSchemes.THEME_GITHUB;
             }
+            editor.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(theme));
         } else {
-            editor.setColorScheme(isTextMate ?
-                    CodeEditorColorSchemes.loadTextMateColorScheme(CodeEditorColorSchemes.THEME_GITHUB) : new EditorColorScheme());
+            editor.setColorScheme(isDark ? new SchemeDarcula() : new EditorColorScheme());
         }
-        editor.setColorScheme(getMaterialStyledScheme(editor));
+        
+        getMaterialStyledScheme(editor);
         editor.setPinLineNumber(true);
     }
 }

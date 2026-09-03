@@ -44,8 +44,10 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
 import a.a.a.Lx;
+import io.github.rosemoe.sora.lang.Language;
 import io.github.rosemoe.sora.langs.java.JavaLanguage;
 import io.github.rosemoe.sora.langs.textmate.TextMateColorScheme;
+import io.github.rosemoe.sora.langs.textmate.TextMateLanguage;
 import io.github.rosemoe.sora.widget.CodeEditor;
 import io.github.rosemoe.sora.widget.component.EditorAutoCompletion;
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme;
@@ -105,18 +107,50 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
     }
 
     public static void selectTheme(CodeEditor ed, int which) {
-        if (!(ed.getColorScheme() instanceof TextMateColorScheme)) {
+        boolean isTextMate = ed.getColorScheme() instanceof TextMateColorScheme;
+        boolean isDark = ThemeUtils.isDarkThemeEnabled(ed.getContext());
+
+        if (isTextMate) {
+            if (which == 0) {
+                // Default Dynamic logic
+                Language language = ed.getEditorLanguage();
+                String scopeName = (language instanceof TextMateLanguage tm && tm.getAutoCompleter().getKeywords() != null) ?
+                        CodeEditorLanguages.SCOPE_NAME_XML : CodeEditorLanguages.SCOPE_NAME_KOTLIN;
+
+                String theme;
+                if (scopeName.equals(CodeEditorLanguages.SCOPE_NAME_XML)) {
+                    theme = isDark ? CodeEditorColorSchemes.THEME_GITHUB_DARK : CodeEditorColorSchemes.THEME_GITHUB;
+                } else {
+                    theme = isDark ? CodeEditorColorSchemes.THEME_DRACULA : CodeEditorColorSchemes.THEME_GITHUB;
+                }
+                ed.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(theme));
+                EditorUtils.getMaterialStyledScheme(ed, true);
+            } else {
+                String themeName = switch (which) {
+                    case 1 -> CodeEditorColorSchemes.THEME_DRACULA;
+                    case 2 -> CodeEditorColorSchemes.THEME_GITHUB;
+                    case 3 -> CodeEditorColorSchemes.THEME_GITHUB_DARK;
+                    case 4 -> CodeEditorColorSchemes.THEME_ECLIPSE;
+                    case 5 -> CodeEditorColorSchemes.THEME_VS2019;
+                    case 6 -> CodeEditorColorSchemes.THEME_NOTEPADXX;
+                    default -> CodeEditorColorSchemes.THEME_DRACULA;
+                };
+                ed.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(themeName));
+                EditorUtils.getMaterialStyledScheme(ed, false);
+            }
+        } else {
             EditorColorScheme scheme = switch (which) {
                 case 1 -> new SchemeGitHub();
                 case 2 -> new SchemeEclipse();
                 case 3 -> new SchemeDarcula();
                 case 4 -> new SchemeVS2019();
                 case 5 -> new SchemeNotepadXX();
-                default -> new EditorColorScheme();
+                default -> isDark ? new SchemeDarcula() : new EditorColorScheme();
             };
-
             ed.setColorScheme(scheme);
+            EditorUtils.getMaterialStyledScheme(ed, which == 0);
         }
+        ed.rerunAnalysis();
     }
 
     public static void selectLanguage(CodeEditor ed, int which) {
@@ -287,17 +321,30 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
     }
 
     public static void showSwitchThemeDialog(Activity activity, CodeEditor codeEditor, DialogInterface.OnClickListener listener) {
-        EditorColorScheme currentScheme = codeEditor.getColorScheme();
-        var knownColorSchemesProperlyOrdered = new ArrayList<>(KNOWN_COLOR_SCHEMES);
-        Collections.reverse(knownColorSchemesProperlyOrdered);
-        int selectedThemeIndex = knownColorSchemesProperlyOrdered.stream()
-                .filter(pair -> pair.second.equals(currentScheme.getClass()))
-                .map(KNOWN_COLOR_SCHEMES::indexOf)
-                .findFirst()
-                .orElse(-1);
-        String[] themeItems = KNOWN_COLOR_SCHEMES.stream()
-                .map(pair -> pair.first)
-                .toArray(String[]::new);
+        String[] themeItems;
+        int selectedThemeIndex = -1;
+
+        if (codeEditor.getColorScheme() instanceof TextMateColorScheme) {
+            themeItems = new String[]{"Default (Dynamic)", "Dracula", "GitHub Light", "GitHub Dark", "Eclipse", "VS2019", "NotepadXX"};
+        } else {
+            EditorColorScheme currentScheme = codeEditor.getColorScheme();
+            var knownColorSchemesProperlyOrdered = new ArrayList<>(KNOWN_COLOR_SCHEMES);
+            Collections.reverse(knownColorSchemesProperlyOrdered);
+            selectedThemeIndex = knownColorSchemesProperlyOrdered.stream()
+                    .filter(pair -> pair.second.equals(currentScheme.getClass()))
+                    .map(KNOWN_COLOR_SCHEMES::indexOf)
+                    .findFirst()
+                    .orElse(-1);
+            
+            // Add Default to items if not there
+            List<String> items = new ArrayList<>();
+            items.add("Default (Dynamic)");
+            items.addAll(KNOWN_COLOR_SCHEMES.stream().map(pair -> pair.first).toList());
+            themeItems = items.toArray(new String[0]);
+            
+            if (selectedThemeIndex != -1) selectedThemeIndex++; // Shift for Default
+        }
+
         new MaterialAlertDialogBuilder(activity)
                 .setTitle("Select Theme")
                 .setSingleChoiceItems(themeItems, selectedThemeIndex, listener)
@@ -358,15 +405,14 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
             languageId = 0;
         } else if (title.endsWith(".kt")) {
             binding.editor.setEditorLanguage(CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_KOTLIN));
-            binding.editor.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(CodeEditorColorSchemes.THEME_DRACULA));
-            languageId = 1;
-        } else if (title.endsWith(".xml")) {
-            binding.editor.setEditorLanguage(CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_XML));
             if (ThemeUtils.isDarkThemeEnabled(getApplicationContext())) {
-                binding.editor.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(CodeEditorColorSchemes.THEME_DRACULA));
+                binding.editor.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(CodeEditorColorSchemes.THEME_GITHUB_DARK));
             } else {
                 binding.editor.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(CodeEditorColorSchemes.THEME_GITHUB));
             }
+            languageId = 1;
+        } else if (title.endsWith(".xml")) {
+            EditorUtils.loadXmlConfig(binding.editor);
             languageId = 2;
         }
 

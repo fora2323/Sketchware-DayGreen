@@ -8,6 +8,8 @@ import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
 import android.widget.EditText;
 
+import com.google.android.material.color.MaterialColors;
+
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,18 +50,28 @@ public class SyntaxScheme {
     }
 
     public static ArrayList<SyntaxScheme> JAVA() {
-        ArrayList<SyntaxScheme> arrayList = new ArrayList<>();
-        boolean isDarkMode = ThemeUtils.isDarkThemeEnabled(SketchApplication.getContext());
+        return DYNAMIC_JAVA(SketchApplication.getContext());
+    }
 
-        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[0] + mJavaPattern[1]), getColor(PRIMARY_COLOR_LIGHT, PRIMARY_COLOR_DARK, isDarkMode)));
-        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[2] + mJavaPattern[3] + mJavaPattern[4]), getColor(SECONDARY_COLOR_LIGHT, SECONDARY_COLOR_DARK, isDarkMode)));
-        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[5]), getColor(NUMBERS_COLOR_LIGHT, NUMBERS_COLOR_DARK, isDarkMode)));
-        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[11]), getColor(NOT_WORD_COLOR_LIGHT, NOT_WORD_COLOR_DARK, isDarkMode)));
-        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[6]), getColor(PRIMARY_COLOR_LIGHT, PRIMARY_COLOR_DARK, isDarkMode)));
-        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[10]), getColor(VARIABLE_COLOR_LIGHT, VARIABLE_COLOR_DARK, isDarkMode)));
-        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[7]), getColor("#9e880d", "#bbb529", isDarkMode)));
-        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[8]), getColor(QUOTES_COLOR_LIGHT, QUOTES_COLOR_DARK, isDarkMode)));
-        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[9]), getColor(COMMENTS_COLOR_LIGHT, COMMENTS_COLOR_DARK, isDarkMode)));
+    public static ArrayList<SyntaxScheme> DYNAMIC_JAVA(Context context) {
+        ArrayList<SyntaxScheme> arrayList = new ArrayList<>();
+        boolean isDarkMode = ThemeUtils.isDarkThemeEnabled(context);
+
+        int primaryColor = MaterialColors.getColor(context, R.attr.colorOnSurface, Color.BLACK);
+        int secondaryColor = MaterialColors.getColor(context, R.attr.colorPrimary, Color.BLUE);
+        int keywordColor = MaterialColors.getColor(context, R.attr.colorSecondary, Color.MAGENTA);
+        int quoteColor = MaterialColors.getColor(context, R.attr.colorGreen, Color.GREEN);
+        int commentColor = MaterialColors.getColor(context, R.attr.colorOutline, Color.GRAY);
+
+        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[0] + mJavaPattern[1]), primaryColor));
+        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[2] + mJavaPattern[3] + mJavaPattern[4]), keywordColor));
+        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[5]), secondaryColor));
+        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[11]), primaryColor));
+        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[6]), primaryColor));
+        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[10]), secondaryColor));
+        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[7]), keywordColor));
+        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[8]), quoteColor));
+        arrayList.add(new SyntaxScheme(Pattern.compile(mJavaPattern[9]), commentColor));
 
         return arrayList;
     }

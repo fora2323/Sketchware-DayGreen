@@ -44,6 +44,7 @@ import pro.sketchware.R;
 import pro.sketchware.databinding.ActivityBlocksManagerCreatorBinding;
 import pro.sketchware.lib.base.BaseTextWatcher;
 import pro.sketchware.lib.highlighter.SimpleHighlighter;
+import pro.sketchware.utility.EditorUtils;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.PropertiesUtil;
 import pro.sketchware.utility.SketchwareUtil;
@@ -233,6 +234,9 @@ public class BlocksManagerCreatorActivity extends BaseAppCompatActivity {
         inputProperties();
         addParameters();
         receiveIntents();
+        
+        binding.code.setTypeface(EditorUtils.getTypeface(this));
+        binding.code.setBackgroundColor(MaterialColors.getColor(this, R.attr.colorSurfaceContainerLow, Color.TRANSPARENT));
         new SimpleHighlighter(binding.code);
 
         {
