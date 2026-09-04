@@ -22,6 +22,7 @@ import a.a.a.jC;
 import a.a.a.jq;
 import a.a.a.kq;
 import extensions.anbui.daydream.blocks.DRPaletteBlock;
+import extensions.fora2323.daygreen.blocks.IDBlockShizuku;
 import mod.agus.jcoderz.beans.ViewBeans;
 import mod.hey.studios.editor.view.IdGenerator;
 import mod.hey.studios.moreblock.ReturnMoreblockManager;
@@ -1171,6 +1172,9 @@ public class ExtraPaletteBlock {
                     logicEditor.a(" ", "progressdialogSetStyle");
                     logicEditor.a(" ", "progressdialogShow");
                     logicEditor.a(" ", "progressdialogDismiss");
+                    if (DRFeatureManager.isShizukuEnabled(sc_id, projectFile.fileName)) {
+                        IDBlockShizuku.addPaletteBlocks(logicEditor);
+                    }
                     return;
                 }
                 return;

@@ -1,5 +1,7 @@
 package extensions.anbui.daydream.blocks
 
+import extensions.fora2323.daygreen.blocks.IDBlockShizuku
+
 object DRBlockHandler {
     @JvmStatic
     fun addBlocks(arrayList: ArrayList<HashMap<String, Any>>) {
@@ -9,6 +11,7 @@ object DRBlockHandler {
         addSharedPreferencesBlocks(arrayList)
         addBasicComponentBlocks(arrayList)
         addIntentPutExtraBlocks(arrayList)
+        IDBlockShizuku.addBlocks(arrayList)
     }
 
     @JvmStatic
