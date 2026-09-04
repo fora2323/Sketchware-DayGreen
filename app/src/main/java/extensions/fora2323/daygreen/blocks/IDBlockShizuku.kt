@@ -12,16 +12,16 @@ object IDBlockShizuku {
         hashMap["code"] = "Shizuku.pingBinder()"
         hashMap["color"] = "#673AB7"
         hashMap["palette"] = "-1"
-        hashMap["spec"] = "Shizuku isAvailable"
+        hashMap["spec"] = "Shizuku pingBinder"
         arrayList.add(hashMap)
 
         hashMap = HashMap()
         hashMap["name"] = "shizukuCheckPermission"
         hashMap["type"] = "b"
-        hashMap["code"] = "Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED"
+        hashMap["code"] = "Shizuku.checkSelfPermission()"
         hashMap["color"] = "#673AB7"
         hashMap["palette"] = "-1"
-        hashMap["spec"] = "Shizuku isPermissionGranted"
+        hashMap["spec"] = "Shizuku checkSelfPermission"
         arrayList.add(hashMap)
 
         hashMap = HashMap()

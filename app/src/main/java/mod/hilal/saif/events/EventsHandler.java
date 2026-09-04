@@ -57,6 +57,8 @@ public class EventsHandler {
         array.add("onCreateContextMenu");
         array.add("onContextItemSelected");
         array.add("onTabLayoutNewTabAdded");
+        //new by @fora2323
+        array.add("shizukuOnRequestPermissionResult");
 
         for (int i = cachedCustomEvents.size() - 1; i >= 0; i--) {
             HashMap<String, Object> customEvent = cachedCustomEvents.get(i);
@@ -265,6 +267,8 @@ public class EventsHandler {
             case "Import" -> "add custom imports";
             case "onActivityResult" -> "onActivityResult";
             case "initializeLogic" -> "initializeLogic";
+            //new add by @fora2323
+            case "shizukuOnRequestPermissionResult" -> "Shizuku onRequestPermissionResult";
             case "onSwipeRefreshLayout" -> "On SwipeRefreshLayout swipe";
             case " onLongClick" -> "onLongClick";
             case "onTabLayoutNewTabAdded" -> "return the name of current tab";
@@ -350,6 +354,8 @@ public class EventsHandler {
                     "protected void onPostExecute(String _result) {\r\n" +
                     param + "\r\n" +
                     "}";
+            //new by @fora2323
+            case "shizukuOnRequestPermissionResult" -> "";        
             default -> {
                 for (int i = 0, cachedCustomEventsSize = cachedCustomEvents.size(); i < cachedCustomEventsSize; i++) {
                     HashMap<String, Object> customEvent = cachedCustomEvents.get(i);
@@ -386,6 +392,8 @@ public class EventsHandler {
             case "onActivityResult" -> "%d.requestCode %d.resultCode %m.intent";
             case "onTabLayoutNewTabAdded", "onProgressUpdate" -> "%d";
             case "doInBackground", "onPostExecute" -> "%s";
+            //new by @fora2323
+            case "shizukuOnRequestPermissionResult" -> "%d.requestCode %d.grantResult";
             default -> {
                 for (int i = 0, cachedCustomEventsSize = cachedCustomEvents.size(); i < cachedCustomEventsSize; i++) {
                     HashMap<String, Object> customEvent = cachedCustomEvents.get(i);
@@ -428,6 +436,8 @@ public class EventsHandler {
             case "doInBackground" -> name + " doInBackground %s.param";
             case "onProgressUpdate" -> name + " onProgressUpdate progress %d.value";
             case "onPostExecute" -> name + " onPostExecute result %s.result";
+            //new by @fora2323
+            case "shizukuOnRequestPermissionResult" -> "Shizuku onRequestPermissionResult requestCode %d.requestCode grantResult %d.grantResult";
             default -> {
                 for (int i = 0, cachedCustomEventsSize = cachedCustomEvents.size(); i < cachedCustomEventsSize; i++) {
                     HashMap<String, Object> customEvent = cachedCustomEvents.get(i);

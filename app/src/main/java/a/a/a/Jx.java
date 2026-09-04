@@ -110,13 +110,17 @@ public class Jx {
 		permissionManager = new PermissionManager(eCVar.a, projectFileBean.getJavaName());
 		ox = new Ox(buildConfig, projectFileBean);
 		extraBlocks = getExtraBlockData();
-		isViewBindingEnabled = settings.getValue(ProjectSettings.SETTING_ENABLE_VIEWBINDING, BuildSettings.SETTING_GENERIC_VALUE_FALSE)
-		.equals(BuildSettings.SETTING_GENERIC_VALUE_TRUE);
+		isViewBindingEnabled = settings.getValue(ProjectSettings.SETTING_ENABLE_VIEWBINDING, BuildSettings.SETTING_GENERIC_VALUE_FALSE).equals(BuildSettings.SETTING_GENERIC_VALUE_TRUE);
 		materialLibraryManager = new Material3LibraryManager(projectDataManager.a);
 	}
 	
 	public String activityResult() {
 		ArrayList<BlockBean> blocks = jC.a(projectDataManager.a).a(projectFileBean.getJavaName(), "onActivityResult_onActivityResult");
+		return Lx.j(new Fx(projectFileBean.getActivityName(), buildConfig, blocks, isViewBindingEnabled).a(), false);
+	}
+	
+	public String shizukuOnRequestPermissionResult() {
+		ArrayList<BlockBean> blocks = jC.a(projectDataManager.a).a(projectFileBean.getJavaName(), "shizukuOnRequestPermissionResult_shizukuOnRequestPermissionResult");
 		return Lx.j(new Fx(projectFileBean.getActivityName(), buildConfig, blocks, isViewBindingEnabled).a(), false);
 	}
 	
@@ -629,6 +633,18 @@ public class Jx {
 						sb.append("// We recommend removing this method after testing and instead use In-App Messages to prompt for notification permission.").append(EOL);
 						sb.append("OneSignal.getNotifications().requestPermission(false, Continue.none());").append(EOL);
 						
+					}
+				}
+				
+				if (DRFeatureManager.isShizukuEnabled(sc_id, projectFileBean.fileName)) {
+					String shizukuListenerLogic = shizukuOnRequestPermissionResult();
+					if (!shizukuListenerLogic.isEmpty()) {
+						sb.append("Shizuku.addRequestPermissionResultListener(new Shizuku.OnRequestPermissionResultListener() {").append(EOL);
+						sb.append("@Override").append(EOL);
+						sb.append("public void onRequestPermissionResult(int requestCode, int grantResult) {").append(EOL);
+						sb.append(shizukuListenerLogic).append(EOL);
+						sb.append("}").append(EOL);
+						sb.append("});").append(EOL);
 					}
 				}
 			}
