@@ -1,20 +1,32 @@
 <p align="center">
-  <img src="assets/Sketchware-DayGreen.png" width="96" alt="App Icon">
+  <img src="assets/Sketchware-DayGreen.png" width="128" alt="App Icon">
+</p>
+
+<h1 align="center">:leaves: Sketchware DayGreen</h1>
+
+<p align="center">
+  <b>A modified version of Sketchware Pro for Android</b>
 </p>
 
 <p align="center">
+<a href="https://github.com/fora2323/Sketchware-DayGreen/blob/main/LICENSE">
+  <img src="https://img.shields.io/badge/license-Apache--2.0-007ec6" alt="License">
+</a>
+  </a>
+  <img src="https://img.shields.io/badge/platform-Android-4c1" alt="Platform">
   <a href="https://github.com/fora2323/Sketchware-DayGreen/releases">
-    <img src="https://img.shields.io/github/downloads/fora2323/Sketchware-DayGreen/total?style=for-the-badge&color=2ea44f&label=Downloads" alt="Total Downloads">
-  </a>
-  <a href="https://t.me/sketchware_daygreen">
-    <img src="https://img.shields.io/badge/Telegram-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram">
-  </a>
-  <a href="https://discord.gg/V4ePcgaCq">
-    <img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
+    <img src="https://img.shields.io/github/downloads/fora2323/Sketchware-DayGreen/total?color=dfb317" alt="Downloads">
   </a>
 </p>
 
-<h1 align="center">:leaves: Sketchware DayGreen :leaves:</h1>
+<p align="center">
+  <a href="https://t.me/sketchware_daygreen">
+    <img src="https://img.shields.io/badge/Telegram-26A5E4?logo=telegram&logoColor=white" alt="Telegram">
+  </a>
+  <a href="https://discord.gg/V4ePcgaCq">
+    <img src="https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=white" alt="Discord">
+  </a>
+</p>
 
 # Important!
 Based on and always including updates from [Sketchware Pro](https://github.com/Sketchware-Pro/Sketchware-Pro). Please backup all your projects if using this version. We will not be responsible if any unexpected problems occur.
