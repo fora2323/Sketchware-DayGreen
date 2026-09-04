@@ -2,7 +2,19 @@
   <img src="assets/Sketchware-DayGreen.png" width="96" alt="App Icon">
 </p>
 
-<h1 align="center">Sketchware DayGreen</h1>
+<p align="center">
+  <a href="https://github.com/fora2323/Sketchware-DayGreen/releases">
+    <img src="https://img.shields.io/github/downloads/fora2323/Sketchware-DayGreen/total?style=for-the-badge&color=2ea44f&label=Downloads" alt="Total Downloads">
+  </a>
+  <a href="https://t.me/sketchware_daygreen">
+    <img src="https://img.shields.io/badge/Telegram-26A5E4?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram">
+  </a>
+  <a href="https://discord.gg/V4ePcgaCq">
+    <img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord">
+  </a>
+</p>
+
+<h1 align="center">:leaves: Sketchware DayGreen :leaves:</h1>
 
 # Important!
 Based on and always including updates from [Sketchware Pro](https://github.com/Sketchware-Pro/Sketchware-Pro). Please backup all your projects if using this version. We will not be responsible if any unexpected problems occur.
