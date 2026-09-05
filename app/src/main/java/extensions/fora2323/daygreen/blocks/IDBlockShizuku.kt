@@ -1,8 +1,14 @@
 package extensions.fora2323.daygreen.blocks
 
 import com.besome.sketch.editor.LogicEditorActivity
+import pro.sketchware.R
+import pro.sketchware.utility.ThemeUtils
 
 object IDBlockShizuku {
+
+    private fun getTitleBgColor(logicEditor: LogicEditorActivity): Int {
+        return ThemeUtils.getColor(logicEditor, if (ThemeUtils.isDarkThemeEnabled(logicEditor)) R.attr.colorSurfaceContainerHigh else R.attr.colorSurfaceInverse)
+    }
 
     @JvmStatic
     fun addBlocks(arrayList: ArrayList<HashMap<String, Any>>) {
@@ -54,7 +60,7 @@ object IDBlockShizuku {
 
     @JvmStatic
     fun addPaletteBlocks(logicEditor: LogicEditorActivity) {
-        logicEditor.a("Shizuku", 0xff673AB7.toInt())
+        logicEditor.a("Shizuku", getTitleBgColor(logicEditor))
         logicEditor.a("b", "shizukuPingBinder")
         logicEditor.a("b", "shizukuCheckPermission")
         logicEditor.a(" ", "shizukuRequestPermission")
