@@ -270,6 +270,21 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
     // wrapped onto separate lines, matching Android Studio's default right margin.
     private static final int PRETTIFY_MAX_LINE_LENGTH = 100;
 
+    private static final java.util.Set<String> ALWAYS_WRAP_TAGS = java.util.Set.of(
+            "uses-library",
+            "meta-data",
+            "activity",
+            "activity-alias",
+            "service",
+            "receiver",
+            "provider",
+            "intent-filter"
+    );
+
+    private static final java.util.Map<String, Integer> CUSTOM_LINE_LENGTH = java.util.Map.of(
+            "uses-permission", 150
+    );
+
     private static void appendTagWithWrapping(StringBuilder formatted, String tag,
                                                 boolean isSelfClosing, int depth,
                                                 String indentUnit, int indentAmount) {
@@ -289,21 +304,35 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
             while (am.find()) attrs.add(am.group());
         }
 
+        String xmlnsAttr = null;
+        java.util.List<String> otherAttrs = new java.util.ArrayList<>();
+        for (String a : attrs) {
+            if (a.startsWith("xmlns:") && xmlnsAttr == null) {
+                xmlnsAttr = a;
+            } else {
+                otherAttrs.add(a);
+            }
+        }
+
         int singleLineLength = indentAmount * depth + tag.length();
+        int maxLineLength = CUSTOM_LINE_LENGTH.getOrDefault(tagName, PRETTIFY_MAX_LINE_LENGTH);
+        boolean forceWrap = attrs.size() >= 2 && ALWAYS_WRAP_TAGS.contains(tagName);
 
         formatted.append(indentUnit.repeat(depth));
-        if (attrs.size() <= 1 || singleLineLength <= PRETTIFY_MAX_LINE_LENGTH) {
+
+        if (!forceWrap && (attrs.size() <= 1 || singleLineLength <= maxLineLength)) {
             formatted.append(tag);
-            // If it's self-closing or a declaration/comment, it gets a newline later.
-            // Opening tags MIGHT get a newline depending on 'justOpenedTag' logic in prettifyXml.
             if (isSelfClosing) formatted.append("\n");
             return;
         }
 
-        formatted.append("<").append(tagName).append("\n");
-        for (int i = 0; i < attrs.size(); i++) {
-            formatted.append(indentUnit.repeat(depth + 1)).append(attrs.get(i));
-            if (i == attrs.size() - 1) {
+        formatted.append("<").append(tagName);
+        if (xmlnsAttr != null) formatted.append(" ").append(xmlnsAttr);
+        formatted.append("\n");
+
+        for (int i = 0; i < otherAttrs.size(); i++) {
+            formatted.append(indentUnit.repeat(depth + 1)).append(otherAttrs.get(i));
+            if (i == otherAttrs.size() - 1) {
                 formatted.append(isSelfClosing ? " />\n" : ">");
             } else {
                 formatted.append("\n");
