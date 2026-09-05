@@ -16,7 +16,7 @@ object IDBlockShizuku {
         hashMap["name"] = "shizukuPingBinder"
         hashMap["type"] = "b"
         hashMap["code"] = "Shizuku.pingBinder()"
-        hashMap["color"] = "#673AB7"
+        hashMap["color"] = "#00A9D0"
         hashMap["palette"] = "-1"
         hashMap["spec"] = "Shizuku pingBinder"
         arrayList.add(hashMap)
@@ -25,7 +25,7 @@ object IDBlockShizuku {
         hashMap["name"] = "shizukuCheckPermission"
         hashMap["type"] = "b"
         hashMap["code"] = "Shizuku.checkSelfPermission()"
-        hashMap["color"] = "#673AB7"
+        hashMap["color"] = "#00A9D0"
         hashMap["palette"] = "-1"
         hashMap["spec"] = "Shizuku checkSelfPermission"
         arrayList.add(hashMap)
@@ -34,27 +34,9 @@ object IDBlockShizuku {
         hashMap["name"] = "shizukuRequestPermission"
         hashMap["type"] = " "
         hashMap["code"] = "Shizuku.requestPermission((int)%s);"
-        hashMap["color"] = "#673AB7"
+        hashMap["color"] = "#00A9D0"
         hashMap["palette"] = "-1"
         hashMap["spec"] = "Shizuku requestPermission requestCode %d"
-        arrayList.add(hashMap)
-
-        hashMap = HashMap()
-        hashMap["name"] = "shizukuGetVersion"
-        hashMap["type"] = "d"
-        hashMap["code"] = "Shizuku.getVersion()"
-        hashMap["color"] = "#673AB7"
-        hashMap["palette"] = "-1"
-        hashMap["spec"] = "Shizuku getVersion"
-        arrayList.add(hashMap)
-
-        hashMap = HashMap()
-        hashMap["name"] = "shizukuGetUid"
-        hashMap["type"] = "d"
-        hashMap["code"] = "Shizuku.getUid()"
-        hashMap["color"] = "#673AB7"
-        hashMap["palette"] = "-1"
-        hashMap["spec"] = "Shizuku getUid"
         arrayList.add(hashMap)
     }
 
@@ -64,7 +46,5 @@ object IDBlockShizuku {
         logicEditor.a("b", "shizukuPingBinder")
         logicEditor.a("b", "shizukuCheckPermission")
         logicEditor.a(" ", "shizukuRequestPermission")
-        logicEditor.a("d", "shizukuGetVersion")
-        logicEditor.a("d", "shizukuGetUid")
     }
 }
