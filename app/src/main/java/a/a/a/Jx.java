@@ -514,18 +514,6 @@ public class Jx {
 					sb.append(value).append(EOL);
 				}
 			}
-			
-			if (DRFeatureManager.isShizukuEnabled(sc_id, projectFileBean.fileName)) {
-				String shizukuListenerLogic = shizukuOnRequestPermissionResult();
-				if (!shizukuListenerLogic.isEmpty()) {
-					sb.append("Shizuku.addRequestPermissionResultListener(new Shizuku.OnRequestPermissionResultListener() {").append(EOL);
-					sb.append("@Override").append(EOL);
-					sb.append("public void onRequestPermissionResult(int requestCode, int grantResult) {").append(EOL);
-					sb.append(shizukuListenerLogic).append(EOL);
-					sb.append("}").append(EOL);
-					sb.append("});").append(EOL);
-				}
-			}
 		} else {
 			sb.append("initializeLogic();").append(EOL);
 			
@@ -645,6 +633,18 @@ public class Jx {
 						sb.append("// We recommend removing this method after testing and instead use In-App Messages to prompt for notification permission.").append(EOL);
 						sb.append("OneSignal.getNotifications().requestPermission(false, Continue.none());").append(EOL);
 						
+					}
+				}
+				
+				if (DRFeatureManager.isShizukuEnabled(sc_id, projectFileBean.fileName)) {
+					String shizukuListenerLogic = shizukuOnRequestPermissionResult();
+					if (!shizukuListenerLogic.isEmpty()) {
+						sb.append("Shizuku.addRequestPermissionResultListener(new Shizuku.OnRequestPermissionResultListener() {").append(EOL);
+						sb.append("@Override").append(EOL);
+						sb.append("public void onRequestPermissionResult(int requestCode, int grantResult) {").append(EOL);
+						sb.append(shizukuListenerLogic).append(EOL);
+						sb.append("}").append(EOL);
+						sb.append("});").append(EOL);
 					}
 				}
 			}
@@ -930,7 +930,7 @@ public class Jx {
 				}
 				
 				if (DRFeatureManager.isShizukuEnabled(Configs.currentProjectID, projectFileBean.fileName)) {
-					addImport("rikka.shizuku.*");
+					addImport("rikka.shizuku.Shizuku");
 				}
 				
 				if (DRFeatureManager.isAndroidBillingEnabled(Configs.currentProjectID, projectFileBean.fileName)) {
