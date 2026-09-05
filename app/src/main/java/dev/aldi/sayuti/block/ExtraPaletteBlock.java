@@ -1193,7 +1193,7 @@ public class ExtraPaletteBlock {
                 if (ConfigActivity.isSettingEnabled(ConfigActivity.SETTING_SHOW_BUILT_IN_BLOCKS)) {
                     logicEditor.a("Command Blocks", getTitleBgColor());
                     logicEditor.a("c", "CommandBlockJava");
-                    logicEditor.addDeprecatedBlock("Deprecated: Use XML Command Manager", "c", "CommandBlockXML");
+                    //logicEditor.addDeprecatedBlock("Deprecated: Use XML Command Manager", "c", "CommandBlockXML");
                     logicEditor.a("Permission Command Blocks", getTitleBgColor());
                     logicEditor.a(" ", "addPermission");
                     logicEditor.a(" ", "removePermission");

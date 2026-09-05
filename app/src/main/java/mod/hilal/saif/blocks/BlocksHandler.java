@@ -42,29 +42,6 @@ public class BlocksHandler {
         arrayList.add(hashMap);
 
         hashMap = new HashMap<>();
-        hashMap.put("name", "CommandBlockXML");
-        hashMap.put("type", "c");
-        hashMap.put("typeName", "");
-        hashMap.put(
-                "code",
-                "/*AXAVajPNTpbJjsz-NGVTp08YDzfI-04kA7ZsuCl4GHqTQQiuWL45sV6Vf4gwK\n"
-                        + ">[%1$s]\n"
-                        + ">%2$s\n"
-                        + ">%3$s\n"
-                        + ">%4$s\n"
-                        + ">%5$s\n"
-                        + ">%6$s\n"
-                        + "%7$s\n"
-                        + "Ui5_PNTJb21WO6OuGwQ3psk3su1LIvyXo_OAol-kVQBC5jtN_DcPLaRCJ0yXp*/");
-        hashMap.put("color", "#493F5A");
-        hashMap.put("palette", "0");
-        hashMap.put(
-                "spec",
-                "XML Command Block: reference %s distance %d frontend %d backend %d command"
-                        + " %m.Command xml name %s.inputOnly");
-        arrayList.add(hashMap);
-
-        hashMap = new HashMap<>();
         hashMap.put("name", "viewOnClick");
         hashMap.put("type", "c");
         hashMap.put("typeName", "");
