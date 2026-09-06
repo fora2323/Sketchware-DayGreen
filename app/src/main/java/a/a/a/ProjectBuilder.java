@@ -88,7 +88,7 @@ public class ProjectBuilder {
     public static final String TAG = "AppBuilder";
     private static final String[] MULTIPLATFORM_JUNK_PREFIXES = {
             "commonMain/", "linuxMain/", "nativeMain/", "nonJvmMain/",
-            "unixMain/", "webMain/", "jsMain/", "appleMain/", "androidNativeMain/"
+            "unixMain/", "webMain/", "jsMain/", "appleMain/", "androidNativeMain/", "junit/", "LICENSE.txt", "LICENSE-junit.txt"
     };
 
     private final File aapt2Binary;
@@ -161,9 +161,7 @@ public class ProjectBuilder {
             return false;
         }
 
-        /* Delete the file */
         fileUtil.a(compareToFile);
-        /* Copy the file from assets to local storage */
         fileUtil.a(SketchApplication.getContext(), fileInAssets, targetFile);
         return true;
     }
@@ -189,7 +187,6 @@ public class ProjectBuilder {
         builder.generateBindings();
     }
     
-    //activate d8
     public boolean isD8Enabled() {
         return build_settings.getValue(BuildSettings.SETTING_DEXER, BuildSettings.SETTING_DEXER_DX).equals(BuildSettings.SETTING_DEXER_D8);
     }
@@ -242,47 +239,32 @@ public class ProjectBuilder {
     public String getClasspath() {
         StringBuilder classpath = new StringBuilder();
 
-        /*
-         * Add yq#u (.sketchware/mysc/xxx/bin/classes) if it exists
-         * since there might be compiled Kotlin files for ecj to use classpath as.
-         */
         KotlinCompilerBridge.maybeAddKotlinFilesToClasspath(classpath, yq);
 
-        /* Add android.jar */
         classpath.append(androidJarPath);
 
-        /* Add HTTP legacy files if wanted */
         if (!build_settings.getValue(BuildSettings.SETTING_NO_HTTP_LEGACY, BuildSettings.SETTING_GENERIC_VALUE_FALSE).equals(BuildSettings.SETTING_GENERIC_VALUE_TRUE)) {
             classpath.append(":").append(BuiltInLibraries.getLibraryClassesJarPathString(BuiltInLibraries.HTTP_LEGACY_ANDROID));
         }
 
-        /* Include MultiDex library if needed */
         if (settings.getMinSdkVersion() < 21) {
             classpath.append(":").append(BuiltInLibraries.getLibraryClassesJarPathString(BuiltInLibraries.ANDROIDX_MULTIDEX));
         }
 
-        /*
-         * Add lambda helper classes
-         * Since all versions above java 7 supports lambdas, this should work
-         */
         if (!build_settings.getValue(BuildSettings.SETTING_JAVA_VERSION, BuildSettings.SETTING_JAVA_VERSION_1_7).equals(BuildSettings.SETTING_JAVA_VERSION_1_7)) {
             classpath.append(":").append(new File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "core-lambda-stubs.jar").getAbsolutePath());
         }
 
-        /* Add used built-in libraries to the classpath */
         for (Jp library : builtInLibraryManager.getLibraries()) {
             classpath.append(":").append(BuiltInLibraries.getLibraryClassesJarPathString(library.getName()));
         }
 
-        /* Add local libraries to the classpath */
         classpath.append(mll.getJarLocalLibrary());
 
-        /* Append user's custom classpath */
         if (!build_settings.getValue(BuildSettings.SETTING_CLASSPATH, "").isEmpty()) {
             classpath.append(":").append(build_settings.getValue(BuildSettings.SETTING_CLASSPATH, ""));
         }
 
-        /* Add JARs from project's classpath */
         String path = FileUtil.getExternalStorageDir() + "/.sketchware/data/" + yq.sc_id + "/files/classpath/";
         ArrayList<String> jars = FileUtil.listFiles(path, "jar");
         classpath.append(":").append(TextUtils.join(":", jars));
@@ -290,9 +272,6 @@ public class ProjectBuilder {
         return classpath.toString();
     }
 
-    /**
-     * @return Similar to {@link ProjectBuilder#getClasspath()}, but doesn't return some local libraries' JARs if ProGuard full mode is enabled
-     */
     public String getProguardClasspath() {
         Collection<String> localLibraryJarsWithFullModeOn = new LinkedList<>();
 
@@ -330,12 +309,6 @@ public class ProjectBuilder {
         return classpath.toString();
     }
 
-    /**
-     * Dexes libraries.
-     *
-     * @return List of result DEX files which were merged or couldn't be merged with others.
-     * @throws Exception Thrown if merging had problems
-     */
     private Collection<File> dexLibraries(File outputDirectory, List<File> dexes) throws Exception {
         int lastDexNumber = 1;
         String nextMergedDexFilename;
@@ -667,15 +640,6 @@ public class ProjectBuilder {
                 (System.currentTimeMillis() - timestampResourceCompilationStarted) + " ms");
     }
 
-    /**
-     * Either merges DEX files to as few as possible, or adds list of DEX files to add to the APK to
-     * {@link #dexesToAddButNotMerge}.
-     * <p>
-     * Will merge DEX files if either the project's minSdkVersion is lower than 21, or if {@link jq#isDebugBuild}
-     * of {@link yq#N} in {@link #yq} is false.
-     *
-     * @throws Exception Thrown if merging failed
-     */
     public void getDexFilesReady() throws Exception {
         long savedTimeMillis = System.currentTimeMillis();
         ArrayList<File> dexes = new ArrayList<>();
@@ -744,11 +708,6 @@ public class ProjectBuilder {
         LogUtil.d(TAG, "Merging DEX files took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
     }
 
-    /**
-     * Extracts AAPT2 binaries (if they need to be extracted).
-     *
-     * @throws By If anything goes wrong while extracting
-     */
     public void maybeExtractAapt2() throws By {
         var abi = Build.SUPPORTED_ABIS[0];
         try {
@@ -757,13 +716,7 @@ public class ProjectBuilder {
             }
         } catch (Exception e) {
             LogUtil.e(TAG, "Failed to extract AAPT2 binaries", e);
-            // noinspection ConstantValue: the bytecode's lying
-            throw new By(
-                    e instanceof FileNotFoundException fileNotFoundException ?
-                            "Looks like the device's architecture (" + abi + ") isn't supported.\n"
-                                    + Log.getStackTraceString(fileNotFoundException)
-                            : "Couldn't extract AAPT2 binaries! Message: " + e.getMessage()
-            );
+            throw new By(e instanceof FileNotFoundException fileNotFoundException ? "Looks like the device's architecture (" + abi + ") isn't supported.\n" + Log.getStackTraceString(fileNotFoundException) : "Couldn't extract AAPT2 binaries! Message: " + e.getMessage());
         }
     }
 
@@ -938,28 +891,23 @@ public class ProjectBuilder {
 
         ArrayList<String> args = new ArrayList<>();
 
-        /* Include global ProGuard rules */
         args.add("-include");
         args.add(ProguardHandler.ANDROID_PROGUARD_RULES_PATH);
 
-        /* Include ProGuard rules generated by AAPT2 */
         args.add("-include");
         args.add(yq.proguardAaptRules);
 
-        /* Include custom ProGuard rules */
         args.add("-include");
         args.add(proguard.getCustomProguardRules());
 
         proguardAddLibConfigs(args);
         proguardAddRjavaRules(args);
 
-        /* Include local libraries' ProGuard rules */
         for (String rule : mll.getPgRules()) {
             args.add("-include");
             args.add(rule);
         }
 
-        /* Include compiled Java classes (?) IT SAYS -in*jar*s, so why include .class es? */
         args.add("-injars");
         args.add(yq.compiledClassesPath);
 
