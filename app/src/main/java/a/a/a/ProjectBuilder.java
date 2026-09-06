@@ -86,6 +86,10 @@ import proguard.ProGuard;
 
 public class ProjectBuilder {
     public static final String TAG = "AppBuilder";
+    private static final String[] MULTIPLATFORM_JUNK_PREFIXES = {
+            "commonMain/", "linuxMain/", "nativeMain/", "nonJvmMain/",
+            "unixMain/", "webMain/", "jsMain/", "appleMain/", "androidNativeMain/"
+    };
 
     private final File aapt2Binary;
     private final Context context;
@@ -558,18 +562,66 @@ public class ProjectBuilder {
         }
     }
 
+    private File filterMultiplatformJunkFromJar(File originalJar) {
+        try {
+            File filteredJar = new File(context.getCacheDir(), "filtered_" + originalJar.getName());
+            try (java.util.zip.ZipFile zipIn = new java.util.zip.ZipFile(originalJar);
+                 java.util.zip.ZipOutputStream zipOut = new java.util.zip.ZipOutputStream(new FileOutputStream(filteredJar))) {
+
+                java.util.Enumeration<? extends java.util.zip.ZipEntry> entries = zipIn.entries();
+                boolean foundJunk = false;
+
+                while (entries.hasMoreElements()) {
+                    java.util.zip.ZipEntry entry = entries.nextElement();
+                    String name = entry.getName();
+
+                    boolean isJunk = false;
+                    for (String prefix : MULTIPLATFORM_JUNK_PREFIXES) {
+                        if (name.contains(prefix)) {
+                            isJunk = true;
+                            foundJunk = true;
+                            break;
+                        }
+                    }
+                    if (isJunk) {
+                        LogUtil.d(TAG, "Skipping junk entry: " + name + " (from " + originalJar.getName() + ")");
+                        continue;
+                    }
+
+                    zipOut.putNextEntry(new java.util.zip.ZipEntry(name));
+                    if (!entry.isDirectory()) {
+                        try (java.io.InputStream is = zipIn.getInputStream(entry)) {
+                            is.transferTo(zipOut);
+                        }
+                    }
+                    zipOut.closeEntry();
+                }
+
+                if (!foundJunk) {
+                    filteredJar.delete();
+                    return originalJar;
+                }
+            }
+            LogUtil.d(TAG, "Filtered Kotlin Multiplatform metadata from " + originalJar.getName());
+            return filteredJar;
+        } catch (IOException e) {
+            LogUtil.e(TAG, "Failed to filter multiplatform junk from " + originalJar.getName(), e);
+            return originalJar;
+        }
+    }
+
     public void buildApk() throws By {
         String firstDexPath = dexesToAddButNotMerge.isEmpty() ? yq.classesDexPath : dexesToAddButNotMerge.remove(0).getAbsolutePath();
         try {
             ApkBuilder apkBuilder = new ApkBuilder(new File(yq.unsignedUnalignedApkPath), new File(yq.resourcesApkPath), new File(firstDexPath), null, null, System.out);
 
             for (Jp library : builtInLibraryManager.getLibraries()) {
-                apkBuilder.addResourcesFromJar(BuiltInLibraries.getLibraryClassesJarPath(library.getName()));
+                apkBuilder.addResourcesFromJar(filterMultiplatformJunkFromJar(BuiltInLibraries.getLibraryClassesJarPath(library.getName())));
             }
 
             for (String jarPath : mll.getJarLocalLibrary().split(":")) {
                 if (!jarPath.trim().isEmpty()) {
-                    apkBuilder.addResourcesFromJar(new File(jarPath));
+                    apkBuilder.addResourcesFromJar(filterMultiplatformJunkFromJar(new File(jarPath)));
                 }
             }
 
@@ -688,13 +740,8 @@ public class ProjectBuilder {
 
         LogUtil.d(TAG, "Will merge these " + dexes.size() + " DEX files to classes.dex: " + dexes);
 
-        if (settings.getMinSdkVersion() < 21 || !yq.N.isDebugBuild) {
-            dexLibraries(new File(yq.binDirectoryPath), dexes);
-            LogUtil.d(TAG, "Merging DEX files took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
-        } else {
-            dexesToAddButNotMerge = dexes;
-            LogUtil.d(TAG, "Skipped merging DEX files due to debug build with minSdkVersion >= 21");
-        }
+        dexLibraries(new File(yq.binDirectoryPath), dexes);
+        LogUtil.d(TAG, "Merging DEX files took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
     }
 
     /**
