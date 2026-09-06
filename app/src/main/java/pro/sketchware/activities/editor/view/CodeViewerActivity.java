@@ -6,8 +6,10 @@ import androidx.annotation.Nullable;
 
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
 
-import a.a.a.Lx;
+import mod.hey.studios.code.SrcCodeEditor;
 import mod.hey.studios.util.Helper;
+
+import a.a.a.Lx;
 import pro.sketchware.databinding.ActivityCodeViewerBinding;
 import pro.sketchware.utility.EditorUtils;
 import pro.sketchware.utility.UI;
@@ -52,5 +54,6 @@ public class CodeViewerActivity extends BaseAppCompatActivity {
         } else {
             EditorUtils.loadJavaConfig(binding.editor);
         }
+        SrcCodeEditor.loadCESettings(this, binding.editor, "act", true);
     }
 }
