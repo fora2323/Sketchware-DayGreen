@@ -299,6 +299,9 @@
             android:name="mod.hey.studios.activity.managers.assets.ManageAssetsActivity"
             android:configChanges="orientation|screenSize" />
         <activity
+            android:name="mod.hey.studios.activity.managers.assets.HtmlPreviewActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity
             android:name="mod.hey.studios.activity.managers.java.ManageJavaActivity"
             android:configChanges="orientation|screenSize" />
         <activity

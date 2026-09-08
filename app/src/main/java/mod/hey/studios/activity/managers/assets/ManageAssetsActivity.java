@@ -289,6 +289,12 @@ public class ManageAssetsActivity extends BaseAppCompatActivity {
                 try {
                     if (FileUtil.isImageFile(item)) {
                         Glide.with(holder.binding.icon.getContext()).load(new File(item)).into(holder.binding.icon);
+                    } else if (item.endsWith(".js")) {
+                        holder.binding.icon.setImageResource(R.drawable.ic_mtrl_code);
+                    } else if (item.endsWith(".html")) {
+                        holder.binding.icon.setImageResource(R.drawable.ic_mtrl_web);
+                    } else if (item.endsWith(".css")) {
+                        holder.binding.icon.setImageResource(R.drawable.ic_mtrl_style);
                     } else {
                         holder.binding.icon.setImageResource(R.drawable.ic_mtrl_file);
                     }
@@ -302,6 +308,9 @@ public class ManageAssetsActivity extends BaseAppCompatActivity {
 
                 if (!isFolder(position)) {
                     popupMenu.getMenu().add(0, 0, 0, "Edit");
+                    if (item.endsWith(".html")) {
+                        popupMenu.getMenu().add(0, 3, 0, "Preview");
+                    }
                 }
 
                 popupMenu.getMenu().add(0, 1, 0, "Rename");
@@ -312,6 +321,11 @@ public class ManageAssetsActivity extends BaseAppCompatActivity {
                         case 0 -> goEditFile(position);
                         case 1 -> showRenameDialog(position);
                         case 2 -> showDeleteDialog(position);
+                        case 3 -> {
+                            Intent intent = new Intent(ManageAssetsActivity.this, HtmlPreviewActivity.class);
+                            intent.putExtra("path", item);
+                            startActivity(intent);
+                        }
                         default -> {
                             return false;
                         }

@@ -400,6 +400,12 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
         } else if (title.endsWith(".xml")) {
             EditorUtils.loadXmlConfig(binding.editor);
             languageId = 2;
+        } else if (title.endsWith(".html")) {
+            EditorUtils.loadHtmlConfig(binding.editor);
+        } else if (title.endsWith(".js")) {
+            EditorUtils.loadJsConfig(binding.editor);
+        } else if (title.endsWith(".css")) {
+            EditorUtils.loadCssConfig(binding.editor);
         }
 
         loadCESettings(this, binding.editor, "act", true);

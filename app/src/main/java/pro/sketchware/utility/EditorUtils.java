@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 
 import com.google.android.material.color.MaterialColors;
 
+import io.github.rosemoe.sora.lang.EmptyLanguage;
 import io.github.rosemoe.sora.lang.Language;
 import io.github.rosemoe.sora.langs.java.JavaLanguage;
 import io.github.rosemoe.sora.langs.textmate.TextMateColorScheme;
@@ -89,6 +90,25 @@ public class EditorUtils {
                     "match_parent", "wrap_content", "@id/", "@+id/", "@string/", "@color/", "@drawable/"
             });
         }
+        loadConfigByLanguage(editor, language, true);
+    }
+
+    public static void loadHtmlConfig(CodeEditor editor) {
+        Language language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_HTML);
+        if (language instanceof EmptyLanguage) {
+            // Fallback to XML highlight if HTML grammar is missing
+            language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_XML);
+        }
+        loadConfigByLanguage(editor, language, true);
+    }
+
+    public static void loadCssConfig(CodeEditor editor) {
+        Language language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_CSS);
+        loadConfigByLanguage(editor, language, true);
+    }
+
+    public static void loadJsConfig(CodeEditor editor) {
+        Language language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_JS);
         loadConfigByLanguage(editor, language, true);
     }
 
