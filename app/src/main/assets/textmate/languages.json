@@ -17,6 +17,16 @@
       "name": "xml",
       "scopeName": "text.xml",
       "languageConfiguration": "textmate/xml/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/javascript/syntaxes/javascript.tmLanguage.json",
+      "name": "javascript",
+      "scopeName": "source.js"
+    },
+    {
+      "grammar": "textmate/css/syntaxes/css.tmLanguage.json",
+      "name": "css",
+      "scopeName": "source.css"
     }
   ]
 }
