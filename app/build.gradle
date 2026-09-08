@@ -18,8 +18,8 @@ android {
         //noinspection ExpiredTargetSdkVersion
         targetSdk = 28
         minSdk = 26
-        versionCode = 170
-        versionName = "v8.0.3-daygreen"
+        versionCode = 171
+        versionName = "v8.0.4-daygreen"
 
         buildConfigField("String", "SKETCHUB_API_KEY", "\"${System.getenv("SKETCHUB_API_KEY")}\"")
     }
@@ -91,14 +91,14 @@ android {
     flavorDimensions "default"
     productFlavors {
         android26 {
-            versionName "v8.0.3-daygreen-android26"
+            versionName "v8.0.4-daygreen-android26"
             dimension "default"
             resValue "integer", "for_min_sdk", "26"
             resValue "bool", "enable_relase_app", "true"
             resValue "bool", "enable_r8", "true"
         }
         android33 {
-            versionName "v8.0.3-daygreen-android33"
+            versionName "v8.0.4-daygreen-android33"
             dimension "default"
             resValue "integer", "for_min_sdk", "33"
             resValue "bool", "enable_relase_app", "true"
