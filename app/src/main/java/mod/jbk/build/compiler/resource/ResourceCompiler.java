@@ -120,17 +120,41 @@ public class ResourceCompiler {
             if (progressListener != null) {
                 progressListener.onProgressUpdate("Compiling resources with AAPT2...", 9);
             }
-            compileBuiltInLibraryResources();
-            LogUtil.d(TAG + ":c", "Compiling built-in library resources took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
-            savedTimeMillis = System.currentTimeMillis();
-            compileLocalLibraryResources(outputPath);
-            LogUtil.d(TAG + ":c", "Compiling local library resources took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
-            savedTimeMillis = System.currentTimeMillis();
-            compileProjectResources(outputPath);
-            LogUtil.d(TAG + ":c", "Compiling project generated resources took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
-            savedTimeMillis = System.currentTimeMillis();
-            compileImportedResources(outputPath);
-            LogUtil.d(TAG + ":c", "Compiling project imported resources took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
+
+            int coreCount = Runtime.getRuntime().availableProcessors();
+            int threadPoolSize = Math.max(1, Math.min(2, coreCount / 2));
+            java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(threadPoolSize);
+            java.util.List<java.util.concurrent.Future<?>> tasks = new ArrayList<>();
+
+            tasks.add(executor.submit(() -> {
+                try { compileBuiltInLibraryResources(); } catch (Exception e) { throw new RuntimeException(e); }
+            }));
+            tasks.add(executor.submit(() -> {
+                try { compileLocalLibraryResources(outputPath); } catch (Exception e) { throw new RuntimeException(e); }
+            }));
+            tasks.add(executor.submit(() -> {
+                try { compileProjectResources(outputPath); } catch (Exception e) { throw new RuntimeException(e); }
+            }));
+            tasks.add(executor.submit(() -> {
+                try { compileImportedResources(outputPath); } catch (Exception e) { throw new RuntimeException(e); }
+            }));
+
+            for (var task : tasks) {
+                try {
+                    task.get();
+                } catch (java.util.concurrent.ExecutionException e) {
+                    executor.shutdownNow();
+                    Throwable cause = e.getCause();
+                    if (cause instanceof zy zye) throw zye;
+                    if (cause instanceof MissingFileException mfe) throw mfe;
+                    throw new RuntimeException(cause);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            executor.shutdown();
+
+            LogUtil.d(TAG + ":c", "Compiling all resources (parallel) took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
 
             savedTimeMillis = System.currentTimeMillis();
             link();

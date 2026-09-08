@@ -316,19 +316,19 @@ public class ProjectBuilder {
         LinkedList<Dex> dexObjects = new LinkedList<>();
         Iterator<File> toMergeIterator = dexes.iterator();
 
-        List<FieldId> mergedDexFields;
-        List<MethodId> mergedDexMethods;
-        List<ProtoId> mergedDexProtos;
-        List<Integer> mergedDexTypes;
+        java.util.Set<FieldId> mergedDexFields;
+        java.util.Set<MethodId> mergedDexMethods;
+        java.util.Set<ProtoId> mergedDexProtos;
+        java.util.Set<Integer> mergedDexTypes;
 
         {
             // Closable gets closed automatically
             Dex firstDex = new Dex(new FileInputStream(toMergeIterator.next()));
             dexObjects.add(firstDex);
-            mergedDexFields = new LinkedList<>(firstDex.fieldIds());
-            mergedDexMethods = new LinkedList<>(firstDex.methodIds());
-            mergedDexProtos = new LinkedList<>(firstDex.protoIds());
-            mergedDexTypes = new LinkedList<>(firstDex.typeIds());
+            mergedDexFields = new java.util.HashSet<>(firstDex.fieldIds());
+            mergedDexMethods = new java.util.HashSet<>(firstDex.methodIds());
+            mergedDexProtos = new java.util.HashSet<>(firstDex.protoIds());
+            mergedDexTypes = new java.util.HashSet<>(firstDex.typeIds());
         }
 
         while (toMergeIterator.hasNext()) {
@@ -417,10 +417,10 @@ public class ProjectBuilder {
                 dexObjects.clear();
                 dexObjects.add(dex);
 
-                mergedDexFields = new ArrayList<>(dex.fieldIds());
-                mergedDexMethods = new ArrayList<>(dex.methodIds());
-                mergedDexProtos = new ArrayList<>(dex.protoIds());
-                mergedDexTypes = new ArrayList<>(dex.typeIds());
+                mergedDexFields = new java.util.HashSet<>(dex.fieldIds());
+                mergedDexMethods = new java.util.HashSet<>(dex.methodIds());
+                mergedDexProtos = new java.util.HashSet<>(dex.protoIds());
+                mergedDexTypes = new java.util.HashSet<>(dex.typeIds());
                 lastDexNumber++;
             }
         }
