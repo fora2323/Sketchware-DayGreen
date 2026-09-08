@@ -67,6 +67,7 @@ import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.ThemeUtils;
 import pro.sketchware.utility.UI;
+import pro.sketchware.utility.XmlSyncHelper;
 
 public class SrcCodeEditor extends BaseAppCompatActivity {
     public static final String FLAG_FROM_ANDROID_MANIFEST = "from_android_manifest";
@@ -444,7 +445,11 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                 arrayList.add(map);
                 FileUtil.writeFile(filePath, getGson().toJson(arrayList));
             }
-        } else FileUtil.writeFile(getIntent().getStringExtra("content"), beforeContent);
+        } else {
+            String contentPath = getIntent().getStringExtra("content");
+            FileUtil.writeFile(contentPath, beforeContent);
+            XmlSyncHelper.syncXml(this, scId, getIntent().getStringExtra("title"), beforeContent);
+        }
 
         SketchwareUtil.toast("Saved");
     }

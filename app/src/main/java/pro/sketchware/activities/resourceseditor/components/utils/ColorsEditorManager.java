@@ -1,6 +1,5 @@
 package pro.sketchware.activities.resourceseditor.components.utils;
 
-import static com.besome.sketch.design.DesignActivity.sc_id;
 import static mod.hey.studios.util.ProjectFile.getDefaultColor;
 
 import android.annotation.SuppressLint;
@@ -9,6 +8,7 @@ import android.view.ContextThemeWrapper;
 
 import androidx.core.content.ContextCompat;
 
+import com.besome.sketch.design.DesignActivity;
 import com.besome.sketch.editor.manage.library.material3.Material3LibraryManager;
 import com.google.android.material.color.MaterialColors;
 
@@ -51,8 +51,14 @@ public class ColorsEditorManager {
     private final ArrayList<ColorModel> resColorsNightList = new ArrayList<>();
 
     private final Material3LibraryManager material3LibraryManager;
+    private String sc_id;
 
     public ColorsEditorManager() {
+        this(DesignActivity.sc_id);
+    }
+
+    public ColorsEditorManager(String sc_id) {
+        this.sc_id = sc_id;
         material3LibraryManager = new Material3LibraryManager(sc_id);
         initialize();
     }

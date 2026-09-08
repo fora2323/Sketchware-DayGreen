@@ -33,6 +33,7 @@ import pro.sketchware.managers.inject.InjectRootLayoutManager;
 import pro.sketchware.tools.ViewBeanParser;
 import pro.sketchware.utility.EditorUtils;
 import pro.sketchware.utility.SketchwareUtil;
+import pro.sketchware.utility.XmlSyncHelper;
 import pro.sketchware.utility.relativelayout.CircularDependencyDetector;
 
 public class ViewCodeEditorActivity extends BaseAppCompatActivity {
@@ -211,24 +212,12 @@ public class ViewCodeEditorActivity extends BaseAppCompatActivity {
     private void save() {
         try {
             if (isContentModified()) {
-                // Parse content to validate circular dependencies
-                var parser = new ViewBeanParser(editor.getText().toString());
-                parser.setSkipRoot(true);
-
-                var parsedLayout = parser.parse();
-                for (ViewBean viewBean : parsedLayout) {
-                    CircularDependencyDetector detector = new CircularDependencyDetector(parsedLayout, viewBean);
-                    for (String attr : viewBean.parentAttributes.keySet()) {
-                        String targetId = viewBean.parentAttributes.get(attr);
-                        if (!detector.isLegalAttribute(targetId, attr)) {
-                            SketchwareUtil.toastError("Circular dependency found in \"" + viewBean.name + "\"\n" +
-                                    "Please resolve the issue before saving");
-                            return;
-                        }
-                    }
+                String title = getIntent().getStringExtra("title");
+                if (title != null && title.endsWith(".xml")) {
+                    XmlSyncHelper.syncXml(this, sc_id, title, editor.getText().toString());
                 }
 
-                // Update content only after validation
+                // Update content only after validation (if any)
                 content = editor.getText().toString();
                 if (!isEdited) {
                     isEdited = true;
