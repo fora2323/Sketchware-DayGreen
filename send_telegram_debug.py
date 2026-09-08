@@ -7,7 +7,6 @@ api_hash = os.environ["API_HASH"]
 session_string = os.environ["SESSION_STRING"]
 
 chat_id = int(os.environ["TELEGRAM_CHAT_ID"])
-topic_id = int(os.environ["TELEGRAM_THREAD_ID"])
 topic_id2 = int(os.environ["TELEGRAM_THREAD_ID2"])
 
 version = os.environ["VERSION"]
@@ -48,14 +47,13 @@ app = Client(
 )
 
 with app:
-    for tid in (topic_id, topic_id2):
-        print(f"Mengirim APK debug android33 ke topic {tid}: {apk_v33}")
-        app.send_document(
-            chat_id=chat_id,
-            document=apk_v33,
-            file_name=display_name,
-            caption=caption,
-            message_thread_id=tid
-        )
+    print(f"Mengirim APK debug android33 ke topic {topic_id2}: {apk_v33}")
+    app.send_document(
+        chat_id=chat_id,
+        document=apk_v33,
+        file_name=display_name,
+        caption=caption,
+        message_thread_id=topic_id2
+    )
 
-print("APK debug android33 berhasil diunggah ke kedua topik Telegram!")
+print("APK debug android33 berhasil diunggah ke topik Telegram!")
