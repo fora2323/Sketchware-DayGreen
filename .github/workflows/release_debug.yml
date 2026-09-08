@@ -1,0 +1,66 @@
+name: Android Debug Build
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build debug APKs
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload android26 debug APK
+        uses: actions/upload-artifact@v5
+        with:
+          name: app-android26-debug
+          path: app/build/outputs/apk/android26/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload android33 debug APK
+        uses: actions/upload-artifact@v5
+        with:
+          name: app-android33-debug
+          path: app/build/outputs/apk/android33/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Pyrogram & Dependencies
+        run: pip install pyrofork tgcrypto
+
+      - name: Send APK to Telegram (Userbot)
+        env:
+          API_ID: ${{ secrets.API_ID }}
+          API_HASH: ${{ secrets.API_HASH }}
+          SESSION_STRING: ${{ secrets.SESSION_STRING }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
+          TELEGRAM_THREAD_ID2: ${{ secrets.TELEGRAM_THREAD_ID2 }}
+          VERSION: ${{ github.run_number }}
+          COMMIT_AUTHOR: ${{ github.actor }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: python send_telegram_debug.py
