@@ -107,49 +107,10 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
     }
 
     public static void selectTheme(CodeEditor ed, int which) {
-        boolean isTextMate = ed.getColorScheme() instanceof TextMateColorScheme;
         boolean isDark = ThemeUtils.isDarkThemeEnabled(ed.getContext());
-
-        if (isTextMate) {
-            if (which == 0) {
-                // Default Dynamic logic
-                Language language = ed.getEditorLanguage();
-                String scopeName = (language instanceof TextMateLanguage tm && tm.getAutoCompleter().getKeywords() != null) ?
-                        CodeEditorLanguages.SCOPE_NAME_XML : CodeEditorLanguages.SCOPE_NAME_KOTLIN;
-
-                String theme;
-                if (scopeName.equals(CodeEditorLanguages.SCOPE_NAME_XML)) {
-                    theme = isDark ? CodeEditorColorSchemes.THEME_GITHUB_DARK : CodeEditorColorSchemes.THEME_GITHUB;
-                } else {
-                    theme = isDark ? CodeEditorColorSchemes.THEME_DRACULA : CodeEditorColorSchemes.THEME_GITHUB;
-                }
-                ed.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(theme));
-                EditorUtils.getMaterialStyledScheme(ed, true);
-            } else {
-                String themeName = switch (which) {
-                    case 1 -> CodeEditorColorSchemes.THEME_DRACULA;
-                    case 2 -> CodeEditorColorSchemes.THEME_GITHUB;
-                    case 3 -> CodeEditorColorSchemes.THEME_GITHUB_DARK;
-                    case 4 -> CodeEditorColorSchemes.THEME_ECLIPSE;
-                    case 5 -> CodeEditorColorSchemes.THEME_VS2019;
-                    case 6 -> CodeEditorColorSchemes.THEME_NOTEPADXX;
-                    default -> CodeEditorColorSchemes.THEME_DRACULA;
-                };
-                ed.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(themeName));
-                EditorUtils.getMaterialStyledScheme(ed, false);
-            }
-        } else {
-            EditorColorScheme scheme = switch (which) {
-                case 1 -> new SchemeGitHub();
-                case 2 -> new SchemeEclipse();
-                case 3 -> new SchemeDarcula();
-                case 4 -> new SchemeVS2019();
-                case 5 -> new SchemeNotepadXX();
-                default -> isDark ? new SchemeDarcula() : new EditorColorScheme();
-            };
-            ed.setColorScheme(scheme);
-            EditorUtils.getMaterialStyledScheme(ed, which == 0);
-        }
+        String theme = isDark ? CodeEditorColorSchemes.THEME_GITHUB_DARK : CodeEditorColorSchemes.THEME_GITHUB_LIGHT;
+        ed.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(theme));
+        EditorUtils.getMaterialStyledScheme(ed, true);
         ed.rerunAnalysis();
     }
 
@@ -430,15 +391,11 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
         binding.editor.setText(beforeContent);
 
         if (title.endsWith(".java")) {
-            binding.editor.setEditorLanguage(new JavaLanguage());
+            EditorUtils.loadJavaConfig(binding.editor);
             languageId = 0;
         } else if (title.endsWith(".kt")) {
             binding.editor.setEditorLanguage(CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_KOTLIN));
-            if (ThemeUtils.isDarkThemeEnabled(getApplicationContext())) {
-                binding.editor.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(CodeEditorColorSchemes.THEME_GITHUB_DARK));
-            } else {
-                binding.editor.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(CodeEditorColorSchemes.THEME_GITHUB));
-            }
+            selectTheme(binding.editor, 0);
             languageId = 1;
         } else if (title.endsWith(".xml")) {
             EditorUtils.loadXmlConfig(binding.editor);
@@ -522,7 +479,6 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Word wrap").setCheckable(true).setChecked(local_pref.getBoolean("act_ww", false));
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Pretty print");
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Select language");
-            toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Select theme");
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Auto complete").setCheckable(true).setChecked(local_pref.getBoolean("act_ac", true));
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Auto complete symbol pair").setCheckable(true).setChecked(local_pref.getBoolean("act_acsp", true));
 
@@ -586,19 +542,6 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                         break;
 
                     case "Find & Replace":
-                        binding.editor.getSearcher().stopSearch();
-                        binding.editor.beginSearchMode();
-                        break;
-
-                    case "Select theme":
-                        showSwitchThemeDialog(this, binding.editor, (dialog, which) -> {
-                            selectTheme(binding.editor, which);
-                            pref.edit().putInt("act_theme", which).apply();
-                            dialog.dismiss();
-                        });
-                        break;
-
-                    case "Word wrap":
                         item.setChecked(!item.isChecked());
                         binding.editor.setWordwrap(item.isChecked());
 

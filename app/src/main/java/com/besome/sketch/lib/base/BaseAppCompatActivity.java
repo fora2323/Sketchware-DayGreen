@@ -44,7 +44,6 @@ public abstract class BaseAppCompatActivity extends AppCompatActivity {
     private ArrayList<MA> taskList;
 
     private static final String ACTION_THEME_CHANGED = "THEME_CHANGED";
-    private boolean lastIdeDynamicColorState;
     private boolean isReceiverRegistered = false;
     private final BroadcastReceiver themeChangeReceiver = new BroadcastReceiver() {
         @Override
@@ -123,7 +122,6 @@ public abstract class BaseAppCompatActivity extends AppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        lastIdeDynamicColorState = pro.sketchware.utility.theme.ThemeManager.isIdeDynamicColorEnabled(this);
         e = getApplicationContext();
         taskList = new ArrayList<>();
         lottieDialog = new LoadingDialog(this);
@@ -135,10 +133,6 @@ public abstract class BaseAppCompatActivity extends AppCompatActivity {
     @Override
     public void onResume() {
         super.onResume();
-        if (lastIdeDynamicColorState != pro.sketchware.utility.theme.ThemeManager.isIdeDynamicColorEnabled(this)) {
-            recreate();
-            return;
-        }
         if (lottieDialog != null && lottieDialog.isShowing()) {
             lottieDialog.resumeAnimation();
         }

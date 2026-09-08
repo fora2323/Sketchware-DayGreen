@@ -27,10 +27,6 @@ public class bB {
     public static Toast a(Context context, CharSequence charSequence, int duration, int gravity, float xOffset, float yOffset, int toastType) {
         try {
             Context themedContext = new ContextThemeWrapper(context, R.style.Theme_SketchwarePro);
-            
-            if (pro.sketchware.utility.theme.ThemeManager.isIdeDynamicColorEnabled(themedContext)) {
-                themedContext = com.google.android.material.color.DynamicColors.wrapContextIfAvailable(themedContext);
-            }
 
             CustomToastBinding binding = CustomToastBinding.inflate(LayoutInflater.from(themedContext));
 

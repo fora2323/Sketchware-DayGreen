@@ -76,8 +76,6 @@ public class SettingsAppearanceFragment extends qA {
         boolean isSystemTheme = ThemeManager.isSystemTheme(requireContext());
         binding.switchSystem.setChecked(isSystemTheme);
 
-        binding.switchDynamicColor.setChecked(ThemeManager.isIdeDynamicColorEnabled(requireContext()));
-
         updateThemeCardSelection(ThemeManager.getCurrentTheme(requireContext()));
 
         setThemeCardsEnabled(!isSystemTheme);
@@ -85,12 +83,6 @@ public class SettingsAppearanceFragment extends qA {
 
     private void setupClickListeners() {
         binding.themeSystem.setOnClickListener(v -> binding.switchSystem.setChecked(!binding.switchSystem.isChecked()));
-
-        binding.ideDynamicColor.setOnClickListener(v -> binding.switchDynamicColor.setChecked(!binding.switchDynamicColor.isChecked()));
-
-        binding.switchDynamicColor.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            ThemeManager.setIdeDynamicColorEnabled(requireContext(), isChecked);
-        });
 
         binding.switchSystem.setOnCheckedChangeListener((buttonView, isChecked) -> {
             unselectSelectedThemeCard();

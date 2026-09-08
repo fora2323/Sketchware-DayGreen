@@ -29,7 +29,6 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.besome.sketch.lib.base.BasePermissionAppCompatActivity;
-import com.google.android.material.color.DynamicColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.analytics.FirebaseAnalytics;
@@ -148,10 +147,6 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
-        
-        if (ThemeManager.isIdeDynamicColorEnabled(this)) {
-            DynamicColors.applyToActivityIfAvailable(this);
-        }
         
         enableEdgeToEdgeNoContrast();
 

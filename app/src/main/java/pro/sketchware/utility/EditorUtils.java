@@ -12,10 +12,12 @@ import com.google.android.material.color.MaterialColors;
 
 import io.github.rosemoe.sora.lang.Language;
 import io.github.rosemoe.sora.langs.java.JavaLanguage;
+import io.github.rosemoe.sora.langs.textmate.TextMateColorScheme;
 import io.github.rosemoe.sora.langs.textmate.TextMateLanguage;
 import io.github.rosemoe.sora.widget.CodeEditor;
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme;
 import io.github.rosemoe.sora.widget.schemes.SchemeDarcula;
+import io.github.rosemoe.sora.widget.schemes.SchemeGitHub;
 import mod.jbk.code.CodeEditorColorSchemes;
 import mod.jbk.code.CodeEditorLanguages;
 import pro.sketchware.R;
@@ -42,7 +44,11 @@ public class EditorUtils {
 
         if (fullOverride) {
             scheme.setColor(EditorColorScheme.WHOLE_BACKGROUND, surface);
-            scheme.setColor(EditorColorScheme.TEXT_NORMAL, onSurface);
+            // Only override normal text color for non-TextMate schemes
+            // to avoid breaking syntax highlighting colors
+            if (!(scheme instanceof TextMateColorScheme)) {
+                scheme.setColor(EditorColorScheme.TEXT_NORMAL, onSurface);
+            }
             scheme.setColor(EditorColorScheme.CURRENT_LINE, surfaceContainerLow);
             scheme.setColor(EditorColorScheme.LINE_NUMBER_PANEL, surfaceContainer);
             scheme.setColor(EditorColorScheme.LINE_NUMBER_BACKGROUND, surfaceContainer);
@@ -67,7 +73,8 @@ public class EditorUtils {
     }
 
     public static void loadJavaConfig(CodeEditor editor) {
-        loadConfigByLanguage(editor, new JavaLanguage(), false);
+        Language language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_JAVA);
+        loadConfigByLanguage(editor, language, true);
     }
 
     public static void loadXmlConfig(CodeEditor editor) {
@@ -91,21 +98,13 @@ public class EditorUtils {
         boolean isDark = isDarkThemeEnabled(editor.getContext());
         
         if (isTextMate) {
-            String scopeName = ((TextMateLanguage) language).getAutoCompleter().getKeywords() != null ?
-                    CodeEditorLanguages.SCOPE_NAME_XML : CodeEditorLanguages.SCOPE_NAME_KOTLIN;
-            
-            String theme;
-            if (scopeName.equals(CodeEditorLanguages.SCOPE_NAME_XML)) {
-                theme = isDark ? CodeEditorColorSchemes.THEME_GITHUB_DARK : CodeEditorColorSchemes.THEME_GITHUB;
-            } else {
-                theme = isDark ? CodeEditorColorSchemes.THEME_DRACULA : CodeEditorColorSchemes.THEME_GITHUB;
-            }
+            String theme = isDark ? CodeEditorColorSchemes.THEME_GITHUB_DARK : CodeEditorColorSchemes.THEME_GITHUB_LIGHT;
             editor.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(theme));
         } else {
-            editor.setColorScheme(isDark ? new SchemeDarcula() : new EditorColorScheme());
+            editor.setColorScheme(isDark ? new SchemeDarcula() : new SchemeGitHub());
         }
         
-        getMaterialStyledScheme(editor);
+        getMaterialStyledScheme(editor, true);
         editor.setPinLineNumber(true);
     }
 }

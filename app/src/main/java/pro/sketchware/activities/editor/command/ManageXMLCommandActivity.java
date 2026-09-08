@@ -47,6 +47,7 @@ import pro.sketchware.R;
 import pro.sketchware.activities.editor.command.adapters.XMLCommandAdapter;
 import pro.sketchware.databinding.ManageXmlCommandAddBinding;
 import pro.sketchware.databinding.ManageXmlCommandBinding;
+import pro.sketchware.utility.EditorUtils;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.ThemeUtils;
@@ -351,16 +352,11 @@ public class ManageXMLCommandActivity extends BaseAppCompatActivity {
                                         editor.setEditorLanguage(
                                                 CodeEditorLanguages.loadTextMateLanguage(
                                                         CodeEditorLanguages.SCOPE_NAME_XML));
-                                        if (ThemeUtils.isDarkThemeEnabled(
-                                                getApplicationContext())) {
-                                            editor.setColorScheme(
-                                                    CodeEditorColorSchemes.loadTextMateColorScheme(
-                                                            CodeEditorColorSchemes.THEME_DRACULA));
-                                        } else {
-                                            editor.setColorScheme(
-                                                    CodeEditorColorSchemes.loadTextMateColorScheme(
-                                                            CodeEditorColorSchemes.THEME_GITHUB));
-                                        }
+                                        
+                                        boolean isDark = ThemeUtils.isDarkThemeEnabled(getApplicationContext());
+                                        String theme = isDark ? CodeEditorColorSchemes.THEME_GITHUB_DARK : CodeEditorColorSchemes.THEME_GITHUB_LIGHT;
+                                        editor.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(theme));
+                                        EditorUtils.getMaterialStyledScheme(editor, true);
 
                                         AlertDialog dialog = dialogBuilder.create();
                                         dialog.setView(

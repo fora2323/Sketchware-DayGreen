@@ -14,7 +14,6 @@ public class ThemeManager {
     public static final int THEME_DARK = 2;
     private static final String THEME_PREF = "themedata";
     private static final String THEME_KEY = "idetheme";
-    private static final String DYNAMIC_COLOR_KEY = "ide_dynamic_color";
 
     public static void applyTheme(Context context, int type) {
         saveTheme(context, type);
@@ -51,17 +50,6 @@ public class ThemeManager {
             case Configuration.UI_MODE_NIGHT_YES -> THEME_DARK;
             default -> THEME_SYSTEM;
         };
-    }
-
-    public static boolean isIdeDynamicColorEnabled(Context context) {
-        return getPreferences(context).getBoolean(DYNAMIC_COLOR_KEY, false);
-    }
-
-    public static void setIdeDynamicColorEnabled(Context context, boolean enabled) {
-        getPreferences(context).edit().putBoolean(DYNAMIC_COLOR_KEY, enabled).apply();
-        // Notify activities to recreate and apply dynamic colors
-        Intent intent = new Intent("THEME_CHANGED");
-        context.sendBroadcast(intent);
     }
 
     private static void saveTheme(Context context, int theme) {

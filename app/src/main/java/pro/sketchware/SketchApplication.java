@@ -9,7 +9,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.besome.sketch.tools.CollectErrorActivity;
-import com.google.android.material.color.DynamicColors;
 
 import extensions.anbui.daydream.setup.DRSetup;
 import pro.sketchware.utility.theme.ThemeManager;
@@ -37,10 +36,6 @@ public class SketchApplication extends Application {
         });
         super.onCreate();
         ThemeManager.applyTheme(this, ThemeManager.getCurrentTheme(this));
-
-        DynamicColors.applyToActivitiesIfAvailable(this, new com.google.android.material.color.DynamicColorsOptions.Builder()
-                .setPrecondition((activity, themeResId) -> ThemeManager.isIdeDynamicColorEnabled(activity))
-                .build());
 
         DRSetup.startUp(this);
     }

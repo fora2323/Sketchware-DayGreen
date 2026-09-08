@@ -14,13 +14,9 @@ import mod.jbk.util.LogUtil;
 import pro.sketchware.SketchApplication;
 
 public class CodeEditorColorSchemes {
-    public static final String THEME_DRACULA = "dracula.json";
-    public static final String THEME_GITHUB = "GitHub.tmTheme";
+    public static final String THEME_GITHUB_LIGHT = "github_light.json";
     public static final String THEME_GITHUB_DARK = "github_dark.json";
-    public static final String THEME_ECLIPSE = "eclipse.json";
-    public static final String THEME_VS2019 = "vs2019.json";
-    public static final String THEME_NOTEPADXX = "notepadxx.json";
-    public static final String[] THEMES = {THEME_DRACULA, THEME_GITHUB, THEME_GITHUB_DARK, THEME_ECLIPSE, THEME_VS2019, THEME_NOTEPADXX};
+    public static final String[] THEMES = {THEME_GITHUB_LIGHT, THEME_GITHUB_DARK};
     private static final String TAG = "CodeEditorColorSchemes";
 
     static {
