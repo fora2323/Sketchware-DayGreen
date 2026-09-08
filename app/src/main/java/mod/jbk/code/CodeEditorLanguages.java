@@ -15,7 +15,7 @@ public class CodeEditorLanguages {
     public static final String SCOPE_NAME_XML = "text.xml";
     public static final String SCOPE_NAME_HTML = "text.html.basic";
     public static final String SCOPE_NAME_CSS = "source.css";
-    public static final String SCOPE_NAME_JS = "source.js";
+    public static final String SCOPE_NAME_JS = "source.javascript";
     private static final String TAG = "CodeEditorLanguages";
 
     static {

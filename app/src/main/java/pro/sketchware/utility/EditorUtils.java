@@ -126,5 +126,6 @@ public class EditorUtils {
         
         getMaterialStyledScheme(editor, true);
         editor.setPinLineNumber(true);
+        editor.rerunAnalysis();
     }
 }

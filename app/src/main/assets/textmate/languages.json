@@ -21,12 +21,14 @@
     {
       "grammar": "textmate/javascript/syntaxes/javascript.tmLanguage.json",
       "name": "javascript",
-      "scopeName": "source.js"
+      "scopeName": "source.javascript",
+      "languageConfiguration": "textmate/javascript/language-configuration.json"
     },
     {
       "grammar": "textmate/css/syntaxes/css.tmLanguage.json",
       "name": "css",
-      "scopeName": "source.css"
+      "scopeName": "source.css",
+      "languageConfiguration": "textmate/css/language-configuration.json"
     }
   ]
 }

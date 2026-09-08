@@ -1,0 +1,42 @@
+{
+  "name": "JavaScript",
+  "scopeName": "source.javascript",
+  "patterns": [
+    {
+      "match": "//.*",
+      "name": "comment.line.double-slash.js"
+    },
+    {
+      "begin": "/\\*",
+      "end": "\\*/",
+      "name": "comment.block.js"
+    },
+    {
+      "match": "\\b(if|else|for|while|do|switch|case|break|continue|return|function|var|let|const|new|this|class|extends|import|export|from|try|catch|finally|throw|async|await|yield|typeof|instanceof|void|delete|in|of)\\b",
+      "name": "keyword.control.js"
+    },
+    {
+      "begin": "\"",
+      "end": "\"",
+      "name": "string.quoted.double.js"
+    },
+    {
+      "begin": "'",
+      "end": "'",
+      "name": "string.quoted.single.js"
+    },
+    {
+      "begin": "`",
+      "end": "`",
+      "name": "string.template.js"
+    },
+    {
+      "match": "\\b(true|false|null|undefined|NaN|Infinity)\\b",
+      "name": "constant.language.js"
+    },
+    {
+      "match": "\\b[0-9]+(\\.[0-9]+)?\\b",
+      "name": "constant.numeric.js"
+    }
+  ]
+}
