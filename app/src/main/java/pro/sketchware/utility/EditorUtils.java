@@ -4,21 +4,26 @@ import static pro.sketchware.utility.ThemeUtils.isDarkThemeEnabled;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import android.os.Build;
 
 import androidx.annotation.NonNull;
 
 import com.google.android.material.color.MaterialColors;
 
-import io.github.rosemoe.sora.lang.EmptyLanguage;
+import extensions.fora2323.daygreen.keyword.IDCssKeyword;
+import extensions.fora2323.daygreen.keyword.IDHtmlKeyword;
+import extensions.fora2323.daygreen.keyword.IDJavaKeyword;
+import extensions.fora2323.daygreen.keyword.IDJsKeyword;
+import extensions.fora2323.daygreen.keyword.IDKotlinKeyword;
+import extensions.fora2323.daygreen.keyword.IDXmlKeyword;
+
 import io.github.rosemoe.sora.lang.Language;
-import io.github.rosemoe.sora.langs.java.JavaLanguage;
 import io.github.rosemoe.sora.langs.textmate.TextMateColorScheme;
 import io.github.rosemoe.sora.langs.textmate.TextMateLanguage;
 import io.github.rosemoe.sora.widget.CodeEditor;
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme;
 import io.github.rosemoe.sora.widget.schemes.SchemeDarcula;
 import io.github.rosemoe.sora.widget.schemes.SchemeGitHub;
+
 import mod.jbk.code.CodeEditorColorSchemes;
 import mod.jbk.code.CodeEditorLanguages;
 import pro.sketchware.R;
@@ -75,55 +80,63 @@ public class EditorUtils {
 
     public static void loadJavaConfig(CodeEditor editor) {
         Language language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_JAVA);
+        if (language instanceof TextMateLanguage tm) {
+            tm.setCompleterKeywords(IDJavaKeyword.KEYWORDS);
+        }
+        loadConfigByLanguage(editor, language, true);
+    }
+
+    public static void loadKotlinConfig(CodeEditor editor) {
+        Language language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_KOTLIN);
+        if (language instanceof TextMateLanguage) {
+            ((TextMateLanguage) language).setCompleterKeywords(IDKotlinKeyword.KEYWORDS);
+        }
         loadConfigByLanguage(editor, language, true);
     }
 
     public static void loadXmlConfig(CodeEditor editor) {
         Language language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_XML);
         if (language instanceof TextMateLanguage tm) {
-            tm.setCompleterKeywords(new String[]{
-                    "LinearLayout", "RelativeLayout", "FrameLayout", "androidx.recyclerview.widget.RecyclerView",
-                    "Button", "TextView", "ImageView", "EditText", "CheckBox", "RadioButton",
-                    "android:id", "android:layout_width", "android:layout_height", "android:layout_margin",
-                    "android:padding", "android:text", "android:textColor", "android:textSize",
-                    "android:background", "android:gravity", "android:orientation", "android:visibility",
-                    "match_parent", "wrap_content", "@id/", "@+id/", "@string/", "@color/", "@drawable/"
-            });
+            tm.setCompleterKeywords(IDXmlKeyword.KEYWORDS);
         }
         loadConfigByLanguage(editor, language, true);
     }
 
     public static void loadHtmlConfig(CodeEditor editor) {
         Language language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_HTML);
-        if (language instanceof EmptyLanguage) {
-            // Fallback to XML highlight if HTML grammar is missing
-            language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_XML);
+        if (language instanceof TextMateLanguage tm) {
+            tm.setCompleterKeywords(IDHtmlKeyword.KEYWORDS);
         }
         loadConfigByLanguage(editor, language, true);
     }
 
     public static void loadCssConfig(CodeEditor editor) {
         Language language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_CSS);
+        if (language instanceof TextMateLanguage tm) {
+            tm.setCompleterKeywords(IDCssKeyword.KEYWORDS);
+        }
         loadConfigByLanguage(editor, language, true);
     }
 
     public static void loadJsConfig(CodeEditor editor) {
         Language language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_JS);
+        if (language instanceof TextMateLanguage tm) {
+            tm.setCompleterKeywords(IDJsKeyword.KEYWORDS);
+        }
         loadConfigByLanguage(editor, language, true);
     }
 
-    // todo: use dynamic color scheme for textmate language too
     private static void loadConfigByLanguage(CodeEditor editor, Language language, boolean isTextMate) {
         editor.setEditorLanguage(language);
         boolean isDark = isDarkThemeEnabled(editor.getContext());
-        
+
         if (isTextMate) {
             String theme = isDark ? CodeEditorColorSchemes.THEME_GITHUB_DARK : CodeEditorColorSchemes.THEME_GITHUB_LIGHT;
             editor.setColorScheme(CodeEditorColorSchemes.loadTextMateColorScheme(theme));
         } else {
             editor.setColorScheme(isDark ? new SchemeDarcula() : new SchemeGitHub());
         }
-        
+
         getMaterialStyledScheme(editor, true);
         editor.setPinLineNumber(true);
         editor.rerunAnalysis();

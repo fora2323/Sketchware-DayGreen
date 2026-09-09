@@ -615,20 +615,6 @@ public class ColorPickerDialog extends PopupWindow {
 		attributes.add(new Attribute("colorSurfaceContainerHigh"));
 		attributes.add(new Attribute("colorSurfaceContainerHighest"));
 		
-		// Fixed
-		attributes.add(new Attribute("colorPrimaryFixed", "Fixed"));
-		attributes.add(new Attribute("colorOnPrimaryFixed"));
-		attributes.add(new Attribute("colorPrimaryFixedDim"));
-		attributes.add(new Attribute("colorOnPrimaryFixedVariant"));
-		attributes.add(new Attribute("colorSecondaryFixed"));
-		attributes.add(new Attribute("colorOnSecondaryFixed"));
-		attributes.add(new Attribute("colorSecondaryFixedDim"));
-		attributes.add(new Attribute("colorOnSecondaryFixedVariant"));
-		attributes.add(new Attribute("colorTertiaryFixed"));
-		attributes.add(new Attribute("colorOnTertiaryFixed"));
-		attributes.add(new Attribute("colorTertiaryFixedDim"));
-		attributes.add(new Attribute("colorOnTertiaryFixedVariant"));
-		
 		String savedAttrs = colorPref.f("P24I2");
 		if (savedAttrs != null && !savedAttrs.isEmpty()) {
 			String[] customAttrs = savedAttrs.split(",");
