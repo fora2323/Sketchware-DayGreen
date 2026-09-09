@@ -64,6 +64,7 @@ public class ColorPickerDialog extends PopupWindow {
     private Material3LibraryManager material3LibraryManager;
     private yq yq;
     private ColorsEditorManager colorsEditorManager;
+    private int currentEditingColorInt = Color.BLACK;
 
     public ColorPickerDialog(Activity activity, int var3, boolean isTransparentColor, boolean isNoneColor) {
         super(activity);
@@ -112,6 +113,13 @@ public class ColorPickerDialog extends PopupWindow {
 
     public void initialize(Activity activity, String color, boolean isTransparentColor, boolean isNoneColor) {
         this.activity = activity;
+        try {
+            if (color.startsWith("#")) {
+                currentEditingColorInt = Color.parseColor(color);
+            } catch (Exception ignored) {
+                //
+            }
+        }
         colorPref = new DB(activity, "P24");
         initializeColorData(isTransparentColor, isNoneColor);
         initializeResColors();
@@ -266,7 +274,8 @@ public class ColorPickerDialog extends PopupWindow {
 
         pickerView.attachAlphaSlider(alphaBar);
         pickerView.attachBrightnessSlider(brightnessBar);
-        pickerView.setInitialColor(m != -1 ? m : Color.BLACK);
+        
+        pickerView.setInitialColor(currentEditingColorInt);
 
         final boolean[] isUpdatingFromPicker = {false};
 

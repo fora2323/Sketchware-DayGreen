@@ -43,8 +43,8 @@ object IDBlockShizuku {
     @JvmStatic
     fun addPaletteBlocks(logicEditor: LogicEditorActivity) {
         logicEditor.a("Shizuku", getTitleBgColor(logicEditor))
-        logicEditor.a("b", "shizukuPingBinder", "Shizuku pingBinder")
-        logicEditor.a("b", "shizukuCheckPermission", "Shizuku checkSelfPermission")
-        logicEditor.a(" ", "shizukuRequestPermission", "Shizuku requestPermission")
+        logicEditor.a("b", "shizukuPingBinder")
+        logicEditor.a("b", "shizukuCheckPermission")
+        logicEditor.a(" ", "shizukuRequestPermission")
     }
 }

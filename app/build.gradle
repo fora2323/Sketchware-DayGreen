@@ -26,16 +26,16 @@ android {
 
     signingConfigs {
         debug {
-            storeFile = file("../keybali-store.jks")
-            storePassword = "bali23"
-            keyAlias = "Bali"
-            keyPassword = "bali23"
+            storeFile = file("../testkey.keystore")
+            storePassword = "testkey"
+            keyAlias = "testkey"
+            keyPassword = "testkey"
         }
         release {
-            storeFile = file("../keybali-store.jks")
-            storePassword = "bali23"
-            keyAlias = "Bali"
-            keyPassword = "bali23"
+            storeFile = file("../testkey.keystore")
+            storePassword = "testkey"
+            keyAlias = "testkey"
+            keyPassword = "testkey"
         }
     }
 
