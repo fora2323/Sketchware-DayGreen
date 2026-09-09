@@ -11,23 +11,50 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check if versionCode changed (release push)
+        id: check_version
+        run: |
+          FILE="app/build.gradle"
+          [ -f "app/build.gradle.kts" ] && FILE="app/build.gradle.kts"
+          CURRENT=$(grep -m1 'versionCode' "$FILE" | grep -oE '[0-9]+')
+
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            PREVIOUS=$(git show HEAD~1:"$FILE" 2>/dev/null | grep -m1 'versionCode' | grep -oE '[0-9]+')
+          else
+            PREVIOUS=""
+          fi
+
+          if [ "$CURRENT" != "$PREVIOUS" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "versionCode berubah ($PREVIOUS -> $CURRENT), ini push rilis. Skip build debug."
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up JDK 17
+        if: steps.check_version.outputs.changed == 'false'
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Setup Gradle
+        if: steps.check_version.outputs.changed == 'false'
         uses: gradle/actions/setup-gradle@v4
 
       - name: Grant execute permission for gradlew
+        if: steps.check_version.outputs.changed == 'false'
         run: chmod +x gradlew
 
       - name: Build debug APKs
+        if: steps.check_version.outputs.changed == 'false'
         run: ./gradlew assembleDebug --stacktrace
 
       - name: Upload android26 debug APK
+        if: steps.check_version.outputs.changed == 'false'
         uses: actions/upload-artifact@v5
         with:
           name: app-android26-debug
@@ -36,6 +63,7 @@ jobs:
           retention-days: 30
 
       - name: Upload android33 debug APK
+        if: steps.check_version.outputs.changed == 'false'
         uses: actions/upload-artifact@v5
         with:
           name: app-android33-debug
@@ -44,20 +72,22 @@ jobs:
           retention-days: 30
 
       - name: Set up Python
+        if: steps.check_version.outputs.changed == 'false'
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Install Pyrogram & Dependencies
+        if: steps.check_version.outputs.changed == 'false'
         run: pip install pyrofork tgcrypto
 
       - name: Send APK to Telegram (Userbot)
+        if: steps.check_version.outputs.changed == 'false'
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
           SESSION_STRING: ${{ secrets.SESSION_STRING }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
           TELEGRAM_THREAD_ID2: ${{ secrets.TELEGRAM_THREAD_ID2 }}
           VERSION: ${{ github.run_number }}
           COMMIT_AUTHOR: ${{ github.actor }}
