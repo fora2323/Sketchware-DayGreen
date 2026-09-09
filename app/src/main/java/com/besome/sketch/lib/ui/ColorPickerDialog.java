@@ -116,9 +116,9 @@ public class ColorPickerDialog extends PopupWindow {
         try {
             if (color.startsWith("#")) {
                 currentEditingColorInt = Color.parseColor(color);
-            } catch (Exception ignored) {
-                //
             }
+        } catch (Exception ignored) {
+                
         }
         colorPref = new DB(activity, "P24");
         initializeColorData(isTransparentColor, isNoneColor);
