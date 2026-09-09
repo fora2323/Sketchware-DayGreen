@@ -1,6 +1,7 @@
 package extensions.fora2323.daygreen.keyword
 
 object IDJsKeyword {
+    @JvmField
     val KEYWORDS = arrayOf(
         // JavaScript keywords
         "break", "case", "catch", "class", "const", "continue", "debugger", "default",

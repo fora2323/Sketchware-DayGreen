@@ -1,6 +1,7 @@
 package extensions.fora2323.daygreen.keyword
 
 object IDXmlKeyword {
+    @JvmField
     val KEYWORDS = arrayOf(
         // Layouts
         "LinearLayout", "RelativeLayout", "FrameLayout", "ConstraintLayout",

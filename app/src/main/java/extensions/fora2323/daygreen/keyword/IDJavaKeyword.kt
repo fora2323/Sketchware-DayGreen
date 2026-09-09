@@ -1,6 +1,7 @@
 package extensions.fora2323.daygreen.keyword
 
 object IDJavaKeyword {
+    @JvmField
     val KEYWORDS = arrayOf(
         // Java keywords
         "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class",

@@ -1,6 +1,7 @@
 package extensions.fora2323.daygreen.keyword
 
 object IDCssKeyword {
+    @JvmField
     val KEYWORDS = arrayOf(
         // Selectors
         "body", "div", "span", "p", "a", "img", "button", "input", "h1", "h2",

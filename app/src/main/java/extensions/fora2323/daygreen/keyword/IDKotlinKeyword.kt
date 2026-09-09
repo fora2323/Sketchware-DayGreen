@@ -1,6 +1,7 @@
 package extensions.fora2323.daygreen.keyword
 
 object IDKotlinKeyword {
+    @JvmField
     val KEYWORDS = arrayOf(
         // Kotlin keywords
         "as", "break", "class", "continue", "do", "else", "false", "for", "fun",

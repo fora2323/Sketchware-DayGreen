@@ -1,6 +1,7 @@
 package extensions.fora2323.daygreen.keyword
 
 object IDHtmlKeyword {
+    @JvmField
     val KEYWORDS = arrayOf(
         // HTML tags
         "html", "head", "title", "meta", "link", "script", "style", "body",
