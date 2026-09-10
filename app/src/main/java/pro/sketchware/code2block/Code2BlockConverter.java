@@ -118,8 +118,29 @@ public class Code2BlockConverter {
                     }
                 }
 
-                if (bean.opCode != null && !bean.opCode.isEmpty() && bean.spec != null && !bean.spec.isEmpty()) {
-                    BlockLoader.registerRuntimeBlock(bean.opCode, bean.spec, bean.spec2, bean.code, bean.color);
+                if (bean.opCode != null && !bean.opCode.isEmpty()) {
+                    ma.swblockeditor.core.BlockBean indexed = BlocksLoader.ALL_INDEXED_BLOCKS.get(bean.opCode);
+                    if (indexed != null) {
+                        if ((bean.spec == null || bean.spec.isEmpty()) && indexed.getSpec() != null && !indexed.getSpec().isEmpty()) {
+                            bean.spec = indexed.getSpec();
+                        }
+                        if ((bean.spec2 == null || bean.spec2.isEmpty()) && indexed.getSpec2() != null && !indexed.getSpec2().isEmpty()) {
+                            bean.spec2 = indexed.getSpec2();
+                        }
+                        if ((bean.code == null || bean.code.isEmpty()) && indexed.getCode() != null && !indexed.getCode().isEmpty()) {
+                            bean.code = indexed.getCode();
+                        }
+                        if ((bean.type == null || bean.type.isEmpty()) && indexed.getType() != null && !indexed.getType().isEmpty()) {
+                            bean.type = indexed.getType();
+                        }
+                        if (bean.color == 0 && indexed.getColor() != 0) {
+                            bean.color = indexed.getColor();
+                        }
+                    }
+
+                    if (bean.spec != null && !bean.spec.isEmpty()) {
+                        BlockLoader.registerRuntimeBlock(bean.opCode, bean.spec, bean.spec2, bean.code, bean.color);
+                    }
                 }
 
                 blocks.add(bean);

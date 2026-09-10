@@ -72,7 +72,12 @@ public class Code2BlockEditorActivity extends BaseAppCompatActivity {
         });
 
         UI.addSystemWindowInsetToPadding(binding.appBarLayout, true, true, true, false);
-        UI.addSystemWindowInsetToMargin(binding.editor, true, false, true, true);
+        UI.addSystemWindowInsetToMargin(binding.editor, true, false, true, false);
+
+        dev.chrisbanes.insetter.Insetter.builder()
+                .marginBottom(androidx.core.view.WindowInsetsCompat.Type.ime() | androidx.core.view.WindowInsetsCompat.Type.navigationBars(), true)
+                .marginRight(androidx.core.view.WindowInsetsCompat.Type.navigationBars() | androidx.core.view.WindowInsetsCompat.Type.displayCutout(), true)
+                .applyToView(binding.fabConvert);
     }
 
     private void setupToolbar(String title, String subtitle) {
