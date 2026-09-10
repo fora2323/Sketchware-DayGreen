@@ -377,6 +377,10 @@
             android:name=".activities.editor.view.CodeViewerActivity"
             android:configChanges="orientation|screenSize" />
         <activity
+            android:name=".activities.editor.logic.Code2BlockEditorActivity"
+            android:configChanges="orientation|screenSize"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".activities.preview.LayoutPreviewActivity"
             android:configChanges="orientation|screenSize" />
 

@@ -31,12 +31,42 @@ import pro.sketchware.utility.SketchwareUtil;
 public class BlockLoader {
 
     private static ArrayList<ExtraBlockInfo> blocks;
+    private static final HashMap<String, ExtraBlockInfo> runtimeBlocks = new HashMap<>();
 
     static {
         loadCustomBlocks();
     }
 
+    public static void registerRuntimeBlock(ExtraBlockInfo info) {
+        if (info != null && info.getName() != null && !info.getName().isEmpty()
+                && info.getSpec() != null && !info.getSpec().isEmpty()) {
+            info.isMissing = false;
+            runtimeBlocks.put(info.getName(), info);
+        }
+    }
+
+    public static void registerRuntimeBlock(String opCode, String spec, String code, int color) {
+        registerRuntimeBlock(opCode, spec, "", code, color);
+    }
+
+    public static void registerRuntimeBlock(String opCode, String spec, String spec2, String code, int color) {
+        if (opCode != null && !opCode.isEmpty() && spec != null && !spec.isEmpty()) {
+            ExtraBlockInfo info = new ExtraBlockInfo();
+            info.setName(opCode);
+            info.setSpec(spec);
+            info.setSpec2(spec2 != null ? spec2 : "");
+            info.setCode(code != null ? code : "");
+            info.setColor(color != 0 ? color : 0xff8a55d7);
+            info.isMissing = false;
+            runtimeBlocks.put(opCode, info);
+        }
+    }
+
     public static ExtraBlockInfo getBlockInfo(String block_name) {
+        if (runtimeBlocks.containsKey(block_name)) {
+            return runtimeBlocks.get(block_name);
+        }
+
         if (blocks == null) {
             loadCustomBlocks();
         }
