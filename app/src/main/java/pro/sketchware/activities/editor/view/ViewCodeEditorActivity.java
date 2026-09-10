@@ -117,7 +117,7 @@ public class ViewCodeEditorActivity extends BaseAppCompatActivity {
         editor.setTypefaceText(EditorUtils.getTypeface(this));
         editor.setTextSize(14);
         editor.setText(content);
-        EditorUtils.loadXmlConfig(editor);
+        EditorUtils.loadXmlConfig(editor, "layout/" + title); // <-- DIUBAH: dulunya loadXmlConfig(editor) tanpa parameter
         if (projectFile.fileType == ProjectFileBean.PROJECT_FILE_TYPE_ACTIVITY
                 && projectLibrary.isEnabled()) {
             setNote("Use AppCompat Manager to modify attributes for CoordinatorLayout, Toolbar, and other appcompat layout/widget.");

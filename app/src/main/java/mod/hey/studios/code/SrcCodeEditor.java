@@ -211,7 +211,7 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                         formatted.append("\n");
                     }
                     appendTagWithWrapping(formatted, tag, isSelfClosing, depth, indentUnit, indentAmount);
-                    
+
                     if (isSelfClosing) {
                         justOpenedTag = false;
                     } else {
@@ -233,6 +233,7 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
     private static final int PRETTIFY_MAX_LINE_LENGTH = 100;
 
     private static final java.util.Set<String> ALWAYS_WRAP_TAGS = java.util.Set.of(
+            "manifest", // <-- DITAMBAHKAN: biar <manifest xmlns:android=... package=...> ikut dipecah baris
             "uses-library",
             "meta-data",
             "activity",
@@ -326,13 +327,13 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                     .map(KNOWN_COLOR_SCHEMES::indexOf)
                     .findFirst()
                     .orElse(-1);
-            
+
             // Add Default to items if not there
             List<String> items = new ArrayList<>();
             items.add("Default (Dynamic)");
             items.addAll(KNOWN_COLOR_SCHEMES.stream().map(pair -> pair.first).toList());
             themeItems = items.toArray(new String[0]);
-            
+
             if (selectedThemeIndex != -1) selectedThemeIndex++; // Shift for Default
         }
 
@@ -391,7 +392,12 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
             beforeContent = FileUtil.readFile(getIntent().getStringExtra("content"));
         binding.editor.setText(beforeContent);
 
-        if (title.endsWith(".java")) {
+        // DIUBAH: fromAndroidManifest sekarang dicek PALING AWAL, terpisah dari title.endsWith(".xml"),
+        // karena title untuk kasus ini ("<Activity> Components") gak diakhiri ".xml" jadi dulu gak kena config apapun.
+        if (fromAndroidManifest) {
+            EditorUtils.loadXmlConfig(binding.editor, "AndroidManifest.xml");
+            languageId = 2;
+        } else if (title.endsWith(".java")) {
             EditorUtils.loadJavaConfig(binding.editor);
             languageId = 0;
         } else if (title.endsWith(".kt")) {
@@ -399,7 +405,8 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
             selectTheme(binding.editor, 0);
             languageId = 1;
         } else if (title.endsWith(".xml")) {
-            EditorUtils.loadXmlConfig(binding.editor);
+            // DIUBAH: kirim path file (content) biar autocomplete-nya sesuai jenis file (layout/values/manifest/dst)
+            EditorUtils.loadXmlConfig(binding.editor, getIntent().getStringExtra("content"));
             languageId = 2;
         } else if (title.endsWith(".html")) {
             EditorUtils.loadHtmlConfig(binding.editor);
