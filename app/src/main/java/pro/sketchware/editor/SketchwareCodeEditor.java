@@ -394,16 +394,25 @@ public class SketchwareCodeEditor extends CodeEditor {
 
         if (affectedSpans.isEmpty()) return false;
 
+        boolean anyApplied = false;
         for (int i = 0; i < affectedSpans.size(); i++) {
             Span span = affectedSpans.get(i);
             boolean isStart = (i == 0);
             boolean isEnd = (i == affectedSpans.size() - 1);
-            
-            span.setSpanExt(SpanExtAttrs.EXT_EXTERNAL_RENDERER, new ColorPreviewRenderer(color, isStart, isEnd));
-            span.setSpanExt(SpanExtAttrs.EXT_COLOR_RESOLVER, colorResolver);
+
+            try {
+                span.setSpanExt(SpanExtAttrs.EXT_EXTERNAL_RENDERER, new ColorPreviewRenderer(color, isStart, isEnd));
+                span.setSpanExt(SpanExtAttrs.EXT_COLOR_RESOLVER, colorResolver);
+                anyApplied = true;
+            } catch (UnsupportedOperationException e) {
+                // Sejak sora-editor 0.24.x, span yang dibuat via Span.obtain() (mis. dari
+                // getOrCreateSpanAt) gak selalu support ext data (NoExtSpanImpl).
+                // Aman di-skip: cuma preview warna inline-nya aja yang gak muncul di span ini,
+                // gak ganggu highlight/edit teks lainnya.
+            }
         }
 
-        return true;
+        return anyApplied;
     }
 
     private Span getOrCreateSpanAt(List<Span> spans, int column) {
