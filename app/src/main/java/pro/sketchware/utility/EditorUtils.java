@@ -63,6 +63,8 @@ public class EditorUtils {
         // Always style these to maintain IDE feel
         scheme.setColor(EditorColorScheme.LINE_DIVIDER, surfaceContainerHighest);
         scheme.setColor(EditorColorScheme.SELECTION_INSERT, onSurfaceVariant);
+        scheme.setColor(EditorColorScheme.HIGHLIGHTED_DELIMITERS_FOREGROUND, onSurface);
+        scheme.setColor(EditorColorScheme.HIGHLIGHTED_DELIMITERS_BACKGROUND, surfaceContainerHighest);
 
         // Completion window styling - matches IDE panels
         scheme.setColor(EditorColorScheme.COMPLETION_WND_BACKGROUND, surfaceContainer);

@@ -140,8 +140,14 @@ dependencies {
     implementation 'androidx.activity:activity-ktx:1.13.0'
     implementation 'androidx.activity:activity:1.13.0'
 
-    def editorGroupId = "io.github.Rosemoe.sora-editor"
-    implementation platform("$editorGroupId:bom:0.23.5")
+    //def editorGroupId = "io.github.Rosemoe.sora-editor"
+    //implementation platform("$editorGroupId:bom:0.24.6")
+    //implementation "$editorGroupId:editor"
+    //implementation "$editorGroupId:language-java"
+    //implementation "$editorGroupId:language-textmate"
+    
+    def editorGroupId = "io.github.rosemoe"
+    implementation platform("$editorGroupId:editor-bom:0.24.6")
     implementation "$editorGroupId:editor"
     implementation "$editorGroupId:language-java"
     implementation "$editorGroupId:language-textmate"
