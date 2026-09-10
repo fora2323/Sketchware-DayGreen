@@ -160,8 +160,6 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
             StringBuilder formatted = new StringBuilder();
             int depth = 0;
 
-            // We'll use a simple state to track if we just opened a tag and might
-            // want to keep the content on the same line.
             boolean justOpenedTag = false;
 
             java.util.regex.Matcher m = java.util.regex.Pattern
@@ -189,9 +187,6 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
 
                 if (!between.isEmpty()) {
                     if (justOpenedTag) {
-                        // Content immediately following an opening tag.
-                        // For simple text values (no newlines in 'between'),
-                        // don't add a newline/indent yet.
                         if (!between.contains("\n")) {
                             formatted.append(between);
                         } else {
@@ -212,15 +207,12 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                     justOpenedTag = false;
                 } else if (isClosing) {
                     if (justOpenedTag && !between.contains("\n")) {
-                        // If we just opened this tag and the content was simple,
-                        // append the closing tag on the same line.
                         formatted.append(tag).append("\n");
                     } else {
                         formatted.append(indentUnit.repeat(depth)).append(tag).append("\n");
                     }
                     justOpenedTag = false;
                 } else {
-                    // Opening tag
                     if (justOpenedTag) {
                         formatted.append("\n");
                     }
@@ -242,12 +234,10 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
         }
     }
 
-    // Max characters allowed on one line before an opening tag's attributes get
-    // wrapped onto separate lines, matching Android Studio's default right margin.
     private static final int PRETTIFY_MAX_LINE_LENGTH = 100;
 
     private static final java.util.Set<String> ALWAYS_WRAP_TAGS = java.util.Set.of(
-            "manifest", // <-- DITAMBAHKAN: biar <manifest xmlns:android=... package=...> ikut dipecah baris
+            "manifest",
             "uses-library",
             "meta-data",
             "activity",
@@ -276,7 +266,7 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
         java.util.List<String> attrs = new java.util.ArrayList<>();
         if (!attrPart.isEmpty()) {
             java.util.regex.Matcher am = java.util.regex.Pattern
-                    .compile("[^\\s=]+="[^"]*"")
+                    .compile("[^\\s=]+=\"[^\"]*\"")
                     .matcher(attrPart);
             while (am.find()) attrs.add(am.group());
         }
@@ -342,13 +332,12 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                     .findFirst()
                     .orElse(-1);
 
-            // Add Default to items if not there
             List<String> items = new ArrayList<>();
             items.add("Default (Dynamic)");
             items.addAll(KNOWN_COLOR_SCHEMES.stream().map(pair -> pair.first).toList());
             themeItems = items.toArray(new String[0]);
 
-            if (selectedThemeIndex != -1) selectedThemeIndex++; // Shift for Default
+            if (selectedThemeIndex != -1) selectedThemeIndex++;
         }
 
         new MaterialAlertDialogBuilder(activity)
@@ -406,8 +395,6 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
             beforeContent = FileUtil.readFile(getIntent().getStringExtra("content"));
         binding.editor.setText(beforeContent);
 
-        // DIUBAH: fromAndroidManifest sekarang dicek PALING AWAL, terpisah dari title.endsWith(".xml"),
-        // karena title untuk kasus ini ("<Activity> Components") gak diakhiri ".xml" jadi dulu gak kena config apapun.
         if (fromAndroidManifest) {
             EditorUtils.loadXmlConfig(binding.editor, "AndroidManifest.xml");
             languageId = 2;
@@ -419,7 +406,6 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
             selectTheme(binding.editor, 0);
             languageId = 1;
         } else if (title.endsWith(".xml")) {
-            // DIUBAH: kirim path file (content) biar autocomplete-nya sesuai jenis file (layout/values/manifest/dst)
             EditorUtils.loadXmlConfig(binding.editor, getIntent().getStringExtra("content"));
             languageId = 2;
         } else if (title.endsWith(".html")) {
