@@ -5,7 +5,6 @@ import kotlin.jvm.JvmStatic
 
 object IDXmlKeyword {
 
-    // Selalu relevan di semua jenis file XML
     private val BASE = arrayOf(
         "xmlns:android=\"http://schemas.android.com/apk/res/android\"",
         "xmlns:app=\"http://schemas.android.com/apk/res-auto\"",
@@ -14,7 +13,6 @@ object IDXmlKeyword {
         "true", "false"
     )
 
-    // Layout & tampilan (res/layout/*.xml)
     private val LAYOUT = arrayOf(
         "include", "merge", "view", "fragment", "androidx.fragment.app.FragmentContainerView",
 
@@ -69,57 +67,59 @@ object IDXmlKeyword {
         "vertical", "gone", "visible", "invisible", "bold", "italic", "normal"
     )
 
-    // AndroidManifest.xml / manual_manifest.xml
     private val MANIFEST = arrayOf(
         "manifest", "application", "activity", "service", "receiver", "provider",
         "uses-permission", "uses-feature", "intent-filter", "action", "category", "data",
         "meta-data", "android:exported", "android:permission", "android:theme", "package"
     )
 
-    // Drawable XML (shape, selector, vector, dsb)
     private val DRAWABLE = arrayOf(
         "vector", "path", "group", "clip-path", "selector", "shape", "solid", "stroke",
-        "gradient", "corners", "padding", "size", "ripple", "layer-list", "item", "animated-vector"
+        "gradient", "corners", "padding", "size", "ripple", "layer-list", "item", "animated-vector",
+        "bitmap", "inset", "level-list", "android:width", "android:height", "android:viewportWidth",
+        "android:viewportHeight", "android:fillColor", "android:pathData", "android:tint"
     )
 
-    // res/values/colors.xml
-    private val VALUES_COLORS = arrayOf(
-        "resources", "color", "name"
+    private val ANIM = arrayOf(
+        "set", "alpha", "scale", "translate", "rotate",
+        "objectAnimator", "valueAnimator", "propertyValuesHolder", "animator",
+        "android:duration", "android:fromAlpha", "android:toAlpha",
+        "android:fromXScale", "android:toXScale", "android:fromYScale", "android:toYScale",
+        "android:pivotX", "android:pivotY", "android:fromXDelta", "android:toXDelta",
+        "android:fromYDelta", "android:toYDelta", "android:fromDegrees", "android:toDegrees",
+        "android:interpolator", "android:repeatCount", "android:repeatMode", "android:fillAfter",
+        "android:startOffset", "android:propertyName", "android:valueType", "android:valueFrom",
+        "android:valueTo", "android:ordering"
     )
 
-    // res/values/strings.xml
-    private val VALUES_STRINGS = arrayOf(
-        "resources", "string", "string-array", "plurals", "item",
-        "name", "translatable", "formatted"
+    private val MENU = arrayOf(
+        "menu", "item", "group",
+        "android:id", "android:title", "android:icon", "android:orderInCategory",
+        "android:showAsAction", "android:visible", "android:enabled", "android:checkable",
+        "app:showAsAction", "app:actionViewClass", "app:actionProviderClass"
     )
 
-    // res/values/styles.xml & themes.xml
-    private val VALUES_STYLES = arrayOf(
-        "resources", "style", "item", "name", "parent"
+    private val COLOR_STATE_LIST = arrayOf(
+        "selector", "item",
+        "android:color", "android:alpha", "android:state_enabled", "android:state_checked",
+        "android:state_pressed", "android:state_focused", "android:state_selected",
+        "android:state_activated"
     )
 
-    // res/values/attrs.xml
-    private val VALUES_ATTRS = arrayOf(
-        "resources", "declare-styleable", "attr", "name", "format",
-        "enum", "flag", "reference", "dimension", "boolean", "integer", "fraction"
-    )
+    private val VALUES_COLORS = arrayOf("resources", "color", "name")
+    private val VALUES_STRINGS = arrayOf("resources", "string", "string-array", "plurals", "item", "name", "translatable", "formatted")
+    private val VALUES_STYLES = arrayOf("resources", "style", "item", "name", "parent")
+    private val VALUES_ATTRS = arrayOf("resources", "declare-styleable", "attr", "name", "format", "enum", "flag", "reference", "dimension", "boolean", "integer", "fraction")
+    private val VALUES_ARRAYS = arrayOf("resources", "array", "string-array", "integer-array", "item", "name")
+    private val VALUES_ALL = VALUES_STYLES + VALUES_COLORS + VALUES_STRINGS + VALUES_ATTRS + VALUES_ARRAYS
 
-    // res/values/arrays.xml
-    private val VALUES_ARRAYS = arrayOf(
-        "resources", "array", "string-array", "integer-array", "item", "name"
-    )
-
-    /** Fallback lama: semua kategori digabung (dipakai kalau file tidak dikenali). */
     @JvmField
-    val KEYWORDS = BASE + LAYOUT + MANIFEST + DRAWABLE + VALUES_COLORS +
-            VALUES_STRINGS + VALUES_STYLES + VALUES_ATTRS + VALUES_ARRAYS
+    val KEYWORDS = BASE + LAYOUT + MANIFEST + DRAWABLE + ANIM + MENU + COLOR_STATE_LIST + VALUES_ALL
 
-    /**
-     * Pilih keyword set yang sesuai berdasarkan nama/path file yang lagi dibuka.
-     * [pathOrName] boleh full path atau cuma nama file, contoh:
-     * "colors.xml", ".../resource/values/styles.xml", "AndroidManifest.xml",
-     * ".../Injection/androidmanifest/manual_manifest.xml", ".../resource/layout/main.xml"
-     */
+    private val RESOURCE_FOLDER_BASE_NAMES = setOf(
+        "values", "drawable", "mipmap", "layout", "anim", "animator", "menu", "color"
+    )
+
     @JvmStatic
     fun forFile(pathOrName: String?): Array<String> {
         if (pathOrName == null) return KEYWORDS
@@ -127,17 +127,32 @@ object IDXmlKeyword {
         val lower = pathOrName.lowercase()
         val fileName = lower.substringAfterLast('/')
 
-        return when {
-            fileName.contains("manifest") || lower.contains("/androidmanifest/") -> BASE + MANIFEST
-            fileName == "colors.xml" -> BASE + VALUES_COLORS
-            fileName == "strings.xml" -> BASE + VALUES_STRINGS
-            fileName == "styles.xml" || fileName == "themes.xml" -> BASE + VALUES_STYLES
-            fileName == "attrs.xml" -> BASE + VALUES_ATTRS
-            fileName == "arrays.xml" -> BASE + VALUES_ARRAYS
-            lower.contains("/values/") -> BASE + VALUES_STYLES + VALUES_COLORS + VALUES_STRINGS
-            lower.contains("/drawable/") -> BASE + DRAWABLE
-            lower.contains("/layout/") -> BASE + LAYOUT
-            else -> BASE + LAYOUT
+        if (fileName.contains("manifest") || lower.contains("/androidmanifest/")) {
+            return BASE + MANIFEST
+        }
+
+        val segments = lower.split('/')
+        val baseFolder = segments
+            .map { it.substringBefore('-') }
+            .firstOrNull { it in RESOURCE_FOLDER_BASE_NAMES }
+
+        return when (baseFolder) {
+            "values" -> BASE + VALUES_ALL
+            "drawable", "mipmap" -> BASE + DRAWABLE
+            "anim", "animator" -> BASE + ANIM
+            "menu" -> BASE + MENU
+            "color" -> BASE + COLOR_STATE_LIST
+            "layout" -> BASE + LAYOUT
+            else -> {
+                when (fileName) {
+                    "colors.xml" -> BASE + VALUES_COLORS
+                    "strings.xml" -> BASE + VALUES_STRINGS
+                    "styles.xml", "themes.xml" -> BASE + VALUES_STYLES
+                    "attrs.xml" -> BASE + VALUES_ATTRS
+                    "arrays.xml" -> BASE + VALUES_ARRAYS
+                    else -> BASE + LAYOUT
+                }
+            }
         }
     }
 }
