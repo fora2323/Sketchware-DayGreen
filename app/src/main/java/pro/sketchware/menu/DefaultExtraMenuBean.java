@@ -11,6 +11,12 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import extensions.fora2323.daygreen.listimport.IDAndroidxImport;
+import extensions.fora2323.daygreen.listimport.IDKotlinImport;
+import extensions.fora2323.daygreen.listimport.IDLegacyImport;
+import extensions.fora2323.daygreen.listimport.IDMixImport;
+import extensions.fora2323.daygreen.listimport.IDMaterialImport;
+
 import a.a.a.Ss;
 import a.a.a.eC;
 import a.a.a.jC;
@@ -198,7 +204,11 @@ public class DefaultExtraMenuBean {
             }
             case "import" -> {
                 title = "Select language";
-                menus.addAll(Arrays.asList(uq.IMPORT_CLASS_PATH));
+                menus.addAll(Arrays.asList(IDAndroidxImport.LIST));
+                menus.addAll(Arrays.asList(IDMaterialImport.LIST));
+                menus.addAll(Arrays.asList(IDKotlinImport.LIST));
+                menus.addAll(Arrays.asList(IDLegacyImport.LIST));
+                menus.addAll(Arrays.asList(IDMixImport.LIST));
             }
             //end
         }
