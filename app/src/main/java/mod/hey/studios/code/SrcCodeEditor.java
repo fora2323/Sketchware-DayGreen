@@ -8,13 +8,19 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import androidx.appcompat.content.res.AppCompatResources;
 
+import com.besome.sketch.beans.ViewBean;
+import com.besome.sketch.editor.view.ViewPane;
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -44,6 +50,8 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 
 import a.a.a.Lx;
+import a.a.a.jC;
+import io.github.rosemoe.sora.event.ContentChangeEvent;
 import io.github.rosemoe.sora.lang.Language;
 import io.github.rosemoe.sora.langs.java.JavaLanguage;
 import io.github.rosemoe.sora.langs.textmate.TextMateColorScheme;
@@ -62,6 +70,7 @@ import mod.jbk.code.CodeEditorLanguages;
 import pro.sketchware.R;
 import pro.sketchware.activities.preview.LayoutPreviewActivity;
 import pro.sketchware.databinding.CodeEditorHsBinding;
+import pro.sketchware.tools.ViewBeanParser;
 import pro.sketchware.utility.EditorUtils;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
@@ -86,6 +95,11 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
     private boolean fromAndroidManifest;
     private String scId;
     private String activityName;
+
+    // Real-time preview fields
+    private Handler previewHandler;
+    private boolean isPreviewVisible = false;
+    private final Runnable previewRunnable = this::updatePreview;
 
     public static void loadCESettings(Context c, CodeEditor ed, String prefix) {
         loadCESettings(c, ed, prefix, false);
@@ -262,7 +276,7 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
         java.util.List<String> attrs = new java.util.ArrayList<>();
         if (!attrPart.isEmpty()) {
             java.util.regex.Matcher am = java.util.regex.Pattern
-                    .compile("[^\\s=]+=\"[^\"]*\"")
+                    .compile("[^\\s=]+="[^"]*"")
                     .matcher(attrPart);
             while (am.find()) attrs.add(am.group());
         }
@@ -419,6 +433,11 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
         loadCESettings(this, binding.editor, "act", true);
         loadToolbar();
 
+        // Setup real-time preview for layout XML files
+        if (isFileInLayoutFolder() && scId != null) {
+            setupRealtimePreview();
+        }
+
         UI.addSystemWindowInsetToPadding(binding.appBarLayout, true, true, true, false);
         UI.addSystemWindowInsetToMargin(binding.editor, true, false, true, true);
     }
@@ -491,7 +510,9 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Redo").setIcon(AppCompatResources.getDrawable(this, R.drawable.ic_mtrl_redo)).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Save").setIcon(AppCompatResources.getDrawable(this, R.drawable.ic_mtrl_save)).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
             if (isFileInLayoutFolder() && getIntent().hasExtra("sc_id")) {
-                toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Layout Preview");
+                toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Preview")
+                    .setIcon(AppCompatResources.getDrawable(this, R.drawable.ic_mtrl_preview))
+                    .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
             }
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Find & Replace");
             toolbarMenu.add(Menu.NONE, Menu.NONE, Menu.NONE, "Word wrap").setCheckable(true).setChecked(local_pref.getBoolean("act_ww", false));
@@ -580,8 +601,8 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                         pref.edit().putBoolean("act_ac", item.isChecked()).apply();
                         break;
 
-                    case "Layout Preview":
-                        toLayoutPreview();
+                    case "Preview":
+                        togglePreview();
                         break;
 
                     default:
@@ -598,6 +619,14 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
 
         float scaledDensity = getResources().getDisplayMetrics().scaledDensity;
         pref.edit().putInt("act_ts", (int) (binding.editor.getTextSizePx() / scaledDensity)).apply();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (previewHandler != null) {
+            previewHandler.removeCallbacks(previewRunnable);
+        }
+        super.onDestroy();
     }
 
     private boolean isFileInLayoutFolder() {
@@ -617,5 +646,81 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
         intent.putExtras(getIntent());
         intent.putExtra("xml", binding.editor.getText().toString());
         startActivity(intent);
+    }
+
+    // ==================== Real-time Preview ====================
+
+    private void setupRealtimePreview() {
+        previewHandler = new Handler(Looper.getMainLooper());
+        binding.editor.subscribeEvent(ContentChangeEvent.class, (event, unsubscribe) -> {
+            if (isPreviewVisible) {
+                previewHandler.removeCallbacks(previewRunnable);
+                previewHandler.postDelayed(previewRunnable, 500);
+            }
+        });
+    }
+
+    private void togglePreview() {
+        isPreviewVisible = !isPreviewVisible;
+        if (isPreviewVisible) {
+            binding.previewContainer.setVisibility(View.VISIBLE);
+            updatePreview();
+        } else {
+            binding.previewContainer.setVisibility(View.GONE);
+            binding.previewPaneContainer.removeAllViews();
+            if (previewHandler != null) {
+                previewHandler.removeCallbacks(previewRunnable);
+            }
+        }
+    }
+
+    private void updatePreview() {
+        FrameLayout container = binding.previewPaneContainer;
+        container.removeAllViews();
+
+        String xml = binding.editor.getText().toString();
+        if (xml.trim().isEmpty()) {
+            showPreviewError("Empty XML content");
+            return;
+        }
+
+        try {
+            ViewPane pane = new ViewPane(this);
+            pane.initialize(scId, true);
+            pane.updateRootLayout(scId, getIntent().getStringExtra("title"));
+            pane.setVerticalScrollBarEnabled(true);
+            pane.setResourceManager(jC.d(scId));
+
+            ViewBeanParser parser = new ViewBeanParser(xml);
+            ArrayList<ViewBean> views = parser.parse();
+
+            for (int i = 0; i < views.size(); i++) {
+                ViewBean view = views.get(i);
+                if (i == 0) {
+                    view.parent = "root";
+                    view.parentType = 0;
+                    view.preParent = null;
+                    view.preParentType = -1;
+                }
+                var itemView = pane.createItemView(view);
+                pane.addViewAndUpdateIndex(itemView);
+                if (itemView instanceof com.besome.sketch.editor.view.ItemView iv) {
+                    iv.setFixed(true);
+                }
+            }
+
+            container.addView(pane, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT));
+            binding.previewError.setVisibility(View.GONE);
+        } catch (Exception e) {
+            showPreviewError(e.getMessage() != null ? e.getMessage() : "Failed to parse XML");
+        }
+    }
+
+    private void showPreviewError(String message) {
+        binding.previewPaneContainer.removeAllViews();
+        binding.previewError.setText(message);
+        binding.previewError.setVisibility(View.VISIBLE);
     }
 }
