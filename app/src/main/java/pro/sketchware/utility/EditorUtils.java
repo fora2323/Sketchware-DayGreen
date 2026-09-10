@@ -94,10 +94,21 @@ public class EditorUtils {
         loadConfigByLanguage(editor, language, true);
     }
 
+    /** Kompatibilitas lama: pakai keyword gabungan (semua kategori). */
     public static void loadXmlConfig(CodeEditor editor) {
+        loadXmlConfig(editor, null);
+    }
+
+    /**
+     * @param pathOrFileName path lengkap atau nama file yang lagi dibuka,
+     *                        dipakai buat milih keyword autocomplete yang sesuai
+     *                        (layout / values-colors / values-strings / styles / attrs / manifest / drawable).
+     *                        Boleh null kalau gak tahu jenis filenya (bakal pakai keyword gabungan).
+     */
+    public static void loadXmlConfig(CodeEditor editor, String pathOrFileName) {
         Language language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_XML);
         if (language instanceof TextMateLanguage tm) {
-            tm.setCompleterKeywords(IDXmlKeyword.KEYWORDS);
+            tm.setCompleterKeywords(IDXmlKeyword.forFile(pathOrFileName));
         }
         loadConfigByLanguage(editor, language, true);
     }

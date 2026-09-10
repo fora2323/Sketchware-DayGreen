@@ -63,7 +63,7 @@ public class SrcViewerActivity extends BaseAppCompatActivity {
                 binding.editor.setText(bean.source);
                 currentFileName = bean.srcFileName;
                 if (currentFileName.endsWith(".xml")) {
-                    EditorUtils.loadXmlConfig(binding.editor);
+                    EditorUtils.loadXmlConfig(binding.editor, currentFileName); // <-- DIUBAH
                 } else {
                     EditorUtils.loadJavaConfig(binding.editor);
                 }
@@ -116,7 +116,7 @@ public class SrcViewerActivity extends BaseAppCompatActivity {
         binding.editor.setPinLineNumber(true);
 
         if (currentFileName.endsWith(".xml")) {
-            EditorUtils.loadXmlConfig(binding.editor);
+            EditorUtils.loadXmlConfig(binding.editor, currentFileName); // <-- DIUBAH
         } else {
             EditorUtils.loadJavaConfig(binding.editor);
         }
