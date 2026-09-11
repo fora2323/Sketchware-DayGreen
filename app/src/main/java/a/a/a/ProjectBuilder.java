@@ -105,9 +105,6 @@ public class ProjectBuilder {
     private boolean buildAppBundle = false;
     private ArrayList<File> dexesToAddButNotMerge = new ArrayList<>();
 
-    /**
-     * Timestamp keeping track of when compiling the project's resources started, needed for stats of how long compiling took.
-     */
     private long timestampResourceCompilationStarted;
 
     public ProjectBuilder(Context context, yq yqVar) {
@@ -489,8 +486,6 @@ public class ProjectBuilder {
             ArrayList<String> args = new ArrayList<>();
             args.add("-" + build_settings.getValue(BuildSettings.SETTING_JAVA_VERSION, BuildSettings.SETTING_JAVA_VERSION_1_7));
             args.add("-8");
-            args.add("-encoding");
-            args.add("utf-8");
             args.add("-nowarn");
             if (!build_settings.getValue(BuildSettings.SETTING_NO_WARNINGS,
                     BuildSettings.SETTING_GENERIC_VALUE_TRUE).equals(BuildSettings.SETTING_GENERIC_VALUE_TRUE)) {
