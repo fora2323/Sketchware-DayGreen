@@ -65,12 +65,15 @@ import mod.hey.studios.compiler.kotlin.KotlinCompilerBridge;
 import mod.hey.studios.project.ProjectSettings;
 import mod.hey.studios.project.proguard.ProguardHandler;
 import mod.hey.studios.util.SystemLogPrinter;
+
+import mod.jbk.build.cache.BuildCache;
 import mod.jbk.build.BuildProgressReceiver;
 import mod.jbk.build.BuiltInLibraries;
 import mod.jbk.build.compiler.dex.DexCompiler;
 import mod.jbk.build.compiler.resource.ResourceCompiler;
 import mod.jbk.util.LogUtil;
 import mod.jbk.util.TestkeySignBridge;
+
 import mod.pranav.build.JarBuilder;
 import mod.pranav.build.R8Compiler;
 import mod.pranav.viewbinding.ViewBindingBuilder;
@@ -99,6 +102,7 @@ public class ProjectBuilder {
     public ManageLocalLibrary mll;
     public BuiltInLibraryManager builtInLibraryManager;
     public String androidJarPath;
+    public BuildCache buildCache;
     public ProguardHandler proguard;
     public ProjectSettings settings;
     private BuildProgressReceiver progressReceiver;
@@ -137,6 +141,7 @@ public class ProjectBuilder {
         androidJarPath = build_settings.getValue(BuildSettings.SETTING_ANDROID_JAR_PATH, defaultAndroidJar.getAbsolutePath());
         proguard = new ProguardHandler(yqVar.sc_id);
         settings = new ProjectSettings(yqVar.sc_id);
+        buildCache = new BuildCache(yqVar.sc_id);
     }
 
     public ProjectBuilder(BuildProgressReceiver buildAsyncTask, Context context, yq yqVar) {
@@ -165,9 +170,39 @@ public class ProjectBuilder {
 
     public void compileResources() throws Exception {
         timestampResourceCompilationStarted = System.currentTimeMillis();
+
+        String inputHash = BuildCache.combine(
+                BuildCache.hashDirectory(yq.resDirectoryPath, yq.assetsPath, yq.androidManifestPath),
+                BuildCache.hashStrings(
+                        String.valueOf(settings.getMinSdkVersion()),
+                        settings.getValue(ProjectSettings.SETTING_TARGET_SDK_VERSION, ""),
+                        yq.versionCode, yq.versionName,
+                        getLibraryPackageNames()
+                )
+        );
+
+        if (buildCache.isUpToDate("resources", inputHash)) {
+            File cached = buildCache.stageOutputDir("resources");
+            File cachedApk = new File(cached, "resources.apk");
+            File cachedGen = new File(cached, "gen");
+            if (cachedApk.exists() && cachedGen.exists()) {
+                FileUtil.copyFile(cachedApk.getAbsolutePath(), yq.resourcesApkPath);
+                FileUtil.copyDirectory(cachedGen, new File(yq.rJavaDirectoryPath));
+                LogUtil.d(TAG, "Skipped resource compile+link (cache hit)");
+                return;
+            }
+        }
+
         ResourceCompiler compiler = new ResourceCompiler(this, aapt2Binary, buildAppBundle, progressReceiver);
         compiler.compile();
         LogUtil.d(TAG, "Compiling resources took " + (System.currentTimeMillis() - timestampResourceCompilationStarted) + " ms");
+
+        if (inputHash != null) {
+            File cached = buildCache.stageOutputDir("resources");
+            FileUtil.copyFile(yq.resourcesApkPath, new File(cached, "resources.apk").getAbsolutePath());
+            FileUtil.copyDirectory(new File(yq.rJavaDirectoryPath), new File(cached, "gen"));
+            buildCache.markUpToDate("resources", inputHash);
+        }
     }
 
     public void generateViewBinding() throws IOException, SAXException {
@@ -195,6 +230,24 @@ public class ProjectBuilder {
     public void createDexFilesFromClasses() throws Exception {
         FileUtil.makeDir(yq.binDirectoryPath + File.separator + "dex");
         if (proguard.isShrinkingEnabled() && proguard.isR8Enabled()) return;
+
+        String dexSourcePath = proguard.isShrinkingEnabled() ? yq.proguardClassesPath : yq.compiledClassesPath;
+        String dexInputHash = BuildCache.combine(
+                BuildCache.hashDirectory(dexSourcePath),
+                BuildCache.hashStrings(String.valueOf(isD8Enabled()), getClasspath())
+        );
+        File dexOutputDir = new File(yq.binDirectoryPath, "dex");
+
+        if (buildCache.isUpToDate("dex", dexInputHash)) {
+            File cachedDex = buildCache.stageOutputDir("dex");
+            File[] cachedFiles = cachedDex.listFiles();
+            if (cachedFiles != null && cachedFiles.length > 0) {
+                FileUtil.deleteFile(dexOutputDir.getAbsolutePath());
+                FileUtil.copyDirectory(cachedDex, dexOutputDir);
+                LogUtil.d(TAG, "Skipped D8/Dx (cache hit)");
+                return;
+            }
+        }
 
         if (isD8Enabled()) {
             long savedTimeMillis = System.currentTimeMillis();
@@ -231,6 +284,13 @@ public class ProjectBuilder {
                 LogUtil.e(TAG, "Dx failed to process .class files", e);
                 throw e;
             }
+        }
+
+        if (dexInputHash != null) {
+            File cachedDex = buildCache.stageOutputDir("dex");
+            FileUtil.deleteFile(cachedDex.getAbsolutePath());
+            FileUtil.copyDirectory(dexOutputDir, cachedDex);
+            buildCache.markUpToDate("dex", dexInputHash);
         }
     }
 
@@ -446,6 +506,27 @@ public class ProjectBuilder {
      * Run Eclipse Compiler to compile Java files.
      */
     public void compileJavaCode() throws zy, IOException {
+        String classpathForHash = getClasspath();
+        String javaInputHash = BuildCache.combine(
+                BuildCache.hashDirectory(yq.javaFilesPath, yq.rJavaDirectoryPath,
+                        fpu.getPathJava(yq.sc_id), fpu.getPathBroadcast(yq.sc_id), fpu.getPathService(yq.sc_id)),
+                BuildCache.hashStrings(
+                        classpathForHash,
+                        build_settings.getValue(BuildSettings.SETTING_JAVA_VERSION, BuildSettings.SETTING_JAVA_VERSION_1_7),
+                        build_settings.getValue(BuildSettings.SETTING_NO_WARNINGS, BuildSettings.SETTING_GENERIC_VALUE_TRUE)
+                )
+        );
+
+        if (buildCache.isUpToDate("java", javaInputHash)) {
+            File cachedClasses = new File(buildCache.stageOutputDir("java"), "classes");
+            if (cachedClasses.exists()) {
+                FileUtil.deleteFile(yq.compiledClassesPath);
+                FileUtil.copyDirectory(cachedClasses, new File(yq.compiledClassesPath));
+                LogUtil.d(TAG, "Skipped Java compilation (cache hit)");
+                return;
+            }
+        }
+
         long savedTimeMillis = System.currentTimeMillis();
 
         class EclipseOutOutputStream extends OutputStream {
@@ -523,6 +604,13 @@ public class ProjectBuilder {
             if (main.globalErrorsCount <= 0) {
                 LogUtil.d(TAG, "System.err of Eclipse compiler: " + errOutputStream.getOut());
                 LogUtil.d(TAG, "Compiling Java files took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
+                
+                if (javaInputHash != null) {
+                    File cachedClasses = new File(buildCache.stageOutputDir("java"), "classes");
+                    FileUtil.deleteFile(cachedClasses.getAbsolutePath());
+                    FileUtil.copyDirectory(new File(yq.compiledClassesPath), cachedClasses);
+                    buildCache.markUpToDate("java", javaInputHash);
+                }
             } else {
                 LogUtil.e(TAG, "Failed to compile Java files");
                 throw new zy(errOutputStream.getOut());
@@ -697,10 +785,37 @@ public class ProjectBuilder {
             dexes.add(new File(file));
         }
 
+        String mergeInputHash = BuildCache.hashFiles(dexes);
+
+        if (buildCache.isUpToDate("merge", mergeInputHash)) {
+            File cachedMerge = buildCache.stageOutputDir("merge");
+            File[] cachedDexes = cachedMerge.listFiles((dir, name) -> name.startsWith("classes") && name.endsWith(".dex"));
+            if (cachedDexes != null && cachedDexes.length > 0) {
+                for (File f : cachedDexes) {
+                    FileUtil.copyFile(f.getAbsolutePath(), new File(yq.binDirectoryPath, f.getName()).getAbsolutePath());
+                }
+                LogUtil.d(TAG, "Skipped DEX merging (cache hit)");
+                return;
+            }
+        }
+
         LogUtil.d(TAG, "Will merge these " + dexes.size() + " DEX files to classes.dex: " + dexes);
 
         dexLibraries(new File(yq.binDirectoryPath), dexes);
         LogUtil.d(TAG, "Merging DEX files took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
+
+        if (mergeInputHash != null) {
+            File cachedMerge = buildCache.stageOutputDir("merge");
+            FileUtil.deleteFile(cachedMerge.getAbsolutePath());
+            cachedMerge.mkdirs();
+            File[] producedDexes = new File(yq.binDirectoryPath).listFiles((dir, name) -> name.startsWith("classes") && name.endsWith(".dex"));
+            if (producedDexes != null) {
+                for (File f : producedDexes) {
+                    FileUtil.copyFile(f.getAbsolutePath(), new File(cachedMerge, f.getName()).getAbsolutePath());
+                }
+            }
+            buildCache.markUpToDate("merge", mergeInputHash);
+        }
     }
 
     public void maybeExtractAapt2() throws By {
