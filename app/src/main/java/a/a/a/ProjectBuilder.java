@@ -66,7 +66,8 @@ import mod.hey.studios.project.ProjectSettings;
 import mod.hey.studios.project.proguard.ProguardHandler;
 import mod.hey.studios.util.SystemLogPrinter;
 
-import mod.jbk.build.cache.BuildCache;
+import org.sketchware.daygreen.builds.BuildCache;
+
 import mod.jbk.build.BuildProgressReceiver;
 import mod.jbk.build.BuiltInLibraries;
 import mod.jbk.build.compiler.dex.DexCompiler;
@@ -188,7 +189,8 @@ public class ProjectBuilder {
             if (cachedApk.exists() && cachedGen.exists()) {
                 FileUtil.copyFile(cachedApk.getAbsolutePath(), yq.resourcesApkPath);
                 FileUtil.copyDirectory(cachedGen, new File(yq.rJavaDirectoryPath));
-                LogUtil.d(TAG, "Skipped resource compile+link (cache hit)");
+                if (progressReceiver != null) progressReceiver.onProgress("Resources UP-TO-DATE", 10);
+                LogUtil.d(TAG, "Resources UP-TO-DATE");
                 return;
             }
         }
@@ -244,7 +246,8 @@ public class ProjectBuilder {
             if (cachedFiles != null && cachedFiles.length > 0) {
                 FileUtil.deleteFile(dexOutputDir.getAbsolutePath());
                 FileUtil.copyDirectory(cachedDex, dexOutputDir);
-                LogUtil.d(TAG, "Skipped D8/Dx (cache hit)");
+                if (progressReceiver != null) progressReceiver.onProgress("Dex UP-TO-DATE", 17);
+                LogUtil.d(TAG, "Dex UP-TO-DATE");
                 return;
             }
         }
@@ -522,7 +525,8 @@ public class ProjectBuilder {
             if (cachedClasses.exists()) {
                 FileUtil.deleteFile(yq.compiledClassesPath);
                 FileUtil.copyDirectory(cachedClasses, new File(yq.compiledClassesPath));
-                LogUtil.d(TAG, "Skipped Java compilation (cache hit)");
+                if (progressReceiver != null) progressReceiver.onProgress("Java compile UP-TO-DATE", 13);
+                LogUtil.d(TAG, "Java compile UP-TO-DATE");
                 return;
             }
         }
@@ -794,7 +798,8 @@ public class ProjectBuilder {
                 for (File f : cachedDexes) {
                     FileUtil.copyFile(f.getAbsolutePath(), new File(yq.binDirectoryPath, f.getName()).getAbsolutePath());
                 }
-                LogUtil.d(TAG, "Skipped DEX merging (cache hit)");
+                if (progressReceiver != null) progressReceiver.onProgress("Dex merge UP-TO-DATE", 18);
+                LogUtil.d(TAG, "Dex merge UP-TO-DATE");
                 return;
             }
         }
