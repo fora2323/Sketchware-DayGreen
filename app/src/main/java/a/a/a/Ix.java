@@ -1,7 +1,7 @@
 package a.a.a;
 
 import static android.text.TextUtils.isEmpty;
-import static com.besome.sketch.Config.VAR_DEFAULT_TARGET_SDK_VERSION;
+import static org.sketchware.daygreen.Config.VAR_DEFAULT_TARGET_SDK_VERSION;
 
 import android.Manifest;
 import android.app.Service;

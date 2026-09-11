@@ -202,6 +202,7 @@ public class ProjectBuilder {
         if (isD8Enabled()) {
             long savedTimeMillis = System.currentTimeMillis();
             try {
+                System.setProperty("com.android.tools.r8.numberOfThreads", String.valueOf(Math.max(2, Runtime.getRuntime().availableProcessors() - 1)));
                 DexCompiler.compileDexFiles(this);
                 LogUtil.d(TAG, "D8 took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
             } catch (Exception e) {
@@ -486,8 +487,10 @@ public class ProjectBuilder {
              PrintWriter errWriter = new PrintWriter(errOutputStream)) {
 
             ArrayList<String> args = new ArrayList<>();
-            args.add("-" + build_settings.getValue(BuildSettings.SETTING_JAVA_VERSION,
-                    BuildSettings.SETTING_JAVA_VERSION_1_7));
+            args.add("-" + build_settings.getValue(BuildSettings.SETTING_JAVA_VERSION, BuildSettings.SETTING_JAVA_VERSION_1_7));
+            args.add("-8");
+            args.add("-encoding");
+            args.add("utf-8");
             args.add("-nowarn");
             if (!build_settings.getValue(BuildSettings.SETTING_NO_WARNINGS,
                     BuildSettings.SETTING_GENERIC_VALUE_TRUE).equals(BuildSettings.SETTING_GENERIC_VALUE_TRUE)) {
