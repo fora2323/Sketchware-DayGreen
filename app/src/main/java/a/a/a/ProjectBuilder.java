@@ -199,7 +199,7 @@ public class ProjectBuilder {
         if (isD8Enabled()) {
             long savedTimeMillis = System.currentTimeMillis();
             try {
-                System.setProperty("com.android.tools.r8.numberOfThreads", String.valueOf(Math.max(2, Runtime.getRuntime().availableProcessors() - 1)));
+                //System.setProperty("com.android.tools.r8.numberOfThreads", String.valueOf(Math.max(2, Runtime.getRuntime().availableProcessors() - 1)));
                 DexCompiler.compileDexFiles(this);
                 LogUtil.d(TAG, "D8 took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
             } catch (Exception e) {
@@ -389,9 +389,7 @@ public class ProjectBuilder {
                 for (Integer typeId : dex.typeIds()) {
                     if (!newDexTypeIds.contains(typeId)) {
                         if (mergedDexTypes.size() + newDexProtoIds.size() + 1 > 0xffff) {
-                            LogUtil.d(TAG, "Can't merge DEX file to " + nextMergedDexFilename +
-                                    " because it has too many new type IDs. "
-                                    + nextMergedDexFilename + " will have " + mergedDexTypes.size() + " type IDs");
+                            LogUtil.d(TAG, "Can't merge DEX file to " + nextMergedDexFilename + " because it has too many new type IDs. " + nextMergedDexFilename + " will have " + mergedDexTypes.size() + " type IDs");
                             canMerge = false;
                             break bruh;
                         } else {
@@ -485,7 +483,6 @@ public class ProjectBuilder {
 
             ArrayList<String> args = new ArrayList<>();
             args.add("-" + build_settings.getValue(BuildSettings.SETTING_JAVA_VERSION, BuildSettings.SETTING_JAVA_VERSION_1_7));
-            args.add("-8");
             args.add("-nowarn");
             if (!build_settings.getValue(BuildSettings.SETTING_NO_WARNINGS,
                     BuildSettings.SETTING_GENERIC_VALUE_TRUE).equals(BuildSettings.SETTING_GENERIC_VALUE_TRUE)) {
