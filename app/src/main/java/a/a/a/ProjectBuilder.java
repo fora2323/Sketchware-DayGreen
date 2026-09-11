@@ -234,10 +234,7 @@ public class ProjectBuilder {
         if (proguard.isShrinkingEnabled() && proguard.isR8Enabled()) return;
 
         String dexSourcePath = proguard.isShrinkingEnabled() ? yq.proguardClassesPath : yq.compiledClassesPath;
-        String dexInputHash = BuildCache.combine(
-                BuildCache.hashDirectory(dexSourcePath),
-                BuildCache.hashStrings(String.valueOf(isD8Enabled()), getClasspath())
-        );
+        String dexInputHash = BuildCache.combine(BuildCache.hashDirectory(dexSourcePath), BuildCache.hashStrings(String.valueOf(isD8Enabled()), getClasspathForHashing()));
         File dexOutputDir = new File(yq.binDirectoryPath, "dex");
 
         if (buildCache.isUpToDate("dex", dexInputHash)) {
@@ -296,6 +293,10 @@ public class ProjectBuilder {
             buildCache.markUpToDate("dex", dexInputHash);
         }
     }
+    
+    private String getClasspathForHashing() {
+        return getClasspath().replace(yq.compiledClassesPath + ":", "");
+    }
 
     public String getClasspath() {
         StringBuilder classpath = new StringBuilder();
@@ -332,6 +333,8 @@ public class ProjectBuilder {
 
         return classpath.toString();
     }
+    
+    
 
     public String getProguardClasspath() {
         Collection<String> localLibraryJarsWithFullModeOn = new LinkedList<>();
@@ -509,16 +512,8 @@ public class ProjectBuilder {
      * Run Eclipse Compiler to compile Java files.
      */
     public void compileJavaCode() throws zy, IOException {
-        String classpathForHash = getClasspath();
-        String javaInputHash = BuildCache.combine(
-                BuildCache.hashDirectory(yq.javaFilesPath, yq.rJavaDirectoryPath,
-                        fpu.getPathJava(yq.sc_id), fpu.getPathBroadcast(yq.sc_id), fpu.getPathService(yq.sc_id)),
-                BuildCache.hashStrings(
-                        classpathForHash,
-                        build_settings.getValue(BuildSettings.SETTING_JAVA_VERSION, BuildSettings.SETTING_JAVA_VERSION_1_7),
-                        build_settings.getValue(BuildSettings.SETTING_NO_WARNINGS, BuildSettings.SETTING_GENERIC_VALUE_TRUE)
-                )
-        );
+        String classpathForHash = getClasspathForHashing();
+        String javaInputHash = BuildCache.combine(BuildCache.hashDirectory(yq.javaFilesPath, yq.rJavaDirectoryPath, fpu.getPathJava(yq.sc_id), fpu.getPathBroadcast(yq.sc_id), fpu.getPathService(yq.sc_id)), BuildCache.hashStrings(classpathForHash, build_settings.getValue(BuildSettings.SETTING_JAVA_VERSION, BuildSettings.SETTING_JAVA_VERSION_1_7), build_settings.getValue(BuildSettings.SETTING_NO_WARNINGS, BuildSettings.SETTING_GENERIC_VALUE_TRUE)));
 
         if (buildCache.isUpToDate("java", javaInputHash)) {
             File cachedClasses = new File(buildCache.stageOutputDir("java"), "classes");
