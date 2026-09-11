@@ -97,12 +97,10 @@ public class SketchwareCodeEditor extends CodeEditor {
     }
 
     private void processStyles(Styles styles, @Nullable StyleUpdateRange range) {
-        // Increase icon size in gutter
         getProps().sideIconSizeFactor = 0.9f;
 
         Content textContent = getText();
 
-        // We can only get a modifier if spans support modify (M3 XML)
         Spans.Modifier modifier = (styles.spans != null && styles.spans.supportsModify())
                 ? styles.spans.modify()
                 : null;
@@ -125,20 +123,16 @@ public class SketchwareCodeEditor extends CodeEditor {
             }
         }
 
-        // Essential: Sort styles so EditorRenderer can find and draw them in the gutter
         styles.finishBuilding();
     }
 
     private boolean processLine(int line, Content text, Spans.Modifier modifier,
                                 Spans.Reader reader, Styles styles) {
-        // Double check line bounds
         if (line < 0 || line >= text.getLineCount()) return false;
 
         String lineText = text.getLineString(line);
         Matcher matcher = RESOURCE_PATTERN.matcher(lineText);
 
-        // We might not have reader/spans for non-M3 projects or certain languages
-        // but we can still show gutter icons
         List<Span> lineSpans = (reader != null)
                 ? new ArrayList<>(reader.getSpansOnLine(line))
                 : null;
@@ -148,11 +142,9 @@ public class SketchwareCodeEditor extends CodeEditor {
         while (matcher.find()) {
             String match = matcher.group();
 
-            // Handle Colors
             int color = resolveColor(match);
             if (color != 0) {
-                // Only try to add color span if we have spans and can modify them (XML)
-                if (modifier != null && lineSpans != null) {
+                if (lineSpans != null) {
                     if (addBoundedColorSpan(lineSpans, matcher.start(), matcher.end(), color)) {
                         modified = true;
                     }
@@ -162,7 +154,6 @@ public class SketchwareCodeEditor extends CodeEditor {
                     iconAdded = true;
                 }
             } else {
-                // Handle Drawables
                 Drawable drawable = resolveDrawable(match);
                 if (drawable != null && !iconAdded) {
                     styles.addLineStyle(new LineSideIcon(line, drawable));
@@ -187,12 +178,10 @@ public class SketchwareCodeEditor extends CodeEditor {
             Canvas canvas = new Canvas(bitmap);
             Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-            // Background
             p.setColor(color);
             float radius = 4 * density;
             canvas.drawRoundRect(new RectF(0, 0, size, size), radius, radius, p);
 
-            // Border for light colors
             if (!ColorPreviewRenderer.isDarkColor(color)) {
                 p.setStyle(Paint.Style.STROKE);
                 p.setColor(0x33000000);
@@ -262,7 +251,7 @@ public class SketchwareCodeEditor extends CodeEditor {
                             }
 
                             float density = getResources().getDisplayMetrics().density;
-                            int size = (int) (48 * density); // Higher resolution for scaling
+                            int size = (int) (48 * density);
                             svgObj.setDocumentWidth(size);
                             svgObj.setDocumentHeight(size);
 
@@ -278,16 +267,13 @@ public class SketchwareCodeEditor extends CodeEditor {
                     }
                 }
 
-                // Path candidates for raster (including mipmaps)
                 List<String> rasterPaths = new ArrayList<>();
                 String[] densities = {"xhdpi", "hdpi", "mdpi", "xxhdpi", "xxxhdpi", ""};
 
                 if (isMipmap) {
-                    // Sketchware generated mipmaps
                     rasterPaths.add(FileUtil.getExternalStorageDir()
                             + "/.sketchware/resources/icons/" + currentScId
                             + "/mipmaps/mipmap-xhdpi/" + name + ".png");
-                    // Custom project mipmaps
                     for (String dStr : densities) {
                         String suffix = dStr.isEmpty() ? "" : "-" + dStr;
                         rasterPaths.add(wq.b(currentScId)
@@ -425,7 +411,6 @@ public class SketchwareCodeEditor extends CodeEditor {
             }
         };
 
-        // Get all spans that start within our match range
         List<Span> affectedSpans = new ArrayList<>();
         for (Span span : lineSpans) {
             int col = span.getColumn();
@@ -448,10 +433,6 @@ public class SketchwareCodeEditor extends CodeEditor {
                 span.setSpanExt(SpanExtAttrs.EXT_COLOR_RESOLVER, colorResolver);
                 anyApplied = true;
             } catch (UnsupportedOperationException e) {
-                // Sejak sora-editor 0.24.x, span yang dibuat via Span.obtain() (mis. dari
-                // getOrCreateSpanAt) gak selalu support ext data (NoExtSpanImpl).
-                // Aman di-skip: cuma preview warna inline-nya aja yang gak muncul di span ini,
-                // gak ganggu highlight/edit teks lainnya.
             }
         }
 
