@@ -1,0 +1,2 @@
+warns = ["all"]
+allows = ["clippy::suspicious_http"]

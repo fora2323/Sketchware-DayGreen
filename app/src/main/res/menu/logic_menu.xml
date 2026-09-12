@@ -2,6 +2,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/menu_logic_code2block"
+        android:icon="@drawable/ic_mtrl_puzzle"
+        android:orderInCategory="90"
+        android:title="Code to Blocks"
+        app:showAsAction="always" />
+
+    <item
         android:id="@+id/menu_logic_showsource"
         android:icon="@drawable/ic_mtrl_code"
         android:orderInCategory="100"

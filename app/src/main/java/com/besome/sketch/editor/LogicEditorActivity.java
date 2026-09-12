@@ -48,6 +48,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.besome.sketch.beans.BlockBean;
+import mod.pranav.viewbinding.ViewBindingBuilder;
 import com.besome.sketch.beans.BlockCollectionBean;
 import com.besome.sketch.beans.ComponentBean;
 import com.besome.sketch.beans.HistoryBlockBean;
@@ -120,8 +121,9 @@ import mod.hilal.saif.asd.AsdDialog;
 import mod.jbk.editor.manage.MoreblockImporter;
 import mod.jbk.util.BlockUtil;
 import mod.jbk.util.LogUtil;
-import mod.pranav.viewbinding.ViewBindingBuilder;
+import mod.hey.studios.editor.manage.block.v2.BlockLoader;
 import pro.sketchware.R;
+import pro.sketchware.activities.editor.logic.Code2BlockEditorActivity;
 import pro.sketchware.activities.editor.view.CodeViewerActivity;
 import pro.sketchware.activities.resourceseditor.ResourcesEditorActivity;
 import pro.sketchware.databinding.ImagePickerItemBinding;
@@ -155,6 +157,14 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     private final ActivityResultLauncher<Intent> openResourcesEditor = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == RESULT_OK) {
             paletteSelector.performClickPalette(-1);
+        }
+    });
+    private final ActivityResultLauncher<Intent> openCode2Block = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+        if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+            ArrayList<BlockBean> convertedBlocks = result.getData().getParcelableArrayListExtra(Code2BlockEditorActivity.RESULT_EXTRA_BLOCKS);
+            if (convertedBlocks != null) {
+                applyConvertedBlocks(convertedBlocks);
+            }
         }
     });
     private Rs w;
@@ -1240,7 +1250,19 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     }
 
     public Rs b(BlockBean blockBean) {
-        return new Rs(this, Integer.parseInt(blockBean.id), blockBean.spec, blockBean.type, blockBean.typeName, blockBean.opCode);
+        if (blockBean.spec != null && !blockBean.spec.isEmpty()) {
+            BlockLoader.registerRuntimeBlock(blockBean.opCode, blockBean.spec, blockBean.spec2, blockBean.code, blockBean.color);
+        }
+        Rs rs = new Rs(this, Integer.parseInt(blockBean.id), blockBean.spec, blockBean.type, blockBean.typeName, blockBean.opCode);
+        if (blockBean.spec != null && !blockBean.spec.isEmpty()) {
+            if (rs.T == null || rs.T.isEmpty()) {
+                rs.setSpec(blockBean.spec);
+            }
+        }
+        if (blockBean.color != 0) {
+            rs.e = blockBean.color;
+        }
+        return rs;
     }
 
     private RadioButton getFontRadioButton(String fontName) {
@@ -1973,7 +1995,9 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
     public boolean onOptionsItemSelected(@NonNull MenuItem menuItem) {
         int itemId = menuItem.getItemId();
 
-        if (itemId == R.id.menu_block_helper) {
+        if (itemId == R.id.menu_logic_code2block) {
+            openCode2BlockEditor();
+        } else if (itemId == R.id.menu_block_helper) {
             e(false);
             g(!ia);
         } else if (itemId == R.id.menu_logic_redo) {
@@ -2463,6 +2487,94 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         intent.putExtra("sc_id", scId);
         intent.putExtra("scheme", CodeViewerActivity.SCHEME_JAVA);
         startActivity(intent);
+    }
+
+    public void openCode2BlockEditor() {
+        yq yq = new yq(this, scId);
+        yq.a(jC.c(scId), jC.b(scId), jC.a(scId));
+        String code = new Fx(M.getActivityName(), yq.N, o.getBlocks(), isViewBindingEnabled).a();
+
+        String title = id.equals("_fab") ? "fab" : ReturnMoreblockManager.getMbName(id);
+        String eventText = getIntent().getStringExtra("event_text");
+        String subtitle = (eventText != null && !eventText.isEmpty()) ? eventText : (M.getActivityName() + " : " + eventName);
+
+        Intent intent = new Intent(this, Code2BlockEditorActivity.class);
+        intent.putExtra(Code2BlockEditorActivity.EXTRA_CODE, code);
+        intent.putExtra(Code2BlockEditorActivity.EXTRA_SC_ID, scId);
+        intent.putExtra(Code2BlockEditorActivity.EXTRA_TITLE, title);
+        intent.putExtra(Code2BlockEditorActivity.EXTRA_SUBTITLE, subtitle);
+        openCode2Block.launch(intent);
+    }
+
+    private void applyConvertedBlocks(ArrayList<BlockBean> newBlocks) {
+        ArrayList<BlockBean> currentBlocks = o.getBlocks();
+        for (int i = currentBlocks.size() - 1; i >= 0; i--) {
+            o.a(currentBlocks.get(i), false);
+        }
+
+        jC.a(scId).a(M.getJavaName(), id + "_" + eventName, newBlocks);
+
+        if (newBlocks == null || newBlocks.isEmpty()) {
+            o.getRoot().k();
+            o.b();
+            C();
+            return;
+        }
+
+        boolean needToFindRoot = true;
+        HashMap<Integer, Rs> blockIdsAndBlocks = new HashMap<>();
+        for (BlockBean next : newBlocks) {
+            if (eventName.equals("onTextChanged") && "getArg".equals(next.opCode) && "text".equals(next.spec)) {
+                next.spec = "charSeq";
+            }
+            Rs b2 = b(next);
+            blockIdsAndBlocks.put((Integer) b2.getTag(), b2);
+            o.g = Math.max(o.g, (Integer) b2.getTag() + 1);
+            o.a(b2, 0, 0);
+            b2.setOnTouchListener(this);
+            if (needToFindRoot) {
+                o.getRoot().b(b2);
+                needToFindRoot = false;
+            }
+        }
+
+        for (BlockBean next2 : newBlocks) {
+            Rs block = blockIdsAndBlocks.get(Integer.valueOf(next2.id));
+            if (block != null) {
+                Rs subStack1RootBlock;
+                if (next2.subStack1 >= 0 && (subStack1RootBlock = blockIdsAndBlocks.get(next2.subStack1)) != null) {
+                    block.e(subStack1RootBlock);
+                }
+                Rs subStack2RootBlock;
+                if (next2.subStack2 >= 0 && (subStack2RootBlock = blockIdsAndBlocks.get(next2.subStack2)) != null) {
+                    block.f(subStack2RootBlock);
+                }
+                Rs nextBlock;
+                if (next2.nextBlock >= 0 && (nextBlock = blockIdsAndBlocks.get(next2.nextBlock)) != null) {
+                    block.b(nextBlock);
+                }
+                for (int i = 0; i < next2.parameters.size(); i++) {
+                    String parameter = next2.parameters.get(i);
+                    if (parameter != null && !parameter.isEmpty()) {
+                        if (parameter.charAt(0) == '@') {
+                            Rs parameterBlock = blockIdsAndBlocks.get(Integer.valueOf(parameter.substring(1)));
+                            if (parameterBlock != null && i < block.V.size()) {
+                                block.a((Ts) block.V.get(i), parameterBlock);
+                            }
+                        } else {
+                            if (i < block.V.size() && block.V.get(i) instanceof Ss) {
+                                ((Ss) block.V.get(i)).setArgValue(parameter);
+                                block.m();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        o.getRoot().k();
+        o.b();
+        C();
     }
 
     public void t() {
