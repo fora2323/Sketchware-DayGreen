@@ -1,7 +1,9 @@
 package a.a.a;
 
-import static com.besome.sketch.Config.VAR_DEFAULT_MIN_SDK_VERSION;
-import static com.besome.sketch.Config.VAR_DEFAULT_TARGET_SDK_VERSION;
+import static org.sketchware.daygreen.Config.VAR_DEFAULT_MIN_SDK_VERSION;
+import static org.sketchware.daygreen.Config.VAR_DEFAULT_TARGET_SDK_VERSION;
+import static org.sketchware.daygreen.Config.VAR_DEFAULT_TARGET_COMPILE_VERSION;
+
 import static mod.hey.studios.util.ProjectFile.getDefaultColor;
 
 import android.content.Context;
@@ -297,8 +299,7 @@ public class yq {
      * Generates top-level build.gradle, build.gradle for module ':app' and settings.gradle files.
      */
     public void generateGradleFiles() {
-        fileUtil.b(projectMyscPath + File.separator + "app" + File.separator + "build.gradle",
-                Lx.getBuildGradleString(VAR_DEFAULT_TARGET_SDK_VERSION, VAR_DEFAULT_MIN_SDK_VERSION, projectSettings.getValue(ProjectSettings.SETTING_TARGET_SDK_VERSION, String.valueOf(VAR_DEFAULT_TARGET_SDK_VERSION)), N, projectSettings.getValue(ProjectSettings.SETTING_ENABLE_VIEWBINDING, ProjectSettings.SETTING_GENERIC_VALUE_FALSE).equals(ProjectSettings.SETTING_GENERIC_VALUE_TRUE)));
+        fileUtil.b(projectMyscPath + File.separator + "app" + File.separator + "build.gradle", Lx.getBuildGradleString(VAR_DEFAULT_TARGET_COMPILE_VERSION, VAR_DEFAULT_MIN_SDK_VERSION, projectSettings.getValue(ProjectSettings.SETTING_TARGET_SDK_VERSION, String.valueOf(VAR_DEFAULT_TARGET_SDK_VERSION)), N, projectSettings.getValue(ProjectSettings.SETTING_ENABLE_VIEWBINDING, ProjectSettings.SETTING_GENERIC_VALUE_FALSE).equals(ProjectSettings.SETTING_GENERIC_VALUE_TRUE)));
         fileUtil.b(projectMyscPath + File.separator + "settings.gradle", Lx.a());
         fileUtil.b(projectMyscPath + File.separator + "build.gradle", Lx.c("8.13.1", "4.4.4"));
 
