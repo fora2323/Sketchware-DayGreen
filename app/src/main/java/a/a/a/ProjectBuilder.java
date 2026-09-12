@@ -173,7 +173,14 @@ public class ProjectBuilder {
         timestampResourceCompilationStarted = System.currentTimeMillis();
 
         String inputHash = BuildCache.combine(
-                BuildCache.hashDirectory(yq.resDirectoryPath, yq.assetsPath, yq.androidManifestPath),
+                BuildCache.hashDirectory(
+                        yq.resDirectoryPath, 
+                        yq.assetsPath, 
+                        yq.androidManifestPath,
+                        fpu.getPathAssets(yq.sc_id),
+                        fpu.getPathResource(yq.sc_id),
+                        fpu.getPathNativelibs(yq.sc_id)
+                ),
                 BuildCache.hashStrings(
                         String.valueOf(settings.getMinSdkVersion()),
                         settings.getValue(ProjectSettings.SETTING_TARGET_SDK_VERSION, ""),
@@ -187,12 +194,14 @@ public class ProjectBuilder {
             File cachedApk = new File(cached, "resources.apk");
             File cachedGen = new File(cached, "gen");
             if (cachedApk.exists() && cachedGen.exists()) {
+                if (progressReceiver != null) progressReceiver.onProgress("Resources UP-TO-DATE", 10);
                 FileUtil.copyFile(cachedApk.getAbsolutePath(), yq.resourcesApkPath);
                 FileUtil.copyDirectory(cachedGen, new File(yq.rJavaDirectoryPath));
-                if (progressReceiver != null) progressReceiver.onProgress("Resources UP-TO-DATE", 10);
                 LogUtil.d(TAG, "Resources UP-TO-DATE");
                 return;
             }
+        } else {
+            if (progressReceiver != null) progressReceiver.onProgress("AAPT2 is running...", 8);
         }
 
         ResourceCompiler compiler = new ResourceCompiler(this, aapt2Binary, buildAppBundle, progressReceiver);
@@ -328,6 +337,7 @@ public class ProjectBuilder {
 
         String path = FileUtil.getExternalStorageDir() + "/.sketchware/data/" + yq.sc_id + "/files/classpath/";
         ArrayList<String> jars = FileUtil.listFiles(path, "jar");
+        java.util.Collections.sort(jars);
         classpath.append(":").append(TextUtils.join(":", jars));
 
         return classpath.toString();
@@ -523,12 +533,14 @@ public class ProjectBuilder {
         if (buildCache.isUpToDate("java", javaInputHash)) {
             File cachedClasses = new File(buildCache.stageOutputDir("java"), "classes");
             if (cachedClasses.exists()) {
+                if (progressReceiver != null) progressReceiver.onProgress("Java compile UP-TO-DATE", 13);
                 FileUtil.deleteFile(yq.compiledClassesPath);
                 FileUtil.copyDirectory(cachedClasses, new File(yq.compiledClassesPath));
-                if (progressReceiver != null) progressReceiver.onProgress("Java compile UP-TO-DATE", 13);
                 LogUtil.d(TAG, "Java compile UP-TO-DATE");
                 return;
             }
+        } else {
+            if (progressReceiver != null) progressReceiver.onProgress("Java is compiling...", 13);
         }
 
         long savedTimeMillis = System.currentTimeMillis();

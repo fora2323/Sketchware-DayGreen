@@ -7,6 +7,7 @@ import mod.jbk.util.LogUtil
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import org.jetbrains.kotlin.config.Services
+import pro.sketchware.utility.FileUtil
 import java.io.File
 
 /**
@@ -24,7 +25,7 @@ class KotlinCompiler(
      * Invokes `kotlinc`.
      */
     @Throws(Throwable::class)
-    fun compile() {
+    fun compile(receiver: mod.jbk.build.BuildProgressReceiver? = null) {
         val timeMillis = System.currentTimeMillis()
 
         val filesToCompile = getFilesToCompile(workspace).apply {
@@ -65,6 +66,26 @@ class KotlinCompiler(
 
         LogUtil.d(TAG, "Running kotlinc with these arguments: $arguments")
 
+        val inputHash = builder.buildCache.let {
+            org.sketchware.daygreen.builds.BuildCache.combine(
+                org.sketchware.daygreen.builds.BuildCache.hashFiles(filesToCompile),
+                org.sketchware.daygreen.builds.BuildCache.hashStrings(builder.getClasspath())
+            )
+        }
+
+        if (builder.buildCache.isUpToDate("kotlin", inputHash)) {
+            val cachedClasses = File(builder.buildCache.stageOutputDir("kotlin"), "classes")
+            if (cachedClasses.exists()) {
+                receiver?.onProgress("Kotlin compile UP-TO-DATE", 12)
+                FileUtil.deleteFile(workspace.compiledClassesPath)
+                FileUtil.copyDirectory(cachedClasses, File(workspace.compiledClassesPath))
+                LogUtil.d(TAG, "Kotlin compile UP-TO-DATE")
+                return
+            }
+        } else {
+            receiver?.onProgress("Kotlin is compiling...", 12)
+        }
+
         compiler.parseArguments(arguments.toTypedArray(), args)
         compiler.exec(collector, Services.EMPTY, args)
 
@@ -83,6 +104,13 @@ class KotlinCompiler(
                 TAG,
                 "Compiling Kotlin files took ${System.currentTimeMillis() - timeMillis} ms"
             )
+
+            if (inputHash != null) {
+                val cachedClasses = File(builder.buildCache.stageOutputDir("kotlin"), "classes")
+                FileUtil.deleteFile(cachedClasses.absolutePath)
+                FileUtil.copyDirectory(File(workspace.compiledClassesPath), cachedClasses)
+                builder.buildCache.markUpToDate("kotlin", inputHash)
+            }
         }
     }
 

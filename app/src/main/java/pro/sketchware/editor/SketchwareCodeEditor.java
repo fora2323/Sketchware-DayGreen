@@ -80,6 +80,10 @@ public class SketchwareCodeEditor extends CodeEditor {
         }
     }
 
+    public String getScId() {
+        return this.currentScId;
+    }
+
     @Override
     public void setStyles(@Nullable Styles styles) {
         if (styles != null) {

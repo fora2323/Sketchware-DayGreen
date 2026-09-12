@@ -12,8 +12,7 @@ import pro.sketchware.utility.FileUtil;
 public class KotlinCompilerBridge {
     public static void compileKotlinCodeIfPossible(BuildProgressReceiver receiver, ProjectBuilder builder) throws Throwable {
         if (KotlinCompilerUtil.areAnyKtFilesPresent(builder)) {
-            receiver.onProgress("Kotlin is compiling...", 12);
-            new KotlinCompiler(builder).compile();
+            new KotlinCompiler(builder).compile(receiver);
         }
     }
 

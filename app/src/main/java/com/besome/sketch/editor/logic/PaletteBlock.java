@@ -92,16 +92,19 @@ public class PaletteBlock extends LinearLayout {
         var cardView = new MaterialCardView(context);
         var params = getLayoutParams(18.0F);
         params.topMargin = (int) (f * 16.0F);
+        params.bottomMargin = (int) (f * 8.0F);
         cardView.setLayoutParams(params);
         cardView.setCardBackgroundColor(color);
         cardView.setRadius(f * 8f);
+        cardView.setCardElevation(f * 2f);
 
         TextView textView = new TextView(context);
         textView.setText(title);
         textView.setTextColor(getColor(context, isDarkThemeEnabled(context) ? R.attr.colorOnSurface : R.attr.colorOnSurfaceInverse));
-        textView.setTextSize(10.0F);
+        textView.setTextSize(11.0F);
+        textView.setTypeface(null, Typeface.BOLD);
         textView.setGravity(Gravity.CENTER | Gravity.LEFT);
-        textView.setPadding((int) (f * 12.0F), 0, (int) (f * 12.0F), 0);
+        textView.setPadding((int) (f * 12.0F), (int) (f * 4.0F), (int) (f * 12.0F), (int) (f * 4.0F));
         cardView.addView(textView);
 
         binding.blockBuilder.addView(cardView);

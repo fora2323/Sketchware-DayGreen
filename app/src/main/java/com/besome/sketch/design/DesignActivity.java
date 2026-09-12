@@ -1238,7 +1238,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                     return;
                 }
 
-                onProgress("AAPT2 is running...", 8);
                 builder.compileResources();
                 if (isCanceling) {
                     return;
