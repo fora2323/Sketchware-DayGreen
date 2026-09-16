@@ -94,15 +94,15 @@ android {
             versionName "v8.0.4-daygreen-android26"
             dimension "default"
             resValue "integer", "for_min_sdk", "26"
-            resValue "bool", "enable_relase_app", "true"
-            resValue "bool", "enable_r8", "true"
+            resValue "bool", "enable_relase_app", "false"
+            resValue "bool", "enable_r8", "false"
         }
         android33 {
             versionName "v8.0.4-daygreen-android33"
             dimension "default"
             resValue "integer", "for_min_sdk", "33"
-            resValue "bool", "enable_relase_app", "true"
-            resValue "bool", "enable_r8", "true"
+            resValue "bool", "enable_relase_app", "false"
+            resValue "bool", "enable_r8", "false"
         }
     }
 }
