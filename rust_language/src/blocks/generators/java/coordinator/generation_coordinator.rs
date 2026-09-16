@@ -28,7 +28,7 @@ impl GenerationCoordinator {
     pub fn new(code: String) -> Self {
         Self {
             code,
-            id_counter: 10,
+            id_counter: 1000,
             generated_blocks: Vec::new(),
         }
     }
