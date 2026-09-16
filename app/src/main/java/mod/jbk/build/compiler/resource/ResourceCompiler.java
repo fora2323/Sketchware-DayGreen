@@ -1,6 +1,6 @@
 package mod.jbk.build.compiler.resource;
 
-import static com.besome.sketch.Config.VAR_DEFAULT_TARGET_SDK_VERSION;
+import static org.sketchware.daygreen.Config.VAR_DEFAULT_TARGET_SDK_VERSION;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -122,7 +122,7 @@ public class ResourceCompiler {
             }
 
             int coreCount = Runtime.getRuntime().availableProcessors();
-            int threadPoolSize = Math.max(1, Math.min(2, coreCount / 2));
+            int threadPoolSize = Math.max(2, coreCount - 1);
             java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(threadPoolSize);
             java.util.List<java.util.concurrent.Future<?>> tasks = new ArrayList<>();
 

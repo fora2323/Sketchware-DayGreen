@@ -120,6 +120,9 @@ import mod.jbk.diagnostic.CompileErrorSaver;
 import mod.jbk.diagnostic.MissingFileException;
 import mod.jbk.util.LogUtil;
 import mod.khaled.logcat.LogReaderActivity;
+
+import org.sketchware.daygreen.builds.BuildCache;
+
 import pro.sketchware.R;
 import pro.sketchware.activities.appcompat.ManageAppCompatActivity;
 import pro.sketchware.activities.editor.command.ManageXMLCommandActivity;
@@ -136,7 +139,6 @@ import pro.sketchware.utility.apk.ApkSignatures;
 public class DesignActivity extends BaseAppCompatActivity implements View.OnClickListener {
     public static String sc_id;
     private final Handler handler = new Handler(Looper.getMainLooper());
-//    private final FirebaseCrashlytics crashlytics = FirebaseCrashlytics.getInstance();
     private ImageView xmlLayoutOrientation;
     private boolean B;
     private int currentTabNumber;
@@ -512,6 +514,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         bottomMenu.add(Menu.NONE, 2, Menu.NONE, "Clean temporary files").setVisible(false).setOnMenuItemClickListener(item -> {
             new Thread(() -> {
                 FileUtil.deleteFile(q.projectMyscPath);
+                new BuildCache(sc_id).invalidateAll();
                 updateBottomMenu();
                 runOnUiThread(() -> SketchwareUtil.toast("Done cleaning temporary files!"));
             }).start();

@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.util.Log;
+import java.nio.file.NoSuchFileException;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -123,18 +124,30 @@ public class FilesTools {
             Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    Files.delete(file);
+                    try {
+                        Files.delete(file);
+                    } catch (NoSuchFileException e) {
+                        
+                    }
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    Files.delete(dir);
+                    try {
+                        Files.delete(dir);
+                    } catch (NoSuchFileException | java.nio.file.DirectoryNotEmptyException e) {
+                        
+                    }
                     return FileVisitResult.CONTINUE;
                 }
             });
         } else {
-            Files.delete(path);
+            try {
+                Files.delete(path);
+            } catch (NoSuchFileException e) {
+                
+            }
         }
     }
 

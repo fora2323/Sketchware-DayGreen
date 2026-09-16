@@ -8,7 +8,8 @@ import android.graphics.drawable.Drawable;
 
 import androidx.appcompat.widget.AppCompatEditText;
 
-import com.besome.sketch.Config;
+import org.sketchware.daygreen.Config;
+
 import com.besome.sketch.beans.ViewBean;
 import com.besome.sketch.editor.view.ItemView;
 
