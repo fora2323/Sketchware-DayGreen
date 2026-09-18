@@ -15,6 +15,14 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <queries>
+        <package android:name="glab.sketchx" />
+        <package android:name="com.android.vending" />
+        <intent>
+            <action android:name="glab.sketchx.action.GIT" />
+        </intent>
+    </queries>
+
     <application
         android:name=".SketchApplication"
         android:allowBackup="true"
