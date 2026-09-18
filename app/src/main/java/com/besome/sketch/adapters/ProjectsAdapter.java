@@ -315,6 +315,8 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
         binding.projectSettings.setOnClickListener(v -> {
             toProjectSettingOrRequestPermission(projectMap, position);
             projectOptionsBSD.dismiss();
+        });
+
         binding.projectGit.setOnClickListener(v -> {
             projectOptionsBSD.dismiss();
             openSketchX(yB.c(projectMap, "sc_id"));
