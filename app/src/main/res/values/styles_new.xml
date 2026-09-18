@@ -16,11 +16,9 @@
     </style>
 
     <style name="Widget.SketchwarePro.CollapsingToolbar" parent="Widget.Material3Expressive.CollapsingToolbar.Large">
-        <item name="collapsedTitleTextAppearance">
-            @style/TextAppearance.SketchwarePro.CollapsingToolbar.Collapsed
+        <item name="collapsedTitleTextAppearance">@style/TextAppearance.SketchwarePro.CollapsingToolbar.Collapsed
         </item>
-        <item name="expandedTitleTextAppearance">
-            @style/TextAppearance.SketchwarePro.CollapsingToolbar.Expanded
+        <item name="expandedTitleTextAppearance">@style/TextAppearance.SketchwarePro.CollapsingToolbar.Expanded
         </item>
         <item name="titleCollapseMode">scale</item>
     </style>
@@ -80,24 +78,34 @@
         <item name="backgroundTint">?attr/colorSurface</item>
     </style>
 
+    <style name="Widget.SketchwarePro.Button.Dialog.Filled" parent="Widget.Material3Expressive.Button">
+        <item name="android:minWidth">@dimen/m3_btn_dialog_btn_min_width</item>
+        <item name="android:layout_marginStart">@dimen/m3_btn_dialog_btn_spacing</item>
+        <item name="android:layout_marginLeft">@dimen/m3_btn_dialog_btn_spacing</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <style name="Widget.SketchwarePro.Button.Dialog.Tonal" parent="Widget.Material3Expressive.Button.TonalButton">
+        <item name="android:minWidth">@dimen/m3_btn_dialog_btn_min_width</item>
+        <item name="android:layout_marginStart">@dimen/m3_btn_dialog_btn_spacing</item>
+        <item name="android:layout_marginLeft">@dimen/m3_btn_dialog_btn_spacing</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
     <style name="ThemeOverlay.SketchwarePro.AlertDialog" parent="ThemeOverlay.Material3Expressive.MaterialAlertDialog.Centered">
         <item name="android:colorBackground">?attr/colorSurfaceContainer</item>
-        <item name="android:windowAnimationStyle">@style/MaterialAlertDialog.Material3.Animation
-        </item>
+        <item name="android:windowAnimationStyle">@style/MaterialAlertDialog.Material3.Animation</item>
         <item name="android:windowSoftInputMode">adjustResize</item>
         <item name="android:windowMinWidthMajor">65%</item>
         <item name="android:windowMinWidthMinor">98%</item>
         <item name="alertDialogStyle">@style/MaterialAlertDialog.SketchwarePro</item>
 
-        <!-- Expressive button styles have increased horizontal padding, which we don't need at all. -->
-        <item name="buttonBarButtonStyle">@style/Widget.Material3.Button.TextButton.Dialog</item>
-        <item name="buttonBarNegativeButtonStyle">@style/Widget.Material3.Button.TextButton.Dialog
-        </item>
-        <item name="buttonBarNeutralButtonStyle">
-            @style/Widget.Material3.Button.TextButton.Dialog.Flush
-        </item>
-        <item name="buttonBarPositiveButtonStyle">@style/Widget.Material3.Button.TextButton.Dialog
-        </item>
+        <item name="buttonBarButtonStyle">@style/Widget.SketchwarePro.Button.Dialog.Tonal</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.SketchwarePro.Button.Dialog.Tonal</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.SketchwarePro.Button.Dialog.Tonal</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.SketchwarePro.Button.Dialog.Filled</item>
     </style>
 
     <style name="MaterialAlertDialog.SketchwarePro" parent="MaterialAlertDialog.Material3Expressive">
@@ -131,8 +139,7 @@
         <item name="shapeAppearance">?attr/shapeAppearanceCornerLarge</item>
     </style>
 
-    <style name="TextAppearance.SketchwarePro.Chip" parent="TextAppearance.SketchwarePro.BodyMedium">
-    </style>
+    <style name="TextAppearance.SketchwarePro.Chip" parent="TextAppearance.SketchwarePro.BodyMedium" />
 
     <style name="TextAppearance.SketchwarePro.BodyLargeEmphasized" parent="TextAppearance.SketchwarePro.BodyLarge">
         <item name="android:textStyle">bold</item>
@@ -141,7 +148,7 @@
     <style name="ThemeOverlay.SketchwarePro.Chip.ProjectPreview" parent="">
         <item name="chipStyle">@style/Widget.SketchwarePro.Chip.ProjectPreview</item>
     </style>
-    <!-- Theme used by AsdDialog to fix keyboard visibility for find/replace -->
+
     <style name="AsdEditorDialogTheme" parent="Theme.SketchwarePro">
         <item name="android:windowIsFloating">false</item>
         <item name="android:windowFullscreen">false</item>

@@ -100,5 +100,29 @@
             android:visibility="gone"
             tools:visibility="visible" />
 
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_cpp_file"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="C++ File"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_c_file"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="C File"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_header_file"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Header File"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
     </com.google.android.material.chip.ChipGroup>
 </LinearLayout>

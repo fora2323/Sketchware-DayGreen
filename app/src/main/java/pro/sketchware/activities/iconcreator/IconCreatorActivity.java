@@ -60,6 +60,7 @@ public class IconCreatorActivity extends BaseAppCompatActivity {
     private int badgeTxtClr = 0xffffff;
     private int gradClr0 = 0xffffff;
     private int gradClr1 = 0x000000;
+    private int gradClr2 = 0x808080;
     private int imgColor = 0xffffff;
     private int patternColor = 0xffffff;
     private int selectedTextureType;
@@ -168,6 +169,7 @@ public class IconCreatorActivity extends BaseAppCompatActivity {
         binding.badgeBgColorPreviewCard.setOnClickListener(v -> showColorPicker(v, 5, badgeClr));
         binding.imgColorPreviewCard.setOnClickListener(v -> showColorPicker(v, 6, imgColor));
         binding.patternColorPreviewCard.setOnClickListener(v -> showColorPicker(v, 7, patternColor));
+        binding.gradColorPreviewCard3.setOnClickListener(v -> showColorPicker(v, 8, gradClr2));
 
         binding.cancel.setOnClickListener(v -> onBackPressed());
 
@@ -217,7 +219,7 @@ public class IconCreatorActivity extends BaseAppCompatActivity {
                     binding.linearClr.setVisibility(View.VISIBLE);
                     binding.linearGrad.setVisibility(View.GONE);
                 } else {
-                    binding.appIcoBg.setBackground(new GradientDrawable(gradDirection, new int[]{gradClr0, gradClr1}));
+                    binding.appIcoBg.setBackground(new GradientDrawable(gradDirection, new int[]{gradClr0, gradClr1, gradClr2}));
                     binding.linearGrad.setVisibility(View.VISIBLE);
                     binding.linearClr.setVisibility(View.GONE);
                 }
@@ -292,7 +294,7 @@ public class IconCreatorActivity extends BaseAppCompatActivity {
                 }
             }
 
-            binding.appIcoBg.setBackground(new GradientDrawable(gradDirection, new int[]{gradClr0, gradClr1}));
+            binding.appIcoBg.setBackground(new GradientDrawable(gradDirection, new int[]{gradClr0, gradClr1, gradClr2}));
         });
 
         binding.textValueInput.addTextChangedListener(new TextWatcher() {
@@ -412,12 +414,12 @@ public class IconCreatorActivity extends BaseAppCompatActivity {
                         break;
                     case 1:
                         gradClr0 = colorInt;
-                        binding.appIcoBg.setBackground(new GradientDrawable(gradDirection, new int[]{gradClr0, gradClr1}));
+                        binding.appIcoBg.setBackground(new GradientDrawable(gradDirection, new int[]{gradClr0, gradClr1, gradClr2}));
                         binding.gradColorPreview.setBackgroundColor(gradClr0);
                         break;
                     case 2:
                         gradClr1 = colorInt;
-                        binding.appIcoBg.setBackground(new GradientDrawable(gradDirection, new int[]{gradClr0, gradClr1}));
+                        binding.appIcoBg.setBackground(new GradientDrawable(gradDirection, new int[]{gradClr0, gradClr1, gradClr2}));
                         binding.gradColorPreview2.setBackgroundColor(gradClr1);
                         break;
                     case 3:
@@ -446,6 +448,11 @@ public class IconCreatorActivity extends BaseAppCompatActivity {
                         binding.appIcoTexture.setColor(patternColor);
                         binding.patternColorPreview.setBackgroundColor(patternColor);
                         break;
+                    case 8:
+                        gradClr2 = colorInt;
+                        binding.appIcoBg.setBackground(new GradientDrawable(gradDirection, new int[]{gradClr0, gradClr1, gradClr2}));
+                        binding.gradColorPreview3.setBackgroundColor(gradClr2);
+                        break;    
                 }
 
             }
@@ -570,6 +577,7 @@ public class IconCreatorActivity extends BaseAppCompatActivity {
         data.put("background_color", bgClr);
         data.put("gradient_color1", gradClr0);
         data.put("gradient_color2", gradClr1);
+        data.put("gradient_color3", gradClr2);
         data.put("gradient_direction", gradDirection);
         data.put("score_effect", binding.scoreCheck.isChecked());
         data.put("textures", binding.textureCheck.isChecked());
@@ -639,6 +647,9 @@ public class IconCreatorActivity extends BaseAppCompatActivity {
         }
         if (data.containsKey("gradient_color2") && data.get("gradient_color2") instanceof Double value) {
             gradClr1 = value.intValue();
+        }
+        if (data.containsKey("gradient_color3") && data.get("gradient_color3") instanceof Double value) {
+            gradClr2 = value.intValue();
         }
         if (data.containsKey("gradient_direction") && data.get("gradient_direction") instanceof String value) {
             switch (value) {
@@ -727,13 +738,14 @@ public class IconCreatorActivity extends BaseAppCompatActivity {
         }
 
         if (binding.bgGradient.isChecked()) {
-            binding.appIcoBg.setBackground(new GradientDrawable(gradDirection, new int[]{gradClr0, gradClr1}));
+            binding.appIcoBg.setBackground(new GradientDrawable(gradDirection, new int[]{gradClr0, gradClr1, gradClr2}));
         } else {
             binding.appIcoBg.setBackgroundColor(bgClr);
         }
         binding.colorPreview.setBackgroundColor(bgClr);
         binding.gradColorPreview.setBackgroundColor(gradClr0);
         binding.gradColorPreview2.setBackgroundColor(gradClr1);
+        binding.gradColorPreview3.setBackgroundColor(gradClr2);
         binding.appIcoTexture.setColor(patternColor);
         binding.patternColorPreview.setBackgroundColor(patternColor);
         binding.appIcoImg.getBackground().setColorFilter(new PorterDuffColorFilter(imgColor, PorterDuff.Mode.SRC_ATOP));

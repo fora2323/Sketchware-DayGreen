@@ -132,6 +132,16 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                 ed.setEditorLanguage(CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_XML));
                 languageId = 2;
                 break;
+
+            case 3:
+                EditorUtils.loadCppConfig(ed);
+                languageId = 3;
+                break;
+
+            case 4:
+                EditorUtils.loadCConfig(ed);
+                languageId = 4;
+                break;
         }
 
     }
@@ -348,7 +358,9 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
         CharSequence[] languagesList = {
                 "Java",
                 "Kotlin",
-                "XML"
+                "XML",
+                "C++",
+                "C"
         };
 
         new MaterialAlertDialogBuilder(activity)
@@ -408,6 +420,12 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
             // DIUBAH: kirim path file (content) biar autocomplete-nya sesuai jenis file (layout/values/manifest/dst)
             EditorUtils.loadXmlConfig(binding.editor, getIntent().getStringExtra("content"));
             languageId = 2;
+        } else if (title.endsWith(".cpp") || title.endsWith(".hpp")) {
+            EditorUtils.loadCppConfig(binding.editor);
+            languageId = 3;
+        } else if (title.endsWith(".c") || title.endsWith(".h")) {
+            EditorUtils.loadCConfig(binding.editor);
+            languageId = 4;
         } else if (title.endsWith(".html")) {
             EditorUtils.loadHtmlConfig(binding.editor);
         } else if (title.endsWith(".js")) {

@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.NumberPicker;
@@ -23,6 +24,8 @@ import androidx.transition.TransitionManager;
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.besome.sketch.lib.ui.ColorPickerDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import org.sketchware.daygreen.Config;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -43,6 +46,7 @@ import a.a.a.oB;
 import a.a.a.wB;
 import a.a.a.wq;
 import a.a.a.yB;
+import extensions.anbui.daydream.project.ProjectApplication;
 import extensions.anbui.daydream.ui.KeyboardUtils;
 import extensions.anbui.daydream.project.ProjectData;
 import mod.hey.studios.project.ProjectSettings;
@@ -168,8 +172,6 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
             for (int i = 0; i < themeColorKeys.length; i++) {
                 projectThemeColors[i] = yB.a(metadata, themeColorKeys[i], projectThemeColors[i]);
             }
-
-            binding.cardViewQuickProjectConf.setVisibility(View.GONE);
         } else {
             /* Set the dialog's title & create button label */
             String newProjectName = getIntent().getStringExtra("my_ws_name");
@@ -204,6 +206,37 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
             themePresetAdapter.notifyItemChanged(0);
         }
         syncThemeColors();
+
+        ProjectSettings settings = new ProjectSettings(sc_id);
+        
+        String[] sdkFriendlyOptions = {
+            "21 (Android 5.0)", "22 (Android 5.1)", "23 (Android 6.0)", "24 (Android 7.0)",
+            "25 (Android 7.1)", "26 (Android 8.0)", "27 (Android 8.1)", "28 (Android 9.0)",
+            "29 (Android 10)", "30 (Android 11)", "31 (Android 12)", "32 (Android 12L)",
+            "33 (Android 13)", "34 (Android 14)", "35 (Android 15)", "36 (Android 16)",
+            "37 (Android 17)"
+        };
+        ArrayAdapter<String> sdkAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, sdkFriendlyOptions);
+        binding.etMinimumSdkVersion.setAdapter(sdkAdapter);
+        binding.etTargetSdkVersion.setAdapter(sdkAdapter);
+
+        String currentMin = settings.getValue(ProjectSettings.SETTING_MINIMUM_SDK_VERSION, String.valueOf(Config.VAR_DEFAULT_MIN_SDK_VERSION));
+        String currentTarget = settings.getValue(ProjectSettings.SETTING_TARGET_SDK_VERSION, String.valueOf(Config.VAR_DEFAULT_TARGET_SDK_VERSION));
+        
+        String displayMin = currentMin;
+        String displayTarget = currentTarget;
+        for (String op : sdkFriendlyOptions) {
+            if (op.startsWith(currentMin + " ")) displayMin = op;
+            if (op.startsWith(currentTarget + " ")) displayTarget = op;
+        }
+        
+        binding.etMinimumSdkVersion.setText(displayMin, false);
+        binding.etTargetSdkVersion.setText(displayTarget, false);
+        binding.etApplicationClassName.setText(settings.getValue(ProjectSettings.SETTING_APPLICATION_CLASS, ".SketchApplication"));
+        
+        binding.cbEnableViewbinding.setChecked(settings.getValue(ProjectSettings.SETTING_ENABLE_VIEWBINDING, "false").equals("true"));
+        binding.cbRemoveOldMethods.setChecked(settings.getValue(ProjectSettings.SETTING_DISABLE_OLD_METHODS, "true").equals("true"));
+        binding.cbUseNewMaterialComponentsAppTheme.setChecked(settings.getValue(ProjectSettings.SETTING_ENABLE_BRIDGELESS_THEMES, "false").equals("true"));
     }
 
     @Override
@@ -239,7 +272,10 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
                 KeyboardUtils.hideKeyboard(this);
                 new SaveProjectAsyncTask(getApplicationContext()).execute();
                 if (icon != null) saveBitmapTo(icon, getCustomIconPath());
-                if (!updatingExistingProject) ProjectData.setDataForFirstTimeProjectCreation(sc_id, binding.cbEnableViewbinding.isChecked(), binding.cbSetMinSdk24.isChecked());
+                if (!updatingExistingProject) {
+                    String minSdkVal = binding.etMinimumSdkVersion.getText().toString().split(" ")[0];
+                    ProjectData.setDataForFirstTimeProjectCreation(sc_id, binding.cbEnableViewbinding.isChecked(), minSdkVal.equals("24"));
+                }
             }
         } else if (id == R.id.cancel) {
             finish();
@@ -560,11 +596,24 @@ public class MyProjectSettingActivity extends BaseAppCompatActivity implements V
                 updateProjectResourcesContents(data);
                 wq.a(getApplicationContext(), sc_id);
                 new oB().b(wq.b(sc_id));
-                ProjectSettings projectSettings = new ProjectSettings(sc_id);
-                projectSettings.setValue(ProjectSettings.SETTING_NEW_XML_COMMAND, ProjectSettings.SETTING_GENERIC_VALUE_TRUE);
-                projectSettings.setValue(ProjectSettings.SETTING_ENABLE_VIEWBINDING, binding.cbEnableViewbinding.isChecked() ? ProjectSettings.SETTING_GENERIC_VALUE_TRUE : ProjectSettings.SETTING_GENERIC_VALUE_FALSE);
-
             }
+
+            ProjectSettings projectSettings = new ProjectSettings(sc_id);
+            String minSdkVal = binding.etMinimumSdkVersion.getText().toString().split(" ")[0];
+            String targetSdkVal = binding.etTargetSdkVersion.getText().toString().split(" ")[0];
+            String appClassVal = binding.etApplicationClassName.getText().toString().trim();
+            if (appClassVal.isEmpty()) appClassVal = ".SketchApplication";
+
+            projectSettings.setValue(ProjectSettings.SETTING_MINIMUM_SDK_VERSION, minSdkVal);
+            projectSettings.setValue(ProjectSettings.SETTING_TARGET_SDK_VERSION, targetSdkVal);
+            projectSettings.setValue(ProjectSettings.SETTING_APPLICATION_CLASS, appClassVal);
+            projectSettings.setValue(ProjectSettings.SETTING_ENABLE_VIEWBINDING, binding.cbEnableViewbinding.isChecked() ? "true" : "false");
+            projectSettings.setValue(ProjectSettings.SETTING_DISABLE_OLD_METHODS, binding.cbRemoveOldMethods.isChecked() ? "true" : "false");
+            projectSettings.setValue(ProjectSettings.SETTING_ENABLE_BRIDGELESS_THEMES, binding.cbUseNewMaterialComponentsAppTheme.isChecked() ? "true" : "false");
+            projectSettings.setValue(ProjectSettings.SETTING_NEW_XML_COMMAND, "true");
+
+            ProjectApplication.createApplicationFile(sc_id, Helper.getText(binding.etPackageName), appClassVal);
+
             try {
                 FileUtil.deleteFile(getTempIconsFolderPath("mipmaps" + File.separator));
                 FileUtil.copyDirectory(new File(getTempIconsFolderPath("temp_icons" + File.separator)), new File(getIconsFolderPath()));

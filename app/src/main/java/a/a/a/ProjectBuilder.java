@@ -33,6 +33,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
@@ -41,11 +42,18 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import extensions.anbui.daydream.configs.Configs;
 import extensions.anbui.daydream.library.DRFeatureManager;
@@ -71,6 +79,7 @@ import org.sketchware.daygreen.builds.BuildCache;
 import mod.jbk.build.BuildProgressReceiver;
 import mod.jbk.build.BuiltInLibraries;
 import mod.jbk.build.compiler.dex.DexCompiler;
+import mod.jbk.build.compiler.native_code.NativeCompiler;
 import mod.jbk.build.compiler.resource.ResourceCompiler;
 import mod.jbk.util.LogUtil;
 import mod.jbk.util.TestkeySignBridge;
@@ -173,7 +182,14 @@ public class ProjectBuilder {
         timestampResourceCompilationStarted = System.currentTimeMillis();
 
         String inputHash = BuildCache.combine(
-                BuildCache.hashDirectory(yq.resDirectoryPath, yq.assetsPath, yq.androidManifestPath),
+                BuildCache.hashDirectory(
+                        yq.resDirectoryPath, 
+                        yq.assetsPath, 
+                        yq.androidManifestPath,
+                        fpu.getPathAssets(yq.sc_id),
+                        fpu.getPathResource(yq.sc_id),
+                        fpu.getPathNativelibs(yq.sc_id)
+                ),
                 BuildCache.hashStrings(
                         String.valueOf(settings.getMinSdkVersion()),
                         settings.getValue(ProjectSettings.SETTING_TARGET_SDK_VERSION, ""),
@@ -187,12 +203,14 @@ public class ProjectBuilder {
             File cachedApk = new File(cached, "resources.apk");
             File cachedGen = new File(cached, "gen");
             if (cachedApk.exists() && cachedGen.exists()) {
+                if (progressReceiver != null) progressReceiver.onProgress("Resources UP-TO-DATE", 10);
                 FileUtil.copyFile(cachedApk.getAbsolutePath(), yq.resourcesApkPath);
                 FileUtil.copyDirectory(cachedGen, new File(yq.rJavaDirectoryPath));
-                if (progressReceiver != null) progressReceiver.onProgress("Resources UP-TO-DATE", 10);
                 LogUtil.d(TAG, "Resources UP-TO-DATE");
                 return;
             }
+        } else {
+            if (progressReceiver != null) progressReceiver.onProgress("AAPT2 is running...", 8);
         }
 
         ResourceCompiler compiler = new ResourceCompiler(this, aapt2Binary, buildAppBundle, progressReceiver);
@@ -328,6 +346,7 @@ public class ProjectBuilder {
 
         String path = FileUtil.getExternalStorageDir() + "/.sketchware/data/" + yq.sc_id + "/files/classpath/";
         ArrayList<String> jars = FileUtil.listFiles(path, "jar");
+        Collections.sort(jars);
         classpath.append(":").append(TextUtils.join(":", jars));
 
         return classpath.toString();
@@ -377,19 +396,19 @@ public class ProjectBuilder {
         LinkedList<Dex> dexObjects = new LinkedList<>();
         Iterator<File> toMergeIterator = dexes.iterator();
 
-        java.util.Set<FieldId> mergedDexFields;
-        java.util.Set<MethodId> mergedDexMethods;
-        java.util.Set<ProtoId> mergedDexProtos;
-        java.util.Set<Integer> mergedDexTypes;
+        Set<FieldId> mergedDexFields;
+        Set<MethodId> mergedDexMethods;
+        Set<ProtoId> mergedDexProtos;
+        Set<Integer> mergedDexTypes;
 
         {
             // Closable gets closed automatically
             Dex firstDex = new Dex(new FileInputStream(toMergeIterator.next()));
             dexObjects.add(firstDex);
-            mergedDexFields = new java.util.HashSet<>(firstDex.fieldIds());
-            mergedDexMethods = new java.util.HashSet<>(firstDex.methodIds());
-            mergedDexProtos = new java.util.HashSet<>(firstDex.protoIds());
-            mergedDexTypes = new java.util.HashSet<>(firstDex.typeIds());
+            mergedDexFields = new HashSet<>(firstDex.fieldIds());
+            mergedDexMethods = new HashSet<>(firstDex.methodIds());
+            mergedDexProtos = new HashSet<>(firstDex.protoIds());
+            mergedDexTypes = new HashSet<>(firstDex.typeIds());
         }
 
         while (toMergeIterator.hasNext()) {
@@ -476,10 +495,10 @@ public class ProjectBuilder {
                 dexObjects.clear();
                 dexObjects.add(dex);
 
-                mergedDexFields = new java.util.HashSet<>(dex.fieldIds());
-                mergedDexMethods = new java.util.HashSet<>(dex.methodIds());
-                mergedDexProtos = new java.util.HashSet<>(dex.protoIds());
-                mergedDexTypes = new java.util.HashSet<>(dex.typeIds());
+                mergedDexFields = new HashSet<>(dex.fieldIds());
+                mergedDexMethods = new HashSet<>(dex.methodIds());
+                mergedDexProtos = new HashSet<>(dex.protoIds());
+                mergedDexTypes = new HashSet<>(dex.typeIds());
                 lastDexNumber++;
             }
         }
@@ -523,12 +542,14 @@ public class ProjectBuilder {
         if (buildCache.isUpToDate("java", javaInputHash)) {
             File cachedClasses = new File(buildCache.stageOutputDir("java"), "classes");
             if (cachedClasses.exists()) {
+                if (progressReceiver != null) progressReceiver.onProgress("Java compile UP-TO-DATE", 13);
                 FileUtil.deleteFile(yq.compiledClassesPath);
                 FileUtil.copyDirectory(cachedClasses, new File(yq.compiledClassesPath));
-                if (progressReceiver != null) progressReceiver.onProgress("Java compile UP-TO-DATE", 13);
                 LogUtil.d(TAG, "Java compile UP-TO-DATE");
                 return;
             }
+        } else {
+            if (progressReceiver != null) progressReceiver.onProgress("Java is compiling...", 13);
         }
 
         long savedTimeMillis = System.currentTimeMillis();
@@ -625,14 +646,14 @@ public class ProjectBuilder {
     private File filterMultiplatformJunkFromJar(File originalJar) {
         try {
             File filteredJar = new File(context.getCacheDir(), "filtered_" + originalJar.getName());
-            try (java.util.zip.ZipFile zipIn = new java.util.zip.ZipFile(originalJar);
-                 java.util.zip.ZipOutputStream zipOut = new java.util.zip.ZipOutputStream(new FileOutputStream(filteredJar))) {
+            try (ZipFile zipIn = new ZipFile(originalJar);
+                 ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(filteredJar))) {
 
-                java.util.Enumeration<? extends java.util.zip.ZipEntry> entries = zipIn.entries();
+                Enumeration<? extends ZipEntry> entries = zipIn.entries();
                 boolean foundJunk = false;
 
                 while (entries.hasMoreElements()) {
-                    java.util.zip.ZipEntry entry = entries.nextElement();
+                    ZipEntry entry = entries.nextElement();
                     String name = entry.getName();
 
                     boolean isJunk = false;
@@ -648,9 +669,9 @@ public class ProjectBuilder {
                         continue;
                     }
 
-                    zipOut.putNextEntry(new java.util.zip.ZipEntry(name));
+                    zipOut.putNextEntry(new ZipEntry(name));
                     if (!entry.isDirectory()) {
-                        try (java.io.InputStream is = zipIn.getInputStream(entry)) {
+                        try (InputStream is = zipIn.getInputStream(entry)) {
                             is.transferTo(zipOut);
                         }
                     }
@@ -921,6 +942,10 @@ public class ProjectBuilder {
 
     public void signDebugApk() throws GeneralSecurityException, IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
         TestkeySignBridge.signWithTestkey(yq.unsignedUnalignedApkPath, yq.finalToInstallApkPath);
+    }
+
+    public void compileNativeCode() throws Exception {
+        new NativeCompiler(this, progressReceiver).compile();
     }
 
     private void mergeDexes(File target, List<Dex> dexes) throws IOException {

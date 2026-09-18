@@ -67,6 +67,7 @@ import mod.jbk.build.BuildProgressReceiver;
 import mod.jbk.build.BuiltInLibraries;
 import mod.jbk.build.compiler.bundle.AppBundleCompiler;
 import mod.jbk.export.GetKeyStoreCredentialsDialog;
+import mod.jbk.util.LogUtil;
 import mod.jbk.util.TestkeySignBridge;
 import pro.sketchware.R;
 import pro.sketchware.dialogs.BuildSettingsBottomSheet;
@@ -902,6 +903,17 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
 
                 onProgress("Java is compiling...", 6);
                 builder.compileJavaCode();
+                if (canceled) {
+                    cancel(true);
+                    return;
+                }
+
+                try {
+                    builder.compileNativeCode();
+                } catch (Exception e) {
+                    LogUtil.e("ExportProjectActivity", "Native compilation failed", e);
+                    throw new RuntimeException(e);
+                }
                 if (canceled) {
                     cancel(true);
                     return;

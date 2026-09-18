@@ -97,6 +97,10 @@ public class FilePathUtil {
         return new File(SKETCHWARE_DATA, sc_id + "/files/native_libs").getAbsolutePath();
     }
 
+    public String getPathNative(String sc_id) {
+        return new File(SKETCHWARE_DATA, sc_id + "/files/native").getAbsolutePath();
+    }
+
     public String getManifestService(String sc_id) {
         return new File(SKETCHWARE_DATA, sc_id + "/service").getAbsolutePath();
     }

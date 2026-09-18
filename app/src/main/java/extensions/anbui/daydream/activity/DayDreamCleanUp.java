@@ -11,8 +11,11 @@ import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.besome.sketch.editor.manage.library.LibraryCategoryView;
+import com.besome.sketch.editor.manage.library.LibraryItemView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.util.ArrayList;
 import java.util.Objects;
 
 import extensions.anbui.daydream.configs.Configs;
@@ -47,9 +50,27 @@ public class DayDreamCleanUp extends AppCompatActivity {
     }
 
     private void initialize() {
-        binding.lnCleanuptemporaryfiles.setOnClickListener(v -> cleanUpTemporaryFiles());
-        binding.lnCleanuplocallibrary.setOnClickListener(v -> cleanUpLocalLib());
-        binding.lnCleanouttherecyclingbin.setOnClickListener(v -> cleanOutTheRecyclingBin());
+        var preferences = new ArrayList<LibraryCategoryView>();
+
+        LibraryCategoryView cleanCategory = new LibraryCategoryView(this);
+        cleanCategory.setTitle(null);
+        preferences.add(cleanCategory);
+
+        cleanCategory.addLibraryItem(createPreference(R.drawable.cleaning_services_24px, "Temporary files", "Files generated during the build process.", v -> cleanUpTemporaryFiles()), true);
+        cleanCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_box, "Local library", "Scan and move unused local libraries to recycle bin.", v -> cleanUpLocalLib()), true);
+        cleanCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_delete, "Recycle bin", "Delete all in recycle bin.", v -> cleanOutTheRecyclingBin()), false);
+
+        preferences.forEach(binding.lnAllOptions::addView);
+    }
+
+    private LibraryItemView createPreference(int icon, String title, String desc, View.OnClickListener listener) {
+        LibraryItemView preference = new LibraryItemView(this);
+        preference.setHideEnabled();
+        preference.icon.setImageResource(icon);
+        preference.title.setText(title);
+        preference.description.setText(desc);
+        preference.setOnClickListener(listener);
+        return preference;
     }
 
     private void cleanUpLocalLib() {

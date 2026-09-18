@@ -244,9 +244,10 @@ public class ResourceCompiler {
             /* Include compiled local libraries' resources */
             File[] filesInCompiledResourcesPath = new File(resourcesPath).listFiles();
             if (filesInCompiledResourcesPath != null) {
+                java.util.Arrays.sort(filesInCompiledResourcesPath, (f1, f2) -> f1.getName().compareTo(f2.getName()));
                 for (File file : filesInCompiledResourcesPath) {
                     if (file.isFile()) {
-                        if (!file.getName().equals("project.zip") || !file.getName().equals("project-imported.zip")) {
+                        if (!file.getName().equals("project.zip") && !file.getName().equals("project-imported.zip")) {
                             args.add("-R");
                             args.add(file.getAbsolutePath());
                         }

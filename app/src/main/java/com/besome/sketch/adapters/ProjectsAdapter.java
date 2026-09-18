@@ -242,9 +242,7 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
         projectsFragment.openProjectSettings.launch(intent);
     }
 
-    private void showProjectSettingDialog(HashMap<String, Object> project) {
-        new ProjectSettingsDialog(activity, yB.c(project, "sc_id")).show();
-    }
+
 
     private void backupProject(HashMap<String, Object> project) {
         String scId = yB.c(project, "sc_id");
@@ -317,13 +315,6 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
         binding.projectSettings.setOnClickListener(v -> {
             toProjectSettingOrRequestPermission(projectMap, position);
             projectOptionsBSD.dismiss();
-        });
-
-        binding.projectConfig.setOnClickListener(v -> {
-            showProjectSettingDialog(projectMap);
-            projectOptionsBSD.dismiss();
-        });
-
         binding.projectGit.setOnClickListener(v -> {
             projectOptionsBSD.dismiss();
             openSketchX(yB.c(projectMap, "sc_id"));
@@ -359,7 +350,9 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
     private void openSketchX(String scId) {
         Intent intent = new Intent("glab.sketchx.action.GIT");
         intent.setPackage("glab.sketchx");
+        intent.putExtra("sc_id", scId);
         intent.putExtra("project_id", scId);
+        intent.putExtra("project", scId);
 
         boolean isInstalled = false;
         try {

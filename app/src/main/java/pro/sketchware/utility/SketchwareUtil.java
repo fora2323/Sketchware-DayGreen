@@ -8,6 +8,8 @@ import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.provider.DocumentsContract;
 import android.util.TypedValue;
@@ -35,6 +37,8 @@ import pro.sketchware.R;
 
 public class SketchwareUtil {
 
+    private static final Handler mainHandler = new Handler(Looper.getMainLooper());
+
     public static boolean isConnected() {
         ConnectivityManager connectivityManager = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
@@ -53,65 +57,50 @@ public class SketchwareUtil {
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, input, getContext().getResources().getDisplayMetrics());
     }
 
-    /**
-     * Show a Toast styled Sketchware-like.
-     *
-     * @param message The message to toast
-     * @param length  The toast's length, either {@link Toast#LENGTH_SHORT} or {@link Toast#LENGTH_LONG}
-     */
     public static void toast(String message, int length) {
-        try {
-            bB.a(getContext(), message, length).show();
-        } catch (RuntimeException e) {
-            LogUtil.e("SketchwareUtil", "Failed to toast regular message, " + "Toast's message was: \"" + message + "\"", e);
+        Runnable showToast = () -> {
+            try {
+                bB.a(getContext(), message, length).show();
+            } catch (RuntimeException e) {
+                LogUtil.e("SketchwareUtil", "Failed to toast regular message, Toast's message was: \"" + message + "\"", e);
+            }
+        };
+
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            showToast.run();
+        } else {
+            mainHandler.post(showToast);
         }
     }
 
-    /**
-     * Show a Toast styled Sketchware-like and with length {@link Toast#LENGTH_SHORT}.
-     *
-     * @param message The message to toast
-     */
     public static void toast(String message) {
         toast(message, Toast.LENGTH_SHORT);
     }
 
-    /**
-     * Show an error Toast styled Sketchware-like and with length {@link Toast#LENGTH_SHORT}.
-     *
-     * @param message The message to toast
-     * @param length  The toast's length, either {@link Toast#LENGTH_SHORT} or {@link Toast#LENGTH_LONG}
-     */
     public static void toastError(String message, int length) {
-        try {
-            bB.b(getContext(), message, length).show();
-        } catch (RuntimeException e) {
-            LogUtil.e("SketchwareUtil", "Failed to toast regular message, " + "Toast's message was: \"" + message + "\"", e);
+        Runnable showToast = () -> {
+            try {
+                bB.b(getContext(), message, length).show();
+            } catch (RuntimeException e) {
+                LogUtil.e("SketchwareUtil", "Failed to toast regular message, Toast's message was: \"" + message + "\"", e);
+            }
+        };
+
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            showToast.run();
+        } else {
+            mainHandler.post(showToast);
         }
     }
 
-    /**
-     * Show an error Toast styled Sketchware-like and with length {@link Toast#LENGTH_SHORT}.
-     *
-     * @param message The message to toast
-     */
     public static void toastError(String message) {
         toastError(message, Toast.LENGTH_SHORT);
     }
 
-    /**
-     * Converts dps into pixels.
-     *
-     * @param dp The amount of density-independent pixels to convert
-     * @return {@code dp} in pixels
-     */
     public static int dpToPx(float dp) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getContext().getResources().getDisplayMetrics());
     }
 
-    /**
-     * @return An optional display name of a document picked with Storage access framework.
-     */
     public static Optional<String> getSafDocumentDisplayName(Uri uri) {
         return doSingleStringContentQuery(uri, DocumentsContract.Document.COLUMN_DISPLAY_NAME);
     }
@@ -148,14 +137,11 @@ public class SketchwareUtil {
         }).start();
     }
 
-    /**
-     * @param componentLabel Label of component that failed to be parsed, e.g. Block selector menus
-     */
     public static void showFailedToParseJsonDialog(Activity context, File json, String componentLabel, Consumer<Void> afterRenameLogic) {
         MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(context);
         dialog.setIcon(R.drawable.break_warning_96_red);
         dialog.setTitle("Couldn't get " + componentLabel);
-        dialog.setMessage("Failed to parse " + componentLabel + " from file " + json + ". Fix by renaming old file to " + json.getName() + ".bak? " + "If not, no " + componentLabel + " will be used.");
+        dialog.setMessage("Failed to parse " + componentLabel + " from file " + json + ". Fix by renaming old file to " + json.getName() + ".bak? If not, no " + componentLabel + " will be used.");
         dialog.setPositiveButton("Rename", (v, which) -> {
             FileUtil.renameFile(json.getAbsolutePath(), json.getAbsolutePath() + ".bak");
             afterRenameLogic.accept(null);
@@ -196,5 +182,4 @@ public class SketchwareUtil {
             }
         });
     }
-
 }

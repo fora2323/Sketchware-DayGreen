@@ -50,6 +50,8 @@ public class ConfigActivity extends BaseAppCompatActivity {
     public static final String SETTING_BACKUP_DIRECTORY = "backup-dir";
     public static final String SETTING_ROOT_AUTO_INSTALL_PROJECTS = "root-auto-install-projects";
     public static final String SETTING_ROOT_AUTO_OPEN_AFTER_INSTALLING = "root-auto-open-after-installing";
+    public static final String SETTING_SHIZUKU_AUTO_INSTALL_PROJECTS = "shizuku-auto-install-projects";
+    public static final String SETTING_SHIZUKU_AUTO_OPEN_AFTER_INSTALLING = "shizuku-auto-open-after-installing";
     public static final String SETTING_BACKUP_FILENAME = "backup-filename";
     public static final String SETTING_SHOW_BUILT_IN_BLOCKS = "built-in-blocks";
     public static final String SETTING_SHOW_EVERY_SINGLE_BLOCK = "show-every-single-block";
@@ -230,6 +232,7 @@ public class ConfigActivity extends BaseAppCompatActivity {
                         installWithRoot.sw_enable.setChecked(false);
                     } else {
                         setSetting(SETTING_ROOT_AUTO_INSTALL_PROJECTS, true);
+                        setSetting(SETTING_SHIZUKU_AUTO_INSTALL_PROJECTS, false);
                     }
                 });
             } else {
@@ -238,6 +241,43 @@ public class ConfigActivity extends BaseAppCompatActivity {
         });
         rootCategory.addLibraryItem(installWithRoot, true);
         rootCategory.addLibraryItem(createSwitchPreference(R.drawable.ic_mtrl_apk_install, "Launch projects after installing", "Opens projects automatically after auto-installation using root.", SETTING_ROOT_AUTO_OPEN_AFTER_INSTALLING, true), false);
+
+        LibraryCategoryView shizukuCategory = new LibraryCategoryView(this);
+        shizukuCategory.setTitle("Shizuku Features");
+        preferences.add(shizukuCategory);
+
+        var installWithShizuku = createSwitchPreference(R.drawable.ic_mtrl_android, "Install projects with Shizuku access", "Automatically installs project APKs after building using Shizuku access.", SETTING_SHIZUKU_AUTO_INSTALL_PROJECTS, false);
+        installWithShizuku.sw_enable.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                if (mod.hilal.saif.util.ShizukuUtil.isShizukuRunning()) {
+                    if (mod.hilal.saif.util.ShizukuUtil.hasPermission()) {
+                        setSetting(SETTING_SHIZUKU_AUTO_INSTALL_PROJECTS, true);
+                        setSetting(SETTING_ROOT_AUTO_INSTALL_PROJECTS, false);
+                    } else {
+                        rikka.shizuku.Shizuku.addRequestPermissionResultListener(new rikka.shizuku.Shizuku.OnRequestPermissionResultListener() {
+                            @Override
+                            public void onRequestPermissionResult(int requestCode, int grantResult) {
+                                if (grantResult == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                    setSetting(SETTING_SHIZUKU_AUTO_INSTALL_PROJECTS, true);
+                                    setSetting(SETTING_ROOT_AUTO_INSTALL_PROJECTS, false);
+                                } else {
+                                    installWithShizuku.sw_enable.setChecked(false);
+                                }
+                                rikka.shizuku.Shizuku.removeRequestPermissionResultListener(this);
+                            }
+                        });
+                        rikka.shizuku.Shizuku.requestPermission(100);
+                    }
+                } else {
+                    Snackbar.make(content, "Shizuku is not running", BaseTransientBottomBar.LENGTH_SHORT).show();
+                    installWithShizuku.sw_enable.setChecked(false);
+                }
+            } else {
+                setSetting(SETTING_SHIZUKU_AUTO_INSTALL_PROJECTS, false);
+            }
+        });
+        shizukuCategory.addLibraryItem(installWithShizuku, true);
+        shizukuCategory.addLibraryItem(createSwitchPreference(R.drawable.ic_mtrl_apk_install, "Launch projects after installing", "Opens projects automatically after auto-installation using Shizuku.", SETTING_SHIZUKU_AUTO_OPEN_AFTER_INSTALLING, true), false);
 
         LibraryCategoryView vcCategory = new LibraryCategoryView(this);
         vcCategory.setTitle("Version Control");
