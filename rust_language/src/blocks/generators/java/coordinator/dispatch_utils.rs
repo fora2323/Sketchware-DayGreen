@@ -1,4 +1,5 @@
 use super::generation_coordinator::{DispatchType, GenerationCoordinator, StatementHandler};
+use crate::blocks::block_palette::BlockBean;
 use tree_sitter::Node;
 
 use crate::blocks::generators::java::handlers::{
@@ -101,7 +102,68 @@ impl GenerationCoordinator {
                 | "octal_integer_literal"
                 | "string_literal"
         ) {
-            (self.get_code(&node).to_string(), false)
+            let mut code = self.get_code(&node).to_string();
+            if node.kind() == "string_literal" {
+                if code.starts_with('"') && code.ends_with('"') && code.len() >= 2 {
+                    code = code[1..code.len() - 1].to_string();
+                }
+            }
+            (code, false)
+        } else if node.kind() == "identifier" {
+            let ident_name = self.get_code(&node).trim().to_string();
+            let is_menu_slot = match dispatch_type {
+                DispatchType::BlockParam(t) => t.starts_with("m.") || t == "var" || t == "view" || t == "intent" || t == "list",
+                _ => false,
+            };
+
+            if is_menu_slot {
+                (ident_name, false)
+            } else {
+                let next_id = self.get_next_id();
+                let expected_t = match dispatch_type {
+                    DispatchType::BlockParam("b") => "b",
+                    DispatchType::BlockParam("s") => "s",
+                    _ => "d",
+                };
+                let get_var_bean = BlockBean::new()
+                    .set_op_code("getVar")
+                    .set_type(expected_t)
+                    .set_spec(&ident_name)
+                    .set_color(Some(0xFFEE7D16));
+                self.push(get_var_bean, DispatchType::LastChild);
+                (format!("@{}", next_id), false)
+            }
+        } else if node.kind() == "field_access" {
+            let code = self.get_code(&node).trim().to_string();
+            if code == "Math.PI" {
+                let next_id = self.get_next_id();
+                let bean = BlockBean::new()
+                    .set_op_code("mathPi")
+                    .set_type("d")
+                    .set_spec("PI")
+                    .set_color(Some(0xFF23B9A9));
+                self.push(bean, DispatchType::LastChild);
+                (format!("@{}", next_id), false)
+            } else if code == "Math.E" {
+                let next_id = self.get_next_id();
+                let bean = BlockBean::new()
+                    .set_op_code("mathE")
+                    .set_type("d")
+                    .set_spec("E")
+                    .set_color(Some(0xFF23B9A9));
+                self.push(bean, DispatchType::LastChild);
+                (format!("@{}", next_id), false)
+            } else if code.contains("VISIBLE") {
+                ("VISIBLE".to_string(), false)
+            } else if code.contains("INVISIBLE") {
+                ("INVISIBLE".to_string(), false)
+            } else if code.contains("GONE") {
+                ("GONE".to_string(), false)
+            } else {
+                let param_entry_annotation = '@';
+                let next_id = self.get_next_id();
+                (format!("{}{}", param_entry_annotation, next_id), true)
+            }
         } else {
             let param_entry_annotation = '@';
             let next_id = self.get_next_id();

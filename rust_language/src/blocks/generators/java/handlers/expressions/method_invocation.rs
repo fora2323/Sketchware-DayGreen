@@ -28,6 +28,12 @@ impl StatementHandler for MethodInvocationHandler {
                 .set_spec("%m.textview setText %s")
                 .set_code("%s.setText(%s);")
                 .set_color(Some(0xFF4A6CD4)),
+            "getText" => BlockBean::new()
+                .set_op_code("getText")
+                .set_type("s")
+                .set_spec("%m.textview getText")
+                .set_code("%s.getText().toString()")
+                .set_color(Some(0xFF4A6CD4)),
             "setVisible" => BlockBean::new()
                 .set_op_code("setVisible")
                 .set_type(" ")
@@ -39,6 +45,54 @@ impl StatementHandler for MethodInvocationHandler {
                 .set_type(" ")
                 .set_spec("%m.view setEnabled %b")
                 .set_code("%s.setEnabled(%s);")
+                .set_color(Some(0xFF4A6CD4)),
+            "getEnable" => BlockBean::new()
+                .set_op_code("getEnable")
+                .set_type("b")
+                .set_spec("%m.view isEnabled")
+                .set_code("%s.isEnabled()")
+                .set_color(Some(0xFF4A6CD4)),
+            "setChecked" => BlockBean::new()
+                .set_op_code("setChecked")
+                .set_type(" ")
+                .set_spec("%m.compoundButton setChecked %b")
+                .set_code("%s.setChecked(%s);")
+                .set_color(Some(0xFF4A6CD4)),
+            "getChecked" => BlockBean::new()
+                .set_op_code("getChecked")
+                .set_type("b")
+                .set_spec("%m.compoundButton isChecked")
+                .set_code("%s.isChecked()")
+                .set_color(Some(0xFF4A6CD4)),
+            "setRotate" => BlockBean::new()
+                .set_op_code("setRotate")
+                .set_type(" ")
+                .set_spec("%m.view setRotation %d")
+                .set_code("%s.setRotation((float)(%s));")
+                .set_color(Some(0xFF4A6CD4)),
+            "setAlpha" => BlockBean::new()
+                .set_op_code("setAlpha")
+                .set_type(" ")
+                .set_spec("%m.view setAlpha %d")
+                .set_code("%s.setAlpha((float)(%s));")
+                .set_color(Some(0xFF4A6CD4)),
+            "setTextColor" => BlockBean::new()
+                .set_op_code("setTextColor")
+                .set_type(" ")
+                .set_spec("%m.textview setTextColor %d")
+                .set_code("%s.setTextColor(%s);")
+                .set_color(Some(0xFF4A6CD4)),
+            "setBgColor" => BlockBean::new()
+                .set_op_code("setBgColor")
+                .set_type(" ")
+                .set_spec("%m.view setBackgroundColor %d")
+                .set_code("%s.setBackgroundColor(%s);")
+                .set_color(Some(0xFF4A6CD4)),
+            "setImage" => BlockBean::new()
+                .set_op_code("setImage")
+                .set_type(" ")
+                .set_spec("%m.imageview setImageResource %m.resource")
+                .set_code("%s.setImageResource(R.drawable.%s);")
                 .set_color(Some(0xFF4A6CD4)),
             "intentSetScreen" => BlockBean::new()
                 .set_op_code("intentSetScreen")
@@ -88,6 +142,24 @@ impl StatementHandler for MethodInvocationHandler {
                 .set_spec("length of %s")
                 .set_code("%s.length()")
                 .set_color(Some(0xFF5CB722)),
+            "stringIndex" => BlockBean::new()
+                .set_op_code("stringIndex")
+                .set_type("d")
+                .set_spec("%s index of %s")
+                .set_code("%s.indexOf(%s)")
+                .set_color(Some(0xFF5CB722)),
+            "stringLastIndex" => BlockBean::new()
+                .set_op_code("stringLastIndex")
+                .set_type("d")
+                .set_spec("%s last index of %s")
+                .set_code("%s.lastIndexOf(%s)")
+                .set_color(Some(0xFF5CB722)),
+            "stringSub" => BlockBean::new()
+                .set_op_code("stringSub")
+                .set_type("s")
+                .set_spec("%s substring from %d to %d")
+                .set_code("%s.substring((int)(%s), (int)(%s))")
+                .set_color(Some(0xFF5CB722)),
             "trim" => BlockBean::new()
                 .set_op_code("trim")
                 .set_type("s")
@@ -111,6 +183,18 @@ impl StatementHandler for MethodInvocationHandler {
                 .set_type("s")
                 .set_spec("%s replace %s with %s")
                 .set_code("%s.replace(%s, %s)")
+                .set_color(Some(0xFF5CB722)),
+            "stringReplaceFirst" => BlockBean::new()
+                .set_op_code("stringReplaceFirst")
+                .set_type("s")
+                .set_spec("%s replace first %s with %s")
+                .set_code("%s.replaceFirst(%s, %s)")
+                .set_color(Some(0xFF5CB722)),
+            "stringReplaceAll" => BlockBean::new()
+                .set_op_code("stringReplaceAll")
+                .set_type("s")
+                .set_spec("%s replace all %s with %s")
+                .set_code("%s.replaceAll(%s, %s)")
                 .set_color(Some(0xFF5CB722)),
             "mapPut" => BlockBean::new()
                 .set_op_code("mapPut")
@@ -136,6 +220,24 @@ impl StatementHandler for MethodInvocationHandler {
                 .set_spec("%m.varMap remove %s")
                 .set_code("%s.remove(%s);")
                 .set_color(Some(0xFFEE7D16)),
+            "mapClear" => BlockBean::new()
+                .set_op_code("mapClear")
+                .set_type(" ")
+                .set_spec("%m.varMap clear")
+                .set_code("%s.clear();")
+                .set_color(Some(0xFFEE7D16)),
+            "mapIsEmpty" => BlockBean::new()
+                .set_op_code("mapIsEmpty")
+                .set_type("b")
+                .set_spec("%m.varMap isEmpty")
+                .set_code("%s.isEmpty()")
+                .set_color(Some(0xFFEE7D16)),
+            "mapSize" => BlockBean::new()
+                .set_op_code("mapSize")
+                .set_type("d")
+                .set_spec("size of %m.varMap")
+                .set_code("%s.size()")
+                .set_color(Some(0xFFEE7D16)),
             "addListStr" => BlockBean::new()
                 .set_op_code("addListStr")
                 .set_type(" ")
@@ -159,6 +261,78 @@ impl StatementHandler for MethodInvocationHandler {
                 .set_type("d")
                 .set_spec("pick random %d to %d")
                 .set_code("SketchwareUtil.getRandom((int)(%s), (int)(%s))")
+                .set_color(Some(0xFF5CB722)),
+            "mathMin" => BlockBean::new()
+                .set_op_code("mathMin")
+                .set_type("d")
+                .set_spec("min %d and %d")
+                .set_code("Math.min(%s, %s)")
+                .set_color(Some(0xFF23B9A9)),
+            "mathMax" => BlockBean::new()
+                .set_op_code("mathMax")
+                .set_type("d")
+                .set_spec("max %d and %d")
+                .set_code("Math.max(%s, %s)")
+                .set_color(Some(0xFF23B9A9)),
+            "mathAbs" => BlockBean::new()
+                .set_op_code("mathAbs")
+                .set_type("d")
+                .set_spec("abs %d")
+                .set_code("Math.abs(%s)")
+                .set_color(Some(0xFF23B9A9)),
+            "mathSqrt" => BlockBean::new()
+                .set_op_code("mathSqrt")
+                .set_type("d")
+                .set_spec("sqrt %d")
+                .set_code("Math.sqrt(%s)")
+                .set_color(Some(0xFF23B9A9)),
+            "mathRound" => BlockBean::new()
+                .set_op_code("mathRound")
+                .set_type("d")
+                .set_spec("round %d")
+                .set_code("Math.round(%s)")
+                .set_color(Some(0xFF23B9A9)),
+            "mathCeil" => BlockBean::new()
+                .set_op_code("mathCeil")
+                .set_type("d")
+                .set_spec("ceil %d")
+                .set_code("Math.ceil(%s)")
+                .set_color(Some(0xFF23B9A9)),
+            "mathFloor" => BlockBean::new()
+                .set_op_code("mathFloor")
+                .set_type("d")
+                .set_spec("floor %d")
+                .set_code("Math.floor(%s)")
+                .set_color(Some(0xFF23B9A9)),
+            "mathSin" => BlockBean::new()
+                .set_op_code("mathSin")
+                .set_type("d")
+                .set_spec("sin %d")
+                .set_code("Math.sin(%s)")
+                .set_color(Some(0xFF23B9A9)),
+            "mathCos" => BlockBean::new()
+                .set_op_code("mathCos")
+                .set_type("d")
+                .set_spec("cos %d")
+                .set_code("Math.cos(%s)")
+                .set_color(Some(0xFF23B9A9)),
+            "mathTan" => BlockBean::new()
+                .set_op_code("mathTan")
+                .set_type("d")
+                .set_spec("tan %d")
+                .set_code("Math.tan(%s)")
+                .set_color(Some(0xFF23B9A9)),
+            "mathPow" => BlockBean::new()
+                .set_op_code("mathPow")
+                .set_type("d")
+                .set_spec("%d ^ %d")
+                .set_code("Math.pow(%s, %s)")
+                .set_color(Some(0xFF23B9A9)),
+            "currentTime" => BlockBean::new()
+                .set_op_code("currentTime")
+                .set_type("d")
+                .set_spec("current time (ms)")
+                .set_code("System.currentTimeMillis()")
                 .set_color(Some(0xFF5CB722)),
             _ => FallbackStatement::get_block(""),
         }
@@ -194,7 +368,7 @@ impl StatementHandler for MethodInvocationHandler {
         }
 
         match method_name.as_str() {
-            "showMessage" => {
+            "showMessage" | "makeText" => {
                 let bean = Self::get_block("doToast");
                 let bean_id = generator_coordinator.push(bean, dispatch_type);
                 let text_node = if args.len() >= 2 { args.get(1) } else { args.first() };
@@ -213,6 +387,13 @@ impl StatementHandler for MethodInvocationHandler {
                     b.parameters.push(object_str);
                 });
                 generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("s"));
+            }
+            "getText" => {
+                let bean = Self::get_block("getText");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.borrow_mut_block(bean_id, |b| {
+                    b.parameters.push(object_str);
+                });
             }
             "setVisibility" if !args.is_empty() => {
                 let bean = Self::get_block("setVisible");
@@ -239,6 +420,71 @@ impl StatementHandler for MethodInvocationHandler {
                     b.parameters.push(object_str);
                 });
                 generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("b"));
+            }
+            "isEnabled" => {
+                let bean = Self::get_block("getEnable");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.borrow_mut_block(bean_id, |b| {
+                    b.parameters.push(object_str);
+                });
+            }
+            "setChecked" if !args.is_empty() => {
+                let bean = Self::get_block("setChecked");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.borrow_mut_block(bean_id, |b| {
+                    b.parameters.push(object_str);
+                });
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("b"));
+            }
+            "isChecked" => {
+                let bean = Self::get_block("getChecked");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.borrow_mut_block(bean_id, |b| {
+                    b.parameters.push(object_str);
+                });
+            }
+            "setRotation" if !args.is_empty() => {
+                let bean = Self::get_block("setRotate");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.borrow_mut_block(bean_id, |b| {
+                    b.parameters.push(object_str);
+                });
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+            }
+            "setAlpha" if !args.is_empty() => {
+                let bean = Self::get_block("setAlpha");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.borrow_mut_block(bean_id, |b| {
+                    b.parameters.push(object_str);
+                });
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+            }
+            "setTextColor" if !args.is_empty() => {
+                let bean = Self::get_block("setTextColor");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.borrow_mut_block(bean_id, |b| {
+                    b.parameters.push(object_str);
+                });
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+            }
+            "setBackgroundColor" if !args.is_empty() => {
+                let bean = Self::get_block("setBgColor");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.borrow_mut_block(bean_id, |b| {
+                    b.parameters.push(object_str);
+                });
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+            }
+            "setImageResource" if !args.is_empty() => {
+                let bean = Self::get_block("setImage");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.borrow_mut_block(bean_id, |b| {
+                    b.parameters.push(object_str);
+                });
+                let res_code = generator_coordinator.get_code(&args[0]).trim().replace("R.drawable.", "");
+                generator_coordinator.borrow_mut_block(bean_id, |b| {
+                    b.parameters.push(res_code);
+                });
             }
             "setClass" if args.len() >= 2 => {
                 let bean = Self::get_block("intentSetScreen");
@@ -267,6 +513,14 @@ impl StatementHandler for MethodInvocationHandler {
                 });
                 generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("s"));
                 generator_coordinator.dispatch_as_block_param(args[1], bean_id, DispatchType::BlockParam("s"));
+            }
+            "setAction" if !args.is_empty() => {
+                let bean = Self::get_block("intentSetAction");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.borrow_mut_block(bean_id, |b| {
+                    b.parameters.push(object_str);
+                });
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("s"));
             }
             "equals" if !args.is_empty() => {
                 let bean = Self::get_block("stringEquals");
@@ -307,6 +561,37 @@ impl StatementHandler for MethodInvocationHandler {
                     generator_coordinator.borrow_mut_block(bean_id, |b| b.parameters.push("".to_string()));
                 }
             }
+            "indexOf" if !args.is_empty() => {
+                let bean = Self::get_block("stringIndex");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("s"));
+                if let Some(obj) = object_node {
+                    generator_coordinator.dispatch_as_block_param(obj, bean_id, DispatchType::BlockParam("s"));
+                } else {
+                    generator_coordinator.borrow_mut_block(bean_id, |b| b.parameters.push("".to_string()));
+                }
+            }
+            "lastIndexOf" if !args.is_empty() => {
+                let bean = Self::get_block("stringLastIndex");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("s"));
+                if let Some(obj) = object_node {
+                    generator_coordinator.dispatch_as_block_param(obj, bean_id, DispatchType::BlockParam("s"));
+                } else {
+                    generator_coordinator.borrow_mut_block(bean_id, |b| b.parameters.push("".to_string()));
+                }
+            }
+            "substring" if args.len() >= 2 => {
+                let bean = Self::get_block("stringSub");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                if let Some(obj) = object_node {
+                    generator_coordinator.dispatch_as_block_param(obj, bean_id, DispatchType::BlockParam("s"));
+                } else {
+                    generator_coordinator.borrow_mut_block(bean_id, |b| b.parameters.push("".to_string()));
+                }
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+                generator_coordinator.dispatch_as_block_param(args[1], bean_id, DispatchType::BlockParam("d"));
+            }
             "trim" => {
                 let bean = Self::get_block("trim");
                 let bean_id = generator_coordinator.push(bean, dispatch_type);
@@ -336,6 +621,28 @@ impl StatementHandler for MethodInvocationHandler {
             }
             "replace" if args.len() >= 2 => {
                 let bean = Self::get_block("stringReplace");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                if let Some(obj) = object_node {
+                    generator_coordinator.dispatch_as_block_param(obj, bean_id, DispatchType::BlockParam("s"));
+                } else {
+                    generator_coordinator.borrow_mut_block(bean_id, |b| b.parameters.push("".to_string()));
+                }
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("s"));
+                generator_coordinator.dispatch_as_block_param(args[1], bean_id, DispatchType::BlockParam("s"));
+            }
+            "replaceFirst" if args.len() >= 2 => {
+                let bean = Self::get_block("stringReplaceFirst");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                if let Some(obj) = object_node {
+                    generator_coordinator.dispatch_as_block_param(obj, bean_id, DispatchType::BlockParam("s"));
+                } else {
+                    generator_coordinator.borrow_mut_block(bean_id, |b| b.parameters.push("".to_string()));
+                }
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("s"));
+                generator_coordinator.dispatch_as_block_param(args[1], bean_id, DispatchType::BlockParam("s"));
+            }
+            "replaceAll" if args.len() >= 2 => {
+                let bean = Self::get_block("stringReplaceAll");
                 let bean_id = generator_coordinator.push(bean, dispatch_type);
                 if let Some(obj) = object_node {
                     generator_coordinator.dispatch_as_block_param(obj, bean_id, DispatchType::BlockParam("s"));
@@ -381,10 +688,10 @@ impl StatementHandler for MethodInvocationHandler {
             "add" if !args.is_empty() => {
                 let bean = Self::get_block("addListStr");
                 let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("s"));
                 generator_coordinator.borrow_mut_block(bean_id, |b| {
                     b.parameters.push(object_str);
                 });
-                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("s"));
             }
             "clear" => {
                 let bean = Self::get_block("clearList");
@@ -405,6 +712,68 @@ impl StatementHandler for MethodInvocationHandler {
                 let bean_id = generator_coordinator.push(bean, dispatch_type);
                 generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
                 generator_coordinator.dispatch_as_block_param(args[1], bean_id, DispatchType::BlockParam("d"));
+            }
+            "min" if args.len() >= 2 => {
+                let bean = Self::get_block("mathMin");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+                generator_coordinator.dispatch_as_block_param(args[1], bean_id, DispatchType::BlockParam("d"));
+            }
+            "max" if args.len() >= 2 => {
+                let bean = Self::get_block("mathMax");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+                generator_coordinator.dispatch_as_block_param(args[1], bean_id, DispatchType::BlockParam("d"));
+            }
+            "abs" if !args.is_empty() => {
+                let bean = Self::get_block("mathAbs");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+            }
+            "sqrt" if !args.is_empty() => {
+                let bean = Self::get_block("mathSqrt");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+            }
+            "round" if !args.is_empty() => {
+                let bean = Self::get_block("mathRound");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+            }
+            "ceil" if !args.is_empty() => {
+                let bean = Self::get_block("mathCeil");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+            }
+            "floor" if !args.is_empty() => {
+                let bean = Self::get_block("mathFloor");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+            }
+            "sin" if !args.is_empty() => {
+                let bean = Self::get_block("mathSin");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+            }
+            "cos" if !args.is_empty() => {
+                let bean = Self::get_block("mathCos");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+            }
+            "tan" if !args.is_empty() => {
+                let bean = Self::get_block("mathTan");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+            }
+            "pow" if args.len() >= 2 => {
+                let bean = Self::get_block("mathPow");
+                let bean_id = generator_coordinator.push(bean, dispatch_type);
+                generator_coordinator.dispatch_as_block_param(args[0], bean_id, DispatchType::BlockParam("d"));
+                generator_coordinator.dispatch_as_block_param(args[1], bean_id, DispatchType::BlockParam("d"));
+            }
+            "currentTimeMillis" => {
+                let bean = Self::get_block("currentTime");
+                generator_coordinator.push(bean, dispatch_type);
             }
             _ => {
                 FallbackStatement::handle(node, generator_coordinator, dispatch_type);
