@@ -40,7 +40,10 @@ import mod.hey.studios.project.ProjectSettingsDialog;
 import mod.hey.studios.project.backup.BackupRestoreManager;
 import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
+import android.widget.Toast;
+
 import pro.sketchware.activities.main.fragments.projects.ProjectsFragment;
+import pro.sketchware.databinding.BottomSheetDownloadSketchxBinding;
 import pro.sketchware.databinding.BottomSheetProjectOptionsBinding;
 import pro.sketchware.databinding.MyprojectsItemBinding;
 
@@ -314,6 +317,11 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
             projectOptionsBSD.dismiss();
         });
 
+        binding.projectGit.setOnClickListener(v -> {
+            projectOptionsBSD.dismiss();
+            openSketchX(yB.c(projectMap, "sc_id"));
+        });
+
         binding.projectDelete.setOnClickListener(v -> {
             RemoveCore.showDialogNow(activity, yB.c(projectMap, "sc_id"));
             projectOptionsBSD.dismiss();
@@ -339,6 +347,61 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
         }
 
         projectOptionsBSD.show();
+    }
+
+    private void openSketchX(String scId) {
+        Intent intent = new Intent("glab.sketchx.action.GIT");
+        intent.setPackage("glab.sketchx");
+        intent.putExtra("sc_id", scId);
+        intent.putExtra("project_id", scId);
+        intent.putExtra("project", scId);
+
+        boolean isInstalled = false;
+        try {
+            if (intent.resolveActivity(activity.getPackageManager()) != null) {
+                isInstalled = true;
+            } else {
+                activity.getPackageManager().getPackageInfo("glab.sketchx", 0);
+                isInstalled = true;
+            }
+        } catch (Exception ignored) {
+        }
+
+        if (isInstalled) {
+            try {
+                activity.startActivity(intent);
+            } catch (Exception e) {
+                showDownloadSketchXBottomSheet();
+            }
+        } else {
+            showDownloadSketchXBottomSheet();
+        }
+    }
+
+    private void showDownloadSketchXBottomSheet() {
+        BottomSheetDialog downloadBSD = new BottomSheetDialog(activity);
+        BottomSheetDownloadSketchxBinding binding = BottomSheetDownloadSketchxBinding.inflate(LayoutInflater.from(activity));
+        downloadBSD.setContentView(binding.getRoot());
+
+        binding.btnDownload.setOnClickListener(v -> {
+            downloadBSD.dismiss();
+            try {
+                Intent playStoreIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=glab.sketchx"));
+                playStoreIntent.setPackage("com.android.vending");
+                activity.startActivity(playStoreIntent);
+            } catch (Exception e) {
+                try {
+                    Intent webIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=glab.sketchx"));
+                    activity.startActivity(webIntent);
+                } catch (Exception ex) {
+                    Toast.makeText(activity, "Could not open Google Play Store", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        binding.btnCancel.setOnClickListener(v -> downloadBSD.dismiss());
+
+        downloadBSD.show();
     }
 
     public static class ProjectViewHolder extends RecyclerView.ViewHolder {

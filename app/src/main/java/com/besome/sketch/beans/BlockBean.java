@@ -47,6 +47,10 @@ public class BlockBean extends SelectableBean implements Parcelable {
     public String type;
     @Expose
     public String typeName;
+    @Expose
+    public String code;
+    @Expose
+    public String spec2;
 
     public BlockBean() {
         parameters = new ArrayList<>();
@@ -86,6 +90,12 @@ public class BlockBean extends SelectableBean implements Parcelable {
         subStack1 = parcel.readInt();
         subStack2 = parcel.readInt();
         nextBlock = parcel.readInt();
+        if (parcel.dataAvail() > 0) {
+            code = parcel.readString();
+        }
+        if (parcel.dataAvail() > 0) {
+            spec2 = parcel.readString();
+        }
         buildClassInfo();
     }
 
@@ -105,6 +115,8 @@ public class BlockBean extends SelectableBean implements Parcelable {
         typeName = other.typeName;
         opCode = other.opCode;
         color = other.color;
+        code = other.code;
+        spec2 = other.spec2;
         parameters = new ArrayList<>(other.parameters);
         subStack1 = other.subStack1;
         subStack2 = other.subStack2;
@@ -178,6 +190,8 @@ public class BlockBean extends SelectableBean implements Parcelable {
         dest.writeInt(subStack1);
         dest.writeInt(subStack2);
         dest.writeInt(nextBlock);
+        dest.writeString(code != null ? code : "");
+        dest.writeString(spec2 != null ? spec2 : "");
     }
 
     @Override

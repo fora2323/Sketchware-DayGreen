@@ -1,0 +1,67 @@
+plugins {
+    id 'com.android.library' version '8.8.2'
+    id 'org.mozilla.rust-android-gradle.rust-android' version '0.9.4'
+}
+
+android {
+    namespace 'io.edward.blockcraft'
+    compileSdk 36
+
+    defaultConfig {
+        minSdk 24
+        targetSdk 36
+        versionCode 1
+        versionName "1.0"
+    }
+    buildFeatures {
+        viewBinding true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    ndkVersion = "26.1.10909125"
+}
+
+cargo {
+    cargoCommand = "C:\\Users\\sddrk\\.cargo\\bin\\cargo.exe"
+    rustcCommand = "C:\\Users\\sddrk\\.cargo\\bin\\rustc.exe"
+    module = "."
+    libname = "rust_language"
+    targets = ["arm64"]
+    apiLevel = 24
+
+    profile = "release"
+}
+
+tasks.configureEach {
+    if (name == "mergeDebugJniLibFolders" || name == "mergeReleaseJniLibFolders") {
+        outputs.upToDateWhen { false }
+        dependsOn("cargoBuild")
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'com.google.android.material:material:1.14.0-alpha07'
+    implementation 'androidx.activity:activity:1.12.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
+    //noinspection Aligned16KB
+    implementation 'com.github.termux.termux-app:termux-shared:v0.119.0-beta.3'
+    implementation("com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava")
+    implementation 'com.google.code.gson:gson:2.13.2'
+
+    implementation platform("io.github.Rosemoe.sora-editor:bom:0.23.6")
+    implementation "io.github.Rosemoe.sora-editor:editor"
+    implementation "io.github.Rosemoe.sora-editor:language-java"
+    implementation "io.github.Rosemoe.sora-editor:language-textmate"
+
+    implementation 'com.google.googlejavaformat:google-java-format:1.33.0'
+}
