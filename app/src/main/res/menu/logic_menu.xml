@@ -5,7 +5,8 @@
         android:id="@+id/menu_logic_code2block"
         android:icon="@drawable/ic_mtrl_puzzle"
         android:orderInCategory="90"
-        android:title="Code to Blocks"
+        android:title="Code to Blocks (soon)"
+        android:enabled="false"
         app:showAsAction="always" />
 
     <item

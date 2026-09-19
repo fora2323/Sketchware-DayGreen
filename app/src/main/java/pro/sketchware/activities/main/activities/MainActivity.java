@@ -451,7 +451,8 @@ binding.drawerToggleBtn.setBackground(drawerCircle);
     private void openFabMenu() {
         isFabMenuOpen = true;
 
-        binding.createNewProject.animate().rotation(0f).setDuration(150).start();
+        binding.createNewProject.shrink();
+        binding.createNewProject.setIconResource(R.drawable.ic_mtrl_close);
 
         binding.layoutFabCreate.setVisibility(View.VISIBLE);
         binding.layoutFabRestore.setVisibility(View.VISIBLE);
@@ -471,7 +472,8 @@ binding.drawerToggleBtn.setBackground(drawerCircle);
     private void closeFabMenu() {
         isFabMenuOpen = false;
 
-        binding.createNewProject.animate().rotation(0f).setDuration(150).start();
+        binding.createNewProject.extend();
+        binding.createNewProject.setIconResource(R.drawable.ic_mtrl_add);
 
         binding.layoutFabCreate.setVisibility(View.GONE);
         binding.layoutFabRestore.setVisibility(View.GONE);

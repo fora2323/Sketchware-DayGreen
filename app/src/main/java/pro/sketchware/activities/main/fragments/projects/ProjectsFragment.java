@@ -127,8 +127,6 @@ public class ProjectsFragment extends DA {
         preference = new DB(requireContext(), "project");
 
         binding.swipeRefresh.setOnRefreshListener(this::refreshProjectsList);
-        binding.swipeRefresh.setColorSchemeColors(MaterialColors.getColor(requireContext(), R.attr.colorPrimary, 0));
-        binding.swipeRefresh.setProgressBackgroundColorSchemeColor(MaterialColors.getColor(requireContext(), R.attr.colorSurfaceContainer, 0));
 
         projectsAdapter = new ProjectsAdapter(this, projectsList);
         binding.myprojects.setAdapter(projectsAdapter);
