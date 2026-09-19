@@ -602,9 +602,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             return true;
         });
 
-        // Divider
-        bottomMenu.add(1, 99, 4, "────────────────").setEnabled(false);
-
         bottomMenu.add(1, 4, 5, "Install last built APK").setIcon(R.drawable.ic_mtrl_apk_install).setVisible(false).setOnMenuItemClickListener(item -> {
             if (FileUtil.isExistFile(q.finalToInstallApkPath)) {
                 installBuiltApk();
@@ -616,7 +613,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             apkSignatures.showSignaturesDialog();
             return true;
         });
-        bottomMenu.add(Menu.NONE, 7, Menu.NONE, "Direct XML editor").setOnMenuItemClickListener(item -> {
+        bottomMenu.add(Menu.NONE, 7, Menu.NONE, "Direct XML editor").setIcon(R.drawable.ic_mtrl_edit).setOnMenuItemClickListener(item -> {
             toViewCodeEditor();
             return true;
         });
@@ -708,7 +705,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             handler.post(() -> {
                 bottomMenu.findItem(2).setVisible(q != null && FileUtil.isExistFile(q.projectMyscPath));
                 var isDebugApkExists = isDebugApkExists();
-                bottomMenu.findItem(99).setVisible(isDebugApkExists);
+                //bottomMenu.findItem(99).setVisible(isDebugApkExists);
                 bottomMenu.findItem(4).setVisible(isDebugApkExists);
                 bottomMenu.findItem(6).setVisible(isDebugApkExists);
             });

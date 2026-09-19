@@ -79,14 +79,14 @@ class DayDreamUniversalSettingsActivity : AppCompatActivity() {
         cleanPref.setOnClickListener { cleanPref.sw_enable.toggle() }
         universalCategory.addLibraryItem(cleanPref, false)
 
-        val ndkPref = createSwitchPreference(R.drawable.ic_menu_mtr2, "Download NDK", "Download Android NDK for native compilation")
+        val ndkPref = createSwitchPreference(R.drawable.ic_mtrl_download, "Download NDK", "Download Android NDK for native compilation")
         ndkPref.sw_enable.visibility = View.GONE
         ndkPref.setOnClickListener {
             showNdkDownloadDialog()
         }
         universalCategory.addLibraryItem(ndkPref, false)
 
-        val cmakePref = createSwitchPreference(R.drawable.ic_menu_mtr2, "Download CMake", "Download CMake for native compilation")
+        val cmakePref = createSwitchPreference(R.drawable.ic_mtrl_download, "Download CMake", "Download CMake for native compilation")
         cmakePref.sw_enable.visibility = View.GONE
         cmakePref.setOnClickListener {
             showCmakeDownloadDialog()
@@ -112,9 +112,6 @@ class DayDreamUniversalSettingsActivity : AppCompatActivity() {
             .setTitle("Download CMake")
             .setMessage("Do you want to download CMake? This is used to manage the native build process.")
             .setPositiveButton("Download") { _, _ ->
-                // User didn't provide a link for CMake, I'll use a common one or ask.
-                // For now, I'll use a placeholder or common GitHub release if I can find one.
-                // Assuming the user wants it from a similar source.
                 startDownload("https://github.com/lzhiyong/termux-ndk/releases/download/cmake/cmake-3.26.4-aarch64.zip", "cmake-aarch64.zip")
             }
             .setNegativeButton("Cancel", null)

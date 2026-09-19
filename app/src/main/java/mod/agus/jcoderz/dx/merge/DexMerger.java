@@ -1148,7 +1148,7 @@ public final class DexMerger {
                 // all of the bytes in a debug info section may be uleb/sleb. The additive constant
                 // is a fudge factor observed to be required when merging small
                 // DEX files (b/68483205).
-                debugInfo += contents.debugInfos.byteCount * 2 + 8;
+                debugInfo += contents.debugInfos.byteCount * 8 + 512;
             }
         }
 
