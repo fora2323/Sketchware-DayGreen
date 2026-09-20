@@ -24,7 +24,7 @@ object IDBlockShizuku {
         hashMap = HashMap()
         hashMap["name"] = "shizukuCheckPermission"
         hashMap["type"] = "b"
-        hashMap["code"] = "Shizuku.checkSelfPermission()"
+        hashMap["code"] = "Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED"
         hashMap["color"] = "#00A9D0"
         hashMap["palette"] = "-1"
         hashMap["spec"] = "Shizuku checkSelfPermission"
@@ -43,8 +43,8 @@ object IDBlockShizuku {
     @JvmStatic
     fun addPaletteBlocks(logicEditor: LogicEditorActivity) {
         logicEditor.a("Shizuku", getTitleBgColor(logicEditor))
-        logicEditor.a("b", "shizukuPingBinder")
-        logicEditor.a("b", "shizukuCheckPermission")
-        logicEditor.a(" ", "shizukuRequestPermission")
+        logicEditor.a("Shizuku pingBinder", "b", "shizukuPingBinder")
+        logicEditor.a("Shizuku checkSelfPermission", "b", "shizukuCheckPermission")
+        logicEditor.a("Shizuku requestPermission requestCode %d", " ", "shizukuRequestPermission")
     }
 }
