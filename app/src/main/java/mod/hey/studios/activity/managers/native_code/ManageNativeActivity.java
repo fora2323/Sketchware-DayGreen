@@ -11,14 +11,22 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.OvershootInterpolator;
+import android.graphics.Typeface;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import extensions.anbui.daydream.configs.Configs;
+import extensions.anbui.daydream.settings.DayDreamProjectSettings;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -55,6 +63,7 @@ public class ManageNativeActivity extends BaseAppCompatActivity {
     private FilePathUtil fpu;
     private String sc_id;
     private FilesAdapter filesAdapter;
+    private MaterialCardView statusBannerCard;
 
     /**
      * Escapes a name for use in a JNI function name:
@@ -72,11 +81,20 @@ public class ManageNativeActivity extends BaseAppCompatActivity {
         setContentView(binding.getRoot());
 
         sc_id = getIntent().getStringExtra("sc_id");
+        if (sc_id == null || sc_id.isEmpty()) {
+            sc_id = Configs.currentProjectID;
+        }
         Helper.fixFileprovider();
         setupUI();
         fpu = new FilePathUtil();
         current_path = Uri.parse(fpu.getPathNative(sc_id)).getPath();
         refresh();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateStatusUI();
     }
 
     @Override
@@ -92,6 +110,7 @@ public class ManageNativeActivity extends BaseAppCompatActivity {
     private void setupUI() {
         binding.topAppBar.setNavigationOnClickListener(Helper.getBackPressedClickListener(this));
         binding.topAppBar.setTitle("Cpp/C Manager");
+        updateStatusUI();
         binding.showOptionsButton.setOnClickListener(view -> hideShowOptionsButton(false));
         binding.closeButton.setOnClickListener(view -> hideShowOptionsButton(true));
         binding.createNewButton.setOnClickListener(v -> {
@@ -102,6 +121,124 @@ public class ManageNativeActivity extends BaseAppCompatActivity {
             showImportDialog();
             hideShowOptionsButton(true);
         });
+    }
+
+    private void updateStatusUI() {
+        boolean isEnabled = (sc_id != null && !sc_id.isEmpty()) && DayDreamProjectSettings.isEnableDayDream(sc_id);
+        binding.topAppBar.setSubtitle(isEnabled ? "Status: Enabled" : "Status: Disabled (Compilation Off)");
+
+        if (statusBannerCard == null) {
+            statusBannerCard = new MaterialCardView(this);
+            int marginHoriz = (int) (16 * getResources().getDisplayMetrics().density);
+            int marginVert = (int) (10 * getResources().getDisplayMetrics().density);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            lp.setMargins(marginHoriz, marginVert, marginHoriz, (int) (6 * getResources().getDisplayMetrics().density));
+            statusBannerCard.setLayoutParams(lp);
+            statusBannerCard.setRadius(14 * getResources().getDisplayMetrics().density);
+            statusBannerCard.setStrokeWidth((int) (1 * getResources().getDisplayMetrics().density));
+
+            LinearLayout container = new LinearLayout(this);
+            container.setOrientation(LinearLayout.HORIZONTAL);
+            container.setGravity(Gravity.CENTER_VERTICAL);
+            int pad = (int) (14 * getResources().getDisplayMetrics().density);
+            container.setPadding(pad, (int) (10 * getResources().getDisplayMetrics().density), pad, (int) (10 * getResources().getDisplayMetrics().density));
+
+            ImageView icon = new ImageView(this);
+            int iconSize = (int) (26 * getResources().getDisplayMetrics().density);
+            LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(iconSize, iconSize);
+            iconLp.setMarginEnd((int) (12 * getResources().getDisplayMetrics().density));
+            icon.setLayoutParams(iconLp);
+            container.addView(icon);
+
+            LinearLayout textCol = new LinearLayout(this);
+            textCol.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            textCol.setLayoutParams(textLp);
+
+            TextView title = new TextView(this);
+            title.setTextSize(14f);
+            title.setTypeface(null, Typeface.BOLD);
+            textCol.addView(title);
+
+            TextView desc = new TextView(this);
+            desc.setTextSize(12f);
+            desc.setPadding(0, (int) (2 * getResources().getDisplayMetrics().density), 0, 0);
+            textCol.addView(desc);
+
+            container.addView(textCol);
+
+            TextView actionChip = new TextView(this);
+            actionChip.setTextSize(12f);
+            actionChip.setTypeface(null, Typeface.BOLD);
+            actionChip.setPadding(
+                    (int) (8 * getResources().getDisplayMetrics().density),
+                    (int) (4 * getResources().getDisplayMetrics().density),
+                    (int) (8 * getResources().getDisplayMetrics().density),
+                    (int) (4 * getResources().getDisplayMetrics().density)
+            );
+            container.addView(actionChip);
+
+            statusBannerCard.addView(container);
+            statusBannerCard.setOnClickListener(v -> {
+                if (sc_id != null && !sc_id.isEmpty()) {
+                    Intent intent = new Intent(this, com.besome.sketch.editor.manage.library.daydream.DayDreamLibraryActivity.class);
+                    intent.putExtra("sc_id", sc_id);
+                    startActivity(intent);
+                }
+            });
+
+            binding.contentLayout.addView(statusBannerCard, 0);
+        }
+
+        LinearLayout container = (LinearLayout) statusBannerCard.getChildAt(0);
+        ImageView icon = (ImageView) container.getChildAt(0);
+        LinearLayout textCol = (LinearLayout) container.getChildAt(1);
+        TextView title = (TextView) textCol.getChildAt(0);
+        TextView desc = (TextView) textCol.getChildAt(1);
+        TextView actionChip = (TextView) container.getChildAt(2);
+
+        if (isEnabled) {
+            statusBannerCard.setCardBackgroundColor(getColor(R.color.primaryContainer));
+            statusBannerCard.setStrokeColor(getColor(R.color.primary));
+            icon.setImageResource(R.drawable.ic_mtrl_check);
+            icon.setColorFilter(getColor(R.color.primary));
+            title.setText("Native Tools: Enabled");
+            title.setTextColor(getColor(R.color.onPrimaryContainer));
+            desc.setText("C/C++ files will be compiled into your APK.");
+            desc.setTextColor(getColor(R.color.onSurfaceVariant));
+            actionChip.setText("SETTINGS");
+            actionChip.setTextColor(getColor(R.color.primary));
+        } else {
+            statusBannerCard.setCardBackgroundColor(getColor(R.color.errorContainer));
+            statusBannerCard.setStrokeColor(getColor(R.color.error));
+            icon.setImageResource(R.drawable.ic_mtrl_warning);
+            icon.setColorFilter(getColor(R.color.error));
+            title.setText("Native Tools: Disabled");
+            title.setTextColor(getColor(R.color.onErrorContainer));
+            desc.setText("Native compilation is turned off. C/C++ files will NOT be compiled.");
+            desc.setTextColor(getColor(R.color.onSurfaceVariant));
+            actionChip.setText("ENABLE");
+            actionChip.setTextColor(getColor(R.color.error));
+        }
+
+        if (binding.noContentLayout.getChildCount() >= 2) {
+            View child1 = binding.noContentLayout.getChildAt(1);
+            if (child1 instanceof TextView) {
+                ((TextView) child1).setText(isEnabled
+                        ? "Native tools is enabled. Tap + to add C/C++ files."
+                        : "Native tools is currently disabled in Library Manager.\nTap here to configure or enable it.");
+                binding.noContentLayout.setOnClickListener(v -> {
+                    if (!isEnabled && sc_id != null && !sc_id.isEmpty()) {
+                        Intent intent = new Intent(this, com.besome.sketch.editor.manage.library.daydream.DayDreamLibraryActivity.class);
+                        intent.putExtra("sc_id", sc_id);
+                        startActivity(intent);
+                    }
+                });
+            }
+        }
     }
 
     private void hideShowOptionsButton(boolean isHide) {
@@ -254,6 +391,7 @@ public class ManageNativeActivity extends BaseAppCompatActivity {
         filesAdapter = new FilesAdapter(currentTree);
         binding.filesListRecyclerView.setAdapter(filesAdapter);
         binding.noContentLayout.setVisibility(currentTree.isEmpty() ? View.VISIBLE : View.GONE);
+        updateStatusUI();
     }
 
     public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> {

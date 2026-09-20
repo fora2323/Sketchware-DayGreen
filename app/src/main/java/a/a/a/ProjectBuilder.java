@@ -945,6 +945,9 @@ public class ProjectBuilder {
     }
 
     public void compileNativeCode() throws Exception {
+        if (!DayDreamProjectSettings.isEnableDayDream(yq.sc_id)) {
+            return;
+        }
         new NativeCompiler(this, progressReceiver).compile();
     }
 

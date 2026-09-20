@@ -1086,7 +1086,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
      * Opens {@link ManageNativeActivity}.
      */
     void toNativeManager() {
-        launchActivity(mod.hey.studios.activity.managers.native_code.ManageNativeActivity.class, null, new Pair<>("pkgName", q.packageName));
+        launchActivity(mod.hey.studios.activity.managers.native_code.ManageNativeActivity.class, null, new Pair<>("pkgName", q.packageName), new Pair<>("sc_id", sc_id));
     }
 
     /**

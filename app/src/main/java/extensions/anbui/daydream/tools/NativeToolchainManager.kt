@@ -311,6 +311,7 @@ object NativeToolchainManager {
         targetDir: File,
         onProgress: ((progress: Int, message: String) -> Unit)? = null
     ) {
+        val symlinkList = mutableListOf<Pair<File, String>>()
         FileInputStream(archiveFile).use { fis ->
             BufferedInputStream(fis, 64 * 1024).use { bis ->
                 XZInputStream(bis).use { xzIn ->
@@ -321,6 +322,12 @@ object NativeToolchainManager {
                             val outFile = File(targetDir, entry.name)
                             if (entry.isDirectory) {
                                 outFile.mkdirs()
+                            } else if (entry.isSymbolicLink || entry.isLink) {
+                                outFile.parentFile?.mkdirs()
+                                val link = entry.linkName
+                                if (!link.isNullOrEmpty()) {
+                                    symlinkList.add(Pair(outFile, link))
+                                }
                             } else {
                                 outFile.parentFile?.mkdirs()
                                 FileOutputStream(outFile).use { fos ->
@@ -344,6 +351,7 @@ object NativeToolchainManager {
                 }
             }
         }
+        resolveSymlinks(symlinkList)
     }
 
     private fun extractTarGz(
@@ -351,6 +359,7 @@ object NativeToolchainManager {
         targetDir: File,
         onProgress: ((progress: Int, message: String) -> Unit)? = null
     ) {
+        val symlinkList = mutableListOf<Pair<File, String>>()
         FileInputStream(archiveFile).use { fis ->
             BufferedInputStream(fis, 64 * 1024).use { bis ->
                 GZIPInputStream(bis).use { gzIn ->
@@ -361,6 +370,12 @@ object NativeToolchainManager {
                             val outFile = File(targetDir, entry.name)
                             if (entry.isDirectory) {
                                 outFile.mkdirs()
+                            } else if (entry.isSymbolicLink || entry.isLink) {
+                                outFile.parentFile?.mkdirs()
+                                val link = entry.linkName
+                                if (!link.isNullOrEmpty()) {
+                                    symlinkList.add(Pair(outFile, link))
+                                }
                             } else {
                                 outFile.parentFile?.mkdirs()
                                 FileOutputStream(outFile).use { fos ->
@@ -380,6 +395,33 @@ object NativeToolchainManager {
                         }
                     }
                 }
+            }
+        }
+        resolveSymlinks(symlinkList)
+    }
+
+    private fun resolveSymlinks(symlinks: List<Pair<File, String>>) {
+        for ((linkFile, targetRel) in symlinks) {
+            try {
+                if (linkFile.exists()) linkFile.delete()
+                var resolved = false
+                try {
+                    android.system.Os.symlink(targetRel, linkFile.absolutePath)
+                    resolved = true
+                } catch (ignored: Exception) {
+                }
+                if (!resolved) {
+                    val targetFile = File(linkFile.parentFile, targetRel).canonicalFile
+                    if (targetFile.exists() && targetFile.isFile) {
+                        targetFile.copyTo(linkFile, overwrite = true)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Symlink resolution failed for ${linkFile.name} -> $targetRel: ${e.message}")
+            }
+            if (linkFile.parentFile?.name == "bin" || linkFile.name.endsWith(".so")) {
+                linkFile.setExecutable(true, false)
+                linkFile.setReadable(true, false)
             }
         }
     }
@@ -413,6 +455,7 @@ object NativeToolchainManager {
 
     fun makeBinariesExecutable(dir: File) {
         if (!dir.exists()) return
+        repairExtractedBinaries(dir)
         val files = dir.listFiles() ?: return
         for (file in files) {
             if (file.isDirectory) {
@@ -424,6 +467,41 @@ object NativeToolchainManager {
                 ) {
                     file.setExecutable(true, false)
                     file.setReadable(true, false)
+                }
+            }
+        }
+    }
+
+    private fun repairExtractedBinaries(dir: File) {
+        val binDirs = listOf(
+            File(dir, "toolchains/llvm/prebuilt/linux-x86_64/bin"),
+            File(dir, "toolchains/llvm/prebuilt/linux-aarch64/bin"),
+            File(dir, "bin")
+        )
+        for (binDir in binDirs) {
+            if (binDir.isDirectory) {
+                val files = binDir.listFiles() ?: continue
+                val realClang = files.firstOrNull {
+                    it.isFile && it.name.matches(Regex("^clang-[0-9]+$")) && it.length() > 1024 * 1024L
+                } ?: files.firstOrNull {
+                    it.isFile && it.name.startsWith("clang") && !it.name.contains("format") &&
+                            !it.name.contains("tidy") && !it.name.contains("check") && it.length() > 1024 * 1024L
+                }
+                if (realClang != null) {
+                    val clang = File(binDir, "clang")
+                    if (!clang.exists() || clang.length() < 1024L) {
+                        try {
+                            realClang.copyTo(clang, overwrite = true)
+                            clang.setExecutable(true, false)
+                        } catch (ignored: Exception) {}
+                    }
+                    val clangCpp = File(binDir, "clang++")
+                    if (!clangCpp.exists() || clangCpp.length() < 1024L) {
+                        try {
+                            realClang.copyTo(clangCpp, overwrite = true)
+                            clangCpp.setExecutable(true, false)
+                        } catch (ignored: Exception) {}
+                    }
                 }
             }
         }
