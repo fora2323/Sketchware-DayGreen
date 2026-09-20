@@ -109,8 +109,7 @@ public class kq {
                  "bluetoothConnectIsBluetoothEnabled", "bluetoothConnectIsBluetoothActivated",
                  "bluetoothConnectActivateBluetooth", "bluetoothConnectGetPairedDevices",
                  "bluetoothConnectGetRandomUuid", "locationManagerRequestLocationUpdates",
-                 "locationManagerRemoveUpdates",
-                 "shizukuPingBinder", "shizukuCheckPermission", "shizukuRequestPermission" ->
+                 "locationManagerRemoveUpdates" ->
                     harmonizeWithPrimary(context, 0xff2ca5e2);
             case "fileutildelete", "fileutilcopy", "fileutilwrite", "fileutilread", "fileutilmove",
                  "fileutilisexist", "fileutilmakedir", "fileutillistdir", "fileutilisdir",
