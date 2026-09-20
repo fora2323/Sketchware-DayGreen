@@ -2503,6 +2503,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         intent.putExtra(Code2BlockEditorActivity.EXTRA_SC_ID, scId);
         intent.putExtra(Code2BlockEditorActivity.EXTRA_TITLE, title);
         intent.putExtra(Code2BlockEditorActivity.EXTRA_SUBTITLE, subtitle);
+        intent.putParcelableArrayListExtra(Code2BlockEditorActivity.EXTRA_ORIGINAL_BLOCKS, o.getBlocks());
         openCode2Block.launch(intent);
     }
 

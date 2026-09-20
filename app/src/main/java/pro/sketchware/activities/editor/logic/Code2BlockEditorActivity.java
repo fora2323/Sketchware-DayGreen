@@ -36,10 +36,12 @@ public class Code2BlockEditorActivity extends BaseAppCompatActivity {
     public static final String EXTRA_SC_ID = "sc_id";
     public static final String EXTRA_TITLE = "title";
     public static final String EXTRA_SUBTITLE = "subtitle";
+    public static final String EXTRA_ORIGINAL_BLOCKS = "original_blocks";
     public static final String RESULT_EXTRA_BLOCKS = "blocks";
 
     private ActivityCode2blockEditorBinding binding;
     private String initialCode = "";
+    private java.util.ArrayList<com.besome.sketch.beans.BlockBean> originalBlocks;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -58,6 +60,7 @@ public class Code2BlockEditorActivity extends BaseAppCompatActivity {
         if (initialCode == null) {
             initialCode = "";
         }
+        originalBlocks = getIntent().getParcelableArrayListExtra(EXTRA_ORIGINAL_BLOCKS);
 
         setupToolbar(title, subtitle);
         setupEditor(scId);
@@ -152,7 +155,7 @@ public class Code2BlockEditorActivity extends BaseAppCompatActivity {
         binding.fabConvert.setEnabled(false);
 
         executor.execute(() -> {
-            Code2BlockConverter.ConversionResult result = Code2BlockConverter.convertJavaToBlocks(currentCode);
+            Code2BlockConverter.ConversionResult result = Code2BlockConverter.convertJavaToBlocks(currentCode, initialCode, originalBlocks);
             mainHandler.post(() -> {
                 if (isFinishing() || isDestroyed()) return;
 
