@@ -207,6 +207,36 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/project_git"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/project_item_shape_alone"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    app:srcCompat="@drawable/github_logo"
+                    app:tint="?attr/colorOnSecondaryContainer" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:gravity="center_vertical"
+                    android:text="Git x SketchX"
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    app:drawableEndCompat="@drawable/ic_mtrl_arrow_right"
+                    app:drawableTint="?attr/colorOnSecondaryContainer" />
+
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/project_delete"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
