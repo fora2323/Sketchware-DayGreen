@@ -579,12 +579,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
 
         bottomPopupMenu = new PopupMenu(this, splitButton != null ? splitButton : btnOptions, Gravity.TOP);
         bottomMenu = bottomPopupMenu.getMenu();
-        bottomMenu.add(0, 1, 0, "Build Settings").setIcon(R.drawable.ic_mtrl_settings).setOnMenuItemClickListener(item -> {
+        bottomMenu.add(0, 1, 0, "Build Settings").setOnMenuItemClickListener(item -> {
             BuildSettingsBottomSheet sheet = BuildSettingsBottomSheet.newInstance(sc_id);
             sheet.show(getSupportFragmentManager(), BuildSettingsBottomSheet.TAG);
             return true;
         });
-        bottomMenu.add(0, 2, 1, "Clean temporary files").setIcon(R.drawable.ic_mtrl_delete).setVisible(false).setOnMenuItemClickListener(item -> {
+        bottomMenu.add(0, 2, 1, "Clean temporary files").setVisible(false).setOnMenuItemClickListener(item -> {
             new Thread(() -> {
                 FileUtil.deleteFile(q.projectMyscPath);
                 new BuildCache(sc_id).invalidateAll();
@@ -593,27 +593,27 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             }).start();
             return true;
         });
-        bottomMenu.add(0, 3, 2, "Show last compile error").setIcon(R.drawable.ic_mtrl_info).setOnMenuItemClickListener(item -> {
+        bottomMenu.add(0, 3, 2, "Show last compile error").setOnMenuItemClickListener(item -> {
             new CompileErrorSaver(sc_id).showLastErrors(this);
             return true;
         });
-        bottomMenu.add(0, 5, 3, "Show source code").setIcon(R.drawable.ic_mtrl_code).setOnMenuItemClickListener(item -> {
+        bottomMenu.add(0, 5, 3, "Show source code").setOnMenuItemClickListener(item -> {
             showCurrentActivitySrcCode();
             return true;
         });
 
-        bottomMenu.add(1, 4, 5, "Install last built APK").setIcon(R.drawable.ic_mtrl_apk_install).setVisible(false).setOnMenuItemClickListener(item -> {
+        bottomMenu.add(1, 4, 5, "Install last built APK").setVisible(false).setOnMenuItemClickListener(item -> {
             if (FileUtil.isExistFile(q.finalToInstallApkPath)) {
                 installBuiltApk();
             } else SketchwareUtil.toast("APK doesn't exist anymore");
             return true;
         });
-        bottomMenu.add(1, 6, 6, "Show Apk signatures").setIcon(R.drawable.ic_mtrl_key).setVisible(false).setOnMenuItemClickListener(item -> {
+        bottomMenu.add(1, 6, 6, "Show Apk signatures").setVisible(false).setOnMenuItemClickListener(item -> {
             ApkSignatures apkSignatures = new ApkSignatures(this, q.finalToInstallApkPath);
             apkSignatures.showSignaturesDialog();
             return true;
         });
-        bottomMenu.add(Menu.NONE, 7, Menu.NONE, "Direct XML editor").setIcon(R.drawable.ic_mtrl_edit).setOnMenuItemClickListener(item -> {
+        bottomMenu.add(Menu.NONE, 7, Menu.NONE, "Direct XML editor").setOnMenuItemClickListener(item -> {
             toViewCodeEditor();
             return true;
         });

@@ -30,7 +30,6 @@ import extensions.anbui.daydream.activity.project.settings.DayDreamUniversalSett
 import mod.hilal.saif.activities.tools.AppSettings
 
 import pro.sketchware.R
-import pro.sketchware.activities.about.AboutActivity
 import pro.sketchware.utility.UI
 
 class MainDrawer @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = R.attr.navigationViewStyle) : NavigationView(MaterialThemeOverlay.wrap(context, attrs, defStyleAttr, DEF_STYLE_RES), attrs, defStyleAttr) {
