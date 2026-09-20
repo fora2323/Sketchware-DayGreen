@@ -79,9 +79,9 @@ public class ExtraBlocks {
         arrayList.add(addBlock("rewardedVideoAdLoad", " ", "", "RewardedAd.load(%2$s.this, _reward_ad_unit_id, new AdRequest.Builder().build(), _%1$s_rewarded_ad_load_callback);", "#2ca5e2", "%m.videoad load in %m.activity"));
         arrayList.add(addBlock("rewardedVideoAdShow", " ", "", "%1s.show(%2$s.this, _%1$s_on_user_earned_reward_listener);", "#2ca5e2", "%m.videoad show in %m.activity"));
         //Shizuku Blocks
-        arrayList.add(addBlock("shizukuPingBinder", "b", "", "Shizuku.pingBinder()", "#00A9D0", "Shizuku pingBinder"));
-        arrayList.add(addBlock("shizukuCheckPermission", "b", "", "Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED", "#00A9D0", "Shizuku checkSelfPermission"));
-        arrayList.add(addBlock("shizukuRequestPermission", " ", "", "Shizuku.requestPermission((int)%s);", "#00A9D0", "Shizuku requestPermission requestCode %d"));
+        arrayList.add(addBlock("shizukuPingBinder", "b", "", "Shizuku.pingBinder()", "#2CA5E2", "Shizuku pingBinder"));
+        arrayList.add(addBlock("shizukuCheckPermission", "b", "", "Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED", "#2CA5E2", "Shizuku checkSelfPermission"));
+        arrayList.add(addBlock("shizukuRequestPermission", " ", "", "Shizuku.requestPermission((int)%s);", "#2CA5E2", "Shizuku requestPermission requestCode %d"));
     }
 
     /**

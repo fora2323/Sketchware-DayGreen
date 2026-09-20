@@ -36,8 +36,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Activity"
-                    android:textColor="@color/toggle_button_text_color" />
+                    android:text="Activity" />
 
                 <Button
                     android:id="@+id/option_fragment_view"
@@ -45,8 +44,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Fragment"
-                    android:textColor="@color/toggle_button_text_color" />
+                    android:text="Fragment" />
 
                 <Button
                     android:id="@+id/option_custom_view"
@@ -54,8 +52,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/common_word_custom_view"
-                    android:textColor="@color/toggle_button_text_color" />
+                    android:text="@string/common_word_custom_view" />
 
             </com.google.android.material.button.MaterialButtonToggleGroup>
 

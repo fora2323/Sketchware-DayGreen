@@ -18,6 +18,8 @@ import com.besome.sketch.beans.ProjectLibraryBean;
 import com.besome.sketch.editor.manage.library.admob.AdmobActivity;
 import com.besome.sketch.editor.manage.library.admob.ManageAdmobActivity;
 import com.besome.sketch.editor.manage.library.compat.ManageCompatActivity;
+import com.besome.sketch.editor.manage.library.daydream.DayDreamLibraryActivity;
+import com.besome.sketch.editor.manage.library.daydream.DayDreamLibraryItemView;
 import com.besome.sketch.editor.manage.library.firebase.ManageFirebaseActivity;
 import com.besome.sketch.editor.manage.library.googlemap.ManageGoogleMapActivity;
 import com.besome.sketch.editor.manage.library.material3.Material3LibraryActivity;
@@ -48,6 +50,7 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
     private final int REQUEST_CODE_GOOGLE_MAPS_ACTIVITY = 241;
     private final int REQUEST_CODE_MATERIAL3_ACTIVITY = 242;
     private final int REQUEST_CODE_CUSTOM_ITEM_LIBRARY_ACTIVITY = 243;
+    private final int REQUEST_CODE_DAYDREAM_ACTIVITY = 244;
 
     private String sc_id;
     private LinearLayout libraryItemLayout;
@@ -99,6 +102,9 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
         if (type == ProjectLibraryBean.PROJECT_LIB_TYPE_EXCLUDE_BUILTIN_LIBRARIES) {
             libraryItemView = new ExcludeBuiltInLibrariesLibraryItemView(this, sc_id);
             libraryItemView.setData(null);
+        } else if (type == ProjectLibraryBean.PROJECT_LIB_TYPE_DAYDREAM) {
+            libraryItemView = new DayDreamLibraryItemView(this, sc_id);
+            libraryItemView.setData(null);
         } else {
             libraryItemView = new Material3LibraryItemView(this);
             libraryItemView.setData(compatLibraryBean);
@@ -134,6 +140,8 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
         for (LibraryItemView itemView : libraryItems) {
             Object tag = itemView.getTag();
             if (itemView instanceof ExcludeBuiltInLibrariesLibraryItemView) {
+                itemView.setData(null);
+            } else if (itemView instanceof DayDreamLibraryItemView) {
                 itemView.setData(null);
             } else if (itemView instanceof Material3LibraryItemView) {
                 itemView.setData(compatLibraryBean);
@@ -188,6 +196,13 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
         startActivityForResult(intent, REQUEST_CODE_MATERIAL3_ACTIVITY);
     }
 
+    private void toDayDreamActivity() {
+        Intent intent = new Intent(getApplicationContext(), DayDreamLibraryActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.putExtra("sc_id", sc_id);
+        startActivityForResult(intent, REQUEST_CODE_DAYDREAM_ACTIVITY);
+    }
+
     private void launchActivity(Class<? extends Activity> toLaunch) {
         Intent intent = new Intent(getApplicationContext(), toLaunch);
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -236,7 +251,7 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
                     initializeLibrary(data.getParcelableExtra("google_map"));
                     break;
 
-                case REQUEST_CODE_CUSTOM_ITEM_LIBRARY_ACTIVITY:
+                case REQUEST_CODE_CUSTOM_ITEM_LIBRARY_ACTIVITY, REQUEST_CODE_DAYDREAM_ACTIVITY:
                     initializeLibrary(null);
                     break;
 
@@ -294,6 +309,11 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
 
                     case ProjectLibraryBean.PROJECT_LIB_TYPE_MATERIAL3:
                         toMaterial3Activity();
+                        break;
+
+                    case ProjectLibraryBean.PROJECT_LIB_TYPE_DAYDREAM:
+                        toDayDreamActivity();
+                        break;
                 }
             }
         }
@@ -373,6 +393,7 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
         LibraryCategoryView basicCategory = addCategoryItem(null);
         addLibraryItem(compatLibraryBean, basicCategory);
         addCustomLibraryItem(ProjectLibraryBean.PROJECT_LIB_TYPE_MATERIAL3, basicCategory);
+        addCustomLibraryItem(ProjectLibraryBean.PROJECT_LIB_TYPE_DAYDREAM, basicCategory);
         addLibraryItem(firebaseLibraryBean, basicCategory);
         addLibraryItem(admobLibraryBean, basicCategory);
         addLibraryItem(googleMapLibraryBean, basicCategory, false);

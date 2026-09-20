@@ -68,15 +68,26 @@ public class NativeCompiler {
             progressReceiver.onProgress("Compiling Native code...", 14);
         }
 
+        File binDir = new File(SketchApplication.getContext().getFilesDir(), "bin");
         File toolsDir = getToolsDirectory();
-        File toolchainFile = new File(toolsDir, "ndk/build/cmake/android.toolchain.cmake");
-        File cmakeBinary = new File(toolsDir, "cmake/bin/cmake");
-
+        File toolchainFile = new File(binDir, "android-ndk/build/cmake/android.toolchain.cmake");
         if (!toolchainFile.isFile()) {
-            throw new zy("NDK not found. Extract it to " + new File(toolsDir, "ndk").getAbsolutePath() + " (expected file: build/cmake/android.toolchain.cmake).");
+            toolchainFile = new File(toolsDir, "ndk/build/cmake/android.toolchain.cmake");
+        }
+
+        File cmakeBinary = new File(binDir, "cmake/bin/cmake");
+        if (!cmakeBinary.isFile()) {
+            cmakeBinary = new File(binDir, "cmake");
         }
         if (!cmakeBinary.isFile()) {
-            throw new zy("CMake not found. Extract it to " + new File(toolsDir, "cmake").getAbsolutePath() + " (expected file: bin/cmake).");
+            cmakeBinary = new File(toolsDir, "cmake/bin/cmake");
+        }
+
+        if (!toolchainFile.isFile()) {
+            throw new zy("NDK not found. Extract it to " + new File(binDir, "android-ndk").getAbsolutePath() + " (expected file: build/cmake/android.toolchain.cmake).");
+        }
+        if (!cmakeBinary.isFile()) {
+            throw new zy("CMake not found. Extract it to " + new File(binDir, "cmake").getAbsolutePath() + " (expected file: bin/cmake).");
         }
         makeExecutable(cmakeBinary);
 
@@ -129,7 +140,10 @@ public class NativeCompiler {
     }
 
     private static File findNinja(File toolsDir) {
+        File binDir = new File(SketchApplication.getContext().getFilesDir(), "bin");
         File[] candidates = {
+                new File(binDir, "cmake/bin/ninja"),
+                new File(binDir, "ninja"),
                 new File(toolsDir, "cmake/bin/ninja"),
                 new File(toolsDir, "ninja/ninja"),
                 new File(toolsDir, "ninja")

@@ -950,6 +950,22 @@ public class Jx {
 						addImport("com.onesignal.debug.LogLevel");
 					}
 				}
+
+				String customImports = DayDreamProjectSettings.getCustomImports(Configs.currentProjectID);
+				if (customImports != null && !customImports.trim().isEmpty()) {
+					for (String impLine : customImports.split("\n")) {
+						String trimmed = impLine.trim();
+						if (trimmed.startsWith("import ")) {
+							trimmed = trimmed.substring(7).trim();
+						}
+						if (trimmed.endsWith(";")) {
+							trimmed = trimmed.substring(0, trimmed.length() - 1).trim();
+						}
+						if (!trimmed.isEmpty()) {
+							addImport(trimmed);
+						}
+					}
+				}
 			}
 		}
 		

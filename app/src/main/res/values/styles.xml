@@ -127,6 +127,7 @@
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">?attr/collapsingToolbarLayoutLargeSize</item>
         <item name="android:fitsSystemWindows">true</item>
+        <item name="titleCollapseMode">scale</item>
         <item name="layout_scrollFlags">scroll|exitUntilCollapsed</item>
         <item name="android:background">?attr/colorSurfaceContainerLow</item>
         <item name="contentScrim">?attr/colorSurfaceContainerLow</item>

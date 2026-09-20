@@ -16,7 +16,7 @@ object IDBlockShizuku {
         hashMap["name"] = "shizukuPingBinder"
         hashMap["type"] = "b"
         hashMap["code"] = "Shizuku.pingBinder()"
-        hashMap["color"] = "#00A9D0"
+        hashMap["color"] = "#2CA5E2"
         hashMap["palette"] = "-1"
         hashMap["spec"] = "Shizuku pingBinder"
         arrayList.add(hashMap)
@@ -25,7 +25,7 @@ object IDBlockShizuku {
         hashMap["name"] = "shizukuCheckPermission"
         hashMap["type"] = "b"
         hashMap["code"] = "Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED"
-        hashMap["color"] = "#00A9D0"
+        hashMap["color"] = "#2CA5E2"
         hashMap["palette"] = "-1"
         hashMap["spec"] = "Shizuku checkSelfPermission"
         arrayList.add(hashMap)
@@ -34,7 +34,7 @@ object IDBlockShizuku {
         hashMap["name"] = "shizukuRequestPermission"
         hashMap["type"] = " "
         hashMap["code"] = "Shizuku.requestPermission((int)%s);"
-        hashMap["color"] = "#00A9D0"
+        hashMap["color"] = "#2CA5E2"
         hashMap["palette"] = "-1"
         hashMap["spec"] = "Shizuku requestPermission requestCode %d"
         arrayList.add(hashMap)

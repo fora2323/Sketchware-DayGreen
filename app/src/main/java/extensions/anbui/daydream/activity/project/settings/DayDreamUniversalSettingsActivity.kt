@@ -1,29 +1,34 @@
 package extensions.anbui.daydream.activity.project.settings
 
-import android.app.DownloadManager
-import android.content.Context
 import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
 import android.os.Bundle
-import android.os.Environment
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import android.window.OnBackInvokedDispatcher
 import androidx.activity.addCallback
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.besome.sketch.editor.manage.library.LibraryCategoryView
-import com.besome.sketch.editor.manage.library.LibraryItemView
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import extensions.anbui.daydream.settings.DRSettings
+import extensions.anbui.daydream.tools.NativeToolchainManager
+import kotlinx.coroutines.launch
 import pro.sketchware.R
 import pro.sketchware.databinding.ActivityDaydreamUniversalSettingsBinding
-import java.io.File
-import java.util.ArrayList
 
 class DayDreamUniversalSettingsActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDaydreamUniversalSettingsBinding
+
+    private var isImportingNdk = true
+
+    private val pickArchiveLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) {
+            startInstallFromUri(uri, isImportingNdk)
+        }
+    }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
@@ -37,11 +42,13 @@ class DayDreamUniversalSettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         binding = ActivityDaydreamUniversalSettingsBinding.inflate(layoutInflater)
-        setContentView(binding.getRoot())
+        setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener { finish() }
-        initialize()
+
+        initializeGeneralSettings()
+        initializeNativeTools()
 
         if (SDK_INT >= 33) {
             onBackInvokedDispatcher.registerOnBackInvokedCallback(
@@ -56,90 +63,221 @@ class DayDreamUniversalSettingsActivity : AppCompatActivity() {
         }
     }
 
-
-    fun initialize() {
-        val preferences = ArrayList<LibraryCategoryView>()
-        val universalCategory = LibraryCategoryView(this)
-        universalCategory.setTitle(null)
-        preferences.add(universalCategory)
-
-        val backupPref = createSwitchPreference(R.drawable.restore_page_24px, "Backup tool", "Use DayGreen's new backup tool instead of the old one.")
-        backupPref.sw_enable.visibility = View.VISIBLE
-        backupPref.sw_enable.isClickable = true
-        DRSettings.getUseBackupTool(this) { backupPref.sw_enable.isChecked = it }
-        backupPref.sw_enable.setOnCheckedChangeListener { _, isChecked -> DRSettings.setUseBackupTool(this, isChecked) }
-        backupPref.setOnClickListener { backupPref.sw_enable.toggle() }
-        universalCategory.addLibraryItem(backupPref, true)
-
-        val cleanPref = createSwitchPreference(R.drawable.cleaning_services_24px, "Auto clean up after building", "Temporary files will be cleaned up after the build is complete.")
-        cleanPref.sw_enable.visibility = View.VISIBLE
-        cleanPref.sw_enable.isClickable = true
-        DRSettings.getAutoCleanUpAfterBuild(this) { cleanPref.sw_enable.isChecked = it }
-        cleanPref.sw_enable.setOnCheckedChangeListener { _, isChecked -> DRSettings.setAutoCleanUpAfterBuild(this, isChecked) }
-        cleanPref.setOnClickListener { cleanPref.sw_enable.toggle() }
-        universalCategory.addLibraryItem(cleanPref, false)
-
-        val ndkPref = createSwitchPreference(R.drawable.ic_mtrl_download, "Download NDK", "Download Android NDK for native compilation")
-        ndkPref.sw_enable.visibility = View.GONE
-        ndkPref.setOnClickListener {
-            showNdkDownloadDialog()
+    private fun initializeGeneralSettings() {
+        DRSettings.getUseBackupTool(this) { binding.swBackup.isChecked = it }
+        binding.swBackup.setOnCheckedChangeListener { _, isChecked ->
+            DRSettings.setUseBackupTool(this, isChecked)
         }
-        universalCategory.addLibraryItem(ndkPref, false)
+        binding.lnBackup.setOnClickListener { binding.swBackup.toggle() }
 
-        val cmakePref = createSwitchPreference(R.drawable.ic_mtrl_download, "Download CMake", "Download CMake for native compilation")
-        cmakePref.sw_enable.visibility = View.GONE
-        cmakePref.setOnClickListener {
-            showCmakeDownloadDialog()
+        DRSettings.getAutoCleanUpAfterBuild(this) { binding.swClean.isChecked = it }
+        binding.swClean.setOnCheckedChangeListener { _, isChecked ->
+            DRSettings.setAutoCleanUpAfterBuild(this, isChecked)
         }
-        universalCategory.addLibraryItem(cmakePref, false)
-
-        preferences.forEach { binding.lnAllOptions.addView(it) }
+        binding.lnClean.setOnClickListener { binding.swClean.toggle() }
     }
 
-    private fun showNdkDownloadDialog() {
+    private fun initializeNativeTools() {
+        refreshNativeToolStatus()
+
+        // NDK Actions
+        binding.btnDownloadNdk.setOnClickListener {
+            showDownloadConfirmation(isNdk = true)
+        }
+        binding.btnImportNdk.setOnClickListener {
+            isImportingNdk = true
+            pickArchiveLauncher.launch("*/*")
+        }
+        binding.btnDeleteNdk.setOnClickListener {
+            showDeleteConfirmation(isNdk = true)
+        }
+
+        // CMake Actions
+        binding.btnDownloadCmake.setOnClickListener {
+            showDownloadConfirmation(isNdk = false)
+        }
+        binding.btnImportCmake.setOnClickListener {
+            isImportingNdk = false
+            pickArchiveLauncher.launch("*/*")
+        }
+        binding.btnDeleteCmake.setOnClickListener {
+            showDeleteConfirmation(isNdk = false)
+        }
+    }
+
+    private fun refreshNativeToolStatus() {
+        // NDK Status
+        val ndkInstalled = NativeToolchainManager.isNdkInstalled(this)
+        if (ndkInstalled) {
+            binding.tvNdkBadge.text = "Installed"
+            binding.tvNdkBadge.setBackgroundResource(R.drawable.bg_round_green)
+            binding.tvNdkBadge.setTextColor(getColor(android.R.color.white))
+            binding.tvNdkInfo.text = "Installed • Space used: ${NativeToolchainManager.getNdkSizeFormatted(this)}"
+            binding.btnDownloadNdk.visibility = View.GONE
+            binding.btnImportNdk.text = "Replace"
+            binding.btnImportNdk.visibility = View.VISIBLE
+            binding.btnDeleteNdk.visibility = View.VISIBLE
+        } else {
+            binding.tvNdkBadge.text = "Not Installed"
+            binding.tvNdkBadge.setBackgroundResource(R.drawable.bg_round_gray)
+            binding.tvNdkBadge.setTextColor(getColor(R.color.onSurfaceVariant))
+            binding.tvNdkInfo.text = "Status: Not installed (~360 MB download)"
+            binding.btnDownloadNdk.text = "Download"
+            binding.btnDownloadNdk.visibility = View.VISIBLE
+            binding.btnImportNdk.text = "Import Archive"
+            binding.btnImportNdk.visibility = View.VISIBLE
+            binding.btnDeleteNdk.visibility = View.GONE
+        }
+
+        // CMake Status
+        val cmakeInstalled = NativeToolchainManager.isCmakeInstalled(this)
+        if (cmakeInstalled) {
+            binding.tvCmakeBadge.text = "Installed"
+            binding.tvCmakeBadge.setBackgroundResource(R.drawable.bg_round_green)
+            binding.tvCmakeBadge.setTextColor(getColor(android.R.color.white))
+            binding.tvCmakeInfo.text = "Installed • Space used: ${NativeToolchainManager.getCmakeSizeFormatted(this)}"
+            binding.btnDownloadCmake.visibility = View.GONE
+            binding.btnImportCmake.text = "Replace"
+            binding.btnImportCmake.visibility = View.VISIBLE
+            binding.btnDeleteCmake.visibility = View.VISIBLE
+        } else {
+            binding.tvCmakeBadge.text = "Not Installed"
+            binding.tvCmakeBadge.setBackgroundResource(R.drawable.bg_round_gray)
+            binding.tvCmakeBadge.setTextColor(getColor(R.color.onSurfaceVariant))
+            binding.tvCmakeInfo.text = "Status: Not installed (~48 MB download)"
+            binding.btnDownloadCmake.text = "Download"
+            binding.btnDownloadCmake.visibility = View.VISIBLE
+            binding.btnImportCmake.text = "Import Archive"
+            binding.btnImportCmake.visibility = View.VISIBLE
+            binding.btnDeleteCmake.visibility = View.GONE
+        }
+
+        val ndkPath = NativeToolchainManager.getNdkDir(this).absolutePath
+        val cmakePath = NativeToolchainManager.getCmakeDir(this).absolutePath
+        binding.tvStorageInfo.text = "Download location: $ndkPath and $cmakePath"
+    }
+
+    private fun showDownloadConfirmation(isNdk: Boolean) {
+        val title = if (isNdk) "Download Android NDK" else "Download CMake"
+        val message = if (isNdk) {
+            "Download Android NDK (r29)? Required for compiling C/C++ native code. Archive size is ~360MB."
+        } else {
+            "Download CMake (3.26.4)? Used to manage native compilation. Archive size is ~48MB."
+        }
+
         MaterialAlertDialogBuilder(this)
-            .setTitle("Download NDK")
-            .setMessage("Do you want to download Android NDK? This is required for C/C++ compilation. The file is large (~500MB).")
+            .setTitle(title)
+            .setMessage(message)
             .setPositiveButton("Download") { _, _ ->
-                startDownload("https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r29-aarch64.tar.xz", "android-ndk-r29-aarch64.tar.xz")
+                val url = if (isNdk) NativeToolchainManager.NDK_DEFAULT_URL else NativeToolchainManager.CMAKE_DEFAULT_URL
+                startDownloadAndInstall(url, isNdk)
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    private fun showCmakeDownloadDialog() {
+    private fun showDeleteConfirmation(isNdk: Boolean) {
+        val toolName = if (isNdk) "Android NDK" else "CMake"
         MaterialAlertDialogBuilder(this)
-            .setTitle("Download CMake")
-            .setMessage("Do you want to download CMake? This is used to manage the native build process.")
-            .setPositiveButton("Download") { _, _ ->
-                startDownload("https://github.com/lzhiyong/termux-ndk/releases/download/cmake/cmake-3.26.4-aarch64.zip", "cmake-aarch64.zip")
+            .setTitle("Delete $toolName?")
+            .setMessage("Are you sure you want to remove $toolName from app storage? You will not be able to compile native C/C++ code until re-downloaded.")
+            .setPositiveButton("Delete") { _, _ ->
+                if (isNdk) {
+                    NativeToolchainManager.deleteNdk(this)
+                } else {
+                    NativeToolchainManager.deleteCmake(this)
+                }
+                refreshNativeToolStatus()
+                Toast.makeText(this, "$toolName deleted.", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    private fun startDownload(url: String, fileName: String) {
-        try {
-            val request = DownloadManager.Request(Uri.parse(url))
-            request.setTitle(fileName)
-            request.setDescription("Downloading native tools...")
-            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+    private fun startDownloadAndInstall(url: String, isNdk: Boolean) {
+        val toolName = if (isNdk) "NDK" else "CMake"
+        binding.cardProgress.visibility = View.VISIBLE
+        binding.tvProgressTitle.text = "Downloading $toolName"
+        binding.progressIndicator.isIndeterminate = false
+        binding.progressIndicator.progress = 0
 
-            val manager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-            manager.enqueue(request)
-            Toast.makeText(this, "Download started. Check notifications.", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "Failed to start download: ${e.message}", Toast.LENGTH_LONG).show()
+        setButtonsEnabled(false)
+
+        lifecycleScope.launch {
+            val result = NativeToolchainManager.downloadAndInstall(
+                context = this@DayDreamUniversalSettingsActivity,
+                urlStr = url,
+                isNdk = isNdk
+            ) { progress, message ->
+                runOnUiThread {
+                    binding.progressIndicator.progress = progress
+                    binding.tvProgressStatus.text = message
+                }
+            }
+
+            binding.cardProgress.visibility = View.GONE
+            setButtonsEnabled(true)
+            refreshNativeToolStatus()
+
+            if (result.isSuccess) {
+                Toast.makeText(this@DayDreamUniversalSettingsActivity, "$toolName installed successfully!", Toast.LENGTH_LONG).show()
+            } else {
+                val error = result.exceptionOrNull()?.message ?: "Unknown error"
+                MaterialAlertDialogBuilder(this@DayDreamUniversalSettingsActivity)
+                    .setTitle("Installation Failed")
+                    .setMessage("Failed to download or install $toolName:\n$error\n\nYou can also download the archive manually and use 'Import Archive'.")
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
         }
     }
 
-    private fun createSwitchPreference(icon: Int, title: String, desc: String): LibraryItemView {
-        val preference = LibraryItemView(this)
-        preference.setHideEnabled()
-        preference.icon.setImageResource(icon)
-        preference.title.text = title
-        preference.description.text = desc
-        return preference
+    private fun startInstallFromUri(uri: Uri, isNdk: Boolean) {
+        val toolName = if (isNdk) "NDK" else "CMake"
+        binding.cardProgress.visibility = View.VISIBLE
+        binding.tvProgressTitle.text = "Importing $toolName Archive"
+        binding.progressIndicator.isIndeterminate = true
+        binding.tvProgressStatus.text = "Extracting and configuring files..."
+
+        setButtonsEnabled(false)
+
+        lifecycleScope.launch {
+            val result = NativeToolchainManager.installFromUri(
+                context = this@DayDreamUniversalSettingsActivity,
+                uri = uri,
+                isNdk = isNdk
+            ) { progress, message ->
+                runOnUiThread {
+                    binding.progressIndicator.isIndeterminate = false
+                    binding.progressIndicator.progress = progress
+                    binding.tvProgressStatus.text = message
+                }
+            }
+
+            binding.cardProgress.visibility = View.GONE
+            setButtonsEnabled(true)
+            refreshNativeToolStatus()
+
+            if (result.isSuccess) {
+                Toast.makeText(this@DayDreamUniversalSettingsActivity, "$toolName imported and installed!", Toast.LENGTH_LONG).show()
+            } else {
+                val error = result.exceptionOrNull()?.message ?: "Unknown error"
+                MaterialAlertDialogBuilder(this@DayDreamUniversalSettingsActivity)
+                    .setTitle("Import Failed")
+                    .setMessage("Failed to import $toolName archive:\n$error")
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+        }
+    }
+
+    private fun setButtonsEnabled(enabled: Boolean) {
+        binding.btnDownloadNdk.isEnabled = enabled
+        binding.btnImportNdk.isEnabled = enabled
+        binding.btnDeleteNdk.isEnabled = enabled
+
+        binding.btnDownloadCmake.isEnabled = enabled
+        binding.btnImportCmake.isEnabled = enabled
+        binding.btnDeleteCmake.isEnabled = enabled
     }
 }

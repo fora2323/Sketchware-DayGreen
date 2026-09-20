@@ -438,6 +438,16 @@ public class DayDreamProjectSettings {
         setDataString(projectID, "Universal", settingName, value);
     }
 
+    public static String getCustomImports(String projectID) {
+        Log.i(TAG, "getCustomImports: " + projectID);
+        return getUniversalSettingsString(projectID, "customImports");
+    }
+
+    public static void setCustomImports(String projectID, String value) {
+        Log.i(TAG, "setCustomImports: " + projectID + " " + value);
+        setUniversalSettingsString(projectID, "customImports", value);
+    }
+
     //Read and write data
 
     public static boolean getDataBoolean(String projectID, String toplevelkey, String key) {
