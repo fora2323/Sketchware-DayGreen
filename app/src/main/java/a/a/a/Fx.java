@@ -488,8 +488,23 @@ public class Fx {
                 opcode = String.format("new DecimalFormat(%s).format(%s)", params.get(1), params.get(0));
                 break;
             case "addSourceDirectly":
-                String asd = bean.parameters.get(0);
+                String asd = (bean.parameters != null && !bean.parameters.isEmpty()) ? bean.parameters.get(0) : "";
                 opcode = (asd != null) ? asd : opcode;
+                break;
+            case "addSourceDirectlyIf":
+                String asdIfHeader = (bean.parameters != null && !bean.parameters.isEmpty()) ? bean.parameters.get(0) : "";
+                String asdIfBody = (bean.subStack1 >= 0) ? a(String.valueOf(bean.subStack1), "") : "";
+                if (asdIfHeader == null) asdIfHeader = "";
+                String trimH = asdIfHeader.trim();
+                if (trimH.startsWith("//") || trimH.startsWith("/*") || trimH.startsWith("#")) {
+                    opcode = trimH + (asdIfBody.isEmpty() ? "" : "\r\n" + asdIfBody);
+                } else if (!trimH.isEmpty() && (trimH.endsWith(")") || trimH.contains("==") || trimH.contains("!=") || trimH.contains(">") || trimH.contains("<"))) {
+                    opcode = "if (" + trimH + ") {\r\n" + asdIfBody + "\r\n}";
+                } else if (!trimH.isEmpty()) {
+                    opcode = "// " + trimH + (asdIfBody.isEmpty() ? "" : "\r\n" + asdIfBody);
+                } else {
+                    opcode = asdIfBody;
+                }
                 break;
             case "strToMap":
                 opcode = String.format("%s = new Gson().fromJson(%s, new TypeToken<HashMap<String, Object>>(){}.getType());", params.get(1), params.get(0));

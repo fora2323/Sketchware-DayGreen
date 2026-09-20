@@ -143,7 +143,7 @@ public class Code2BlockConverter {
         }
 
         JsonArray array = parsedElement.getAsJsonArray();
-        ArrayList<BlockBean> blocks = new ArrayList<>();
+        ArrayList<BlockBean> rawBlocks = new ArrayList<>();
 
         ensureCustomBlocksLoaded();
 
@@ -257,15 +257,142 @@ public class Code2BlockConverter {
             }
 
             normalizeBlock(bean);
-            blocks.add(bean);
+            rawBlocks.add(bean);
         }
 
-        return new ConversionResult(blocks);
+        // Pass 3: Group comments and their following code into C-type source blocks
+        ArrayList<BlockBean> groupedBlocks = groupCommentsIntoCBlocks(rawBlocks);
+
+        return new ConversionResult(groupedBlocks);
+    }
+
+    private static ArrayList<BlockBean> groupCommentsIntoCBlocks(ArrayList<BlockBean> blocks) {
+        if (blocks == null || blocks.isEmpty()) return new ArrayList<>();
+
+        HashMap<String, BlockBean> map = new HashMap<>();
+        Set<Integer> nonRootIds = new HashSet<>();
+
+        for (BlockBean b : blocks) {
+            map.put(b.id, b);
+            if (b.nextBlock >= 0) nonRootIds.add(b.nextBlock);
+            if (b.subStack1 >= 0) nonRootIds.add(b.subStack1);
+            if (b.subStack2 >= 0) nonRootIds.add(b.subStack2);
+            for (String p : b.parameters) {
+                if (p != null && p.startsWith("@")) {
+                    try {
+                        nonRootIds.add(Integer.parseInt(p.substring(1)));
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+        }
+
+        // Find root of top-level chain
+        BlockBean root = null;
+        for (BlockBean b : blocks) {
+            try {
+                int idInt = Integer.parseInt(b.id);
+                if (!nonRootIds.contains(idInt)) {
+                    root = b;
+                    break;
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+        if (root == null) root = blocks.get(0);
+
+        // Walk top-level chain and group comments with their succeeding statements
+        List<BlockBean> topLevel = new ArrayList<>();
+        BlockBean curr = root;
+        Set<String> visited = new HashSet<>();
+        while (curr != null && visited.add(curr.id)) {
+            topLevel.add(curr);
+            if (curr.nextBlock >= 0) {
+                curr = map.get(String.valueOf(curr.nextBlock));
+            } else {
+                break;
+            }
+        }
+
+        List<BlockBean> newTopLevel = new ArrayList<>();
+        int i = 0;
+        while (i < topLevel.size()) {
+            BlockBean b = topLevel.get(i);
+            boolean isComment = "addSourceDirectlyIf".equals(b.opCode) && isCommentBlock(b);
+
+            if (isComment && b.subStack1 < 0) {
+                // Find all subsequent statements until the next comment
+                List<BlockBean> enclosed = new ArrayList<>();
+                int j = i + 1;
+                while (j < topLevel.size()) {
+                    BlockBean candidate = topLevel.get(j);
+                    if ("addSourceDirectlyIf".equals(candidate.opCode) && isCommentBlock(candidate)) {
+                        break;
+                    }
+                    enclosed.add(candidate);
+                    j++;
+                }
+
+                if (!enclosed.isEmpty()) {
+                    // Enclose inside this C-block
+                    b.subStack1 = Integer.parseInt(enclosed.get(0).id);
+                    // Chain the enclosed blocks internally
+                    for (int k = 0; k < enclosed.size() - 1; k++) {
+                        enclosed.get(k).nextBlock = Integer.parseInt(enclosed.get(k + 1).id);
+                    }
+                    enclosed.get(enclosed.size() - 1).nextBlock = -1;
+                    newTopLevel.add(b);
+                    i = j;
+                    continue;
+                }
+            }
+
+            newTopLevel.add(b);
+            i++;
+        }
+
+        // Link new top-level chain
+        for (int k = 0; k < newTopLevel.size() - 1; k++) {
+            newTopLevel.get(k).nextBlock = Integer.parseInt(newTopLevel.get(k + 1).id);
+        }
+        if (!newTopLevel.isEmpty()) {
+            newTopLevel.get(newTopLevel.size() - 1).nextBlock = -1;
+        }
+
+        return blocks;
+    }
+
+    private static boolean isCommentBlock(BlockBean bean) {
+        if (bean.parameters == null || bean.parameters.isEmpty()) return false;
+        String param = bean.parameters.get(0);
+        if (param == null) return false;
+        String trim = param.trim();
+        return trim.startsWith("//") || trim.startsWith("/*") || trim.startsWith("#");
     }
 
     private static void normalizeBlock(BlockBean bean) {
         if (bean.opCode == null) {
             bean.opCode = "";
+        }
+
+        // Handle line and block comments from parser
+        if ("line_comment".equals(bean.opCode) || "block_comment".equals(bean.opCode)) {
+            String commentText = (bean.parameters != null && !bean.parameters.isEmpty()) ? bean.parameters.get(0) : "";
+            if ("line_comment".equals(bean.opCode)) {
+                if (!commentText.trim().startsWith("//")) {
+                    commentText = "// " + commentText.trim();
+                }
+            } else {
+                if (!commentText.trim().startsWith("/*")) {
+                    commentText = "/* " + commentText.trim() + " */";
+                }
+            }
+            bean.opCode = "addSourceDirectlyIf";
+            bean.type = "c";
+            bean.spec = "add source directly %s.inputOnly";
+            bean.code = "if (%1$s) {\n%2$s\n}";
+            bean.color = 0xff5cb722;
+            bean.parameters = new ArrayList<>();
+            bean.parameters.add(commentText);
+            return;
         }
 
         switch (bean.opCode) {
