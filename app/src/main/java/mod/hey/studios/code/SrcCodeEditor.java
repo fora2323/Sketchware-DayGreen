@@ -559,11 +559,16 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
                         });
                         break;
 
-                    case "Find & Replace":
+                    case "Word wrap":
                         item.setChecked(!item.isChecked());
                         binding.editor.setWordwrap(item.isChecked());
 
                         pref.edit().putBoolean("act_ww", item.isChecked()).apply();
+                        break;
+
+                    case "Find & Replace":
+                        binding.editor.getSearcher().stopSearch();
+                        binding.editor.beginSearchMode();
                         break;
 
                     case "Auto complete symbol pair":
