@@ -81,6 +81,8 @@ public class DesignDrawer extends LinearLayout {
             designActivity.toLogReader();
         } else if (id == R.id.item_collection_manager) {
             designActivity.toCollectionManager();
+        } else if (id == R.id.item_aidl_manager) {
+            designActivity.toAidlManager();
         } else {
             throw new IllegalArgumentException("Invalid item id: " + id);
         }
@@ -138,6 +140,7 @@ public class DesignDrawer extends LinearLayout {
                 addDrawerItem(R.id.item_native_manager, R.drawable.ic_mtrl_cpp, R.string.text_title_menu_native, R.string.text_subtitle_menu_native, content);
             }
         }
+        addDrawerItem(R.id.item_aidl_manager, R.drawable.ic_mtrl_code, "AIDL Manager", "Manage AIDL interface files", content);
         addDrawerItem(R.id.item_resource_manager, R.drawable.ic_mtrl_folder, R.string.text_title_menu_resource, R.string.text_subtitle_menu_resource, content);
         addDrawerItem(R.id.item_resource_editor, R.drawable.ic_mtrl_folder_code, R.string.text_title_menu_resource_editor, R.string.text_subtitle_menu_resource_editor, content);
         addDrawerItem(R.id.item_assets_manager, R.drawable.ic_mtrl_file_present, R.string.text_title_menu_assets, R.string.text_subtitle_menu_assets, content);

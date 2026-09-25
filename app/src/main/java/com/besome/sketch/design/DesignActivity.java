@@ -115,6 +115,7 @@ import mod.hey.studios.project.proguard.ManageProguardActivity;
 import mod.hey.studios.project.proguard.ProguardHandler;
 import mod.hey.studios.project.stringfog.ManageStringFogFragment;
 import mod.hey.studios.project.stringfog.StringfogHandler;
+import mod.hey.studios.activity.managers.aidl.ManageAidlActivity;
 import mod.hey.studios.util.Helper;
 import mod.hey.studios.util.SystemLogPrinter;
 import mod.hilal.saif.activities.android_manifest.AndroidManifestInjection;
@@ -1203,6 +1204,10 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
 
     void toDayDream() {
         launchActivity(DayDreamGeneralSettings.class, openLibraryManager);
+    }
+    
+    void toAidlManager() {
+        launchActivity(ManageAidlActivity.class, null, new Pair<>("pkgName", q.packageName));
     }
 
     @SafeVarargs
