@@ -1,7 +1,5 @@
 package pro.sketchware.activities.main.fragments.projects;
 
-import pro.sketchware.activities.main.activities.MainActivity;
-
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
@@ -147,19 +145,6 @@ public class ProjectsFragment extends DA {
         binding.myprojects.setHasFixedSize(true);
 
         binding.myprojects.post(this::refreshProjectsList);
-        binding.myprojects.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                if (getActivity() instanceof MainActivity) {
-                    MainActivity activity = (MainActivity) getActivity();
-                    if (dy > 0) {
-                        activity.hideFab();
-                    } else if (dy < 0) {
-                        activity.showFab();
-                    }
-                }
-            }
-        });
         UI.addSystemWindowInsetToPadding(binding.loadingContainer, true, false, true, true);
         UI.addSystemWindowInsetToPadding(binding.titleContainer, true, false, true, false);
         UI.addSystemWindowInsetToPadding(binding.myprojects, true, false, true, true);

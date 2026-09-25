@@ -2,7 +2,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:clipToPadding="false">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar_layout"
@@ -16,7 +17,7 @@
             android:layout_height="?attr/collapsingToolbarLayoutLargeSize"
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
             android:fitsSystemWindows="true"
-            app:title="@string/common_word_settings"
+            app:title="App Settings"
             app:collapsedTitleTextAppearance="@style/TextAppearance.Material3.TitleMedium"
             app:expandedTitleTextAppearance="@style/TextAppearance.Material3.DisplaySmall">
 

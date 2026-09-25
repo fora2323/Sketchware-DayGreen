@@ -60,12 +60,6 @@ public class AppSettings extends BaseAppCompatActivity {
         var binding = ActivityAppSettingsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, i) -> {
-            Insets insets = i.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-            v.setPadding(insets.left, insets.top, insets.right, insets.bottom);
-            return WindowInsetsCompat.CONSUMED;
-        });
-
         {
             View view = binding.main;
             int left = view.getPaddingLeft();

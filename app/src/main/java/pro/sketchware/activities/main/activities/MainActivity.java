@@ -568,14 +568,6 @@ binding.drawerToggleBtn.setBackground(drawerCircle);
         super.onPause();
     }
     
-    public void hideFab() {
-    binding.fabMenuContainer.animate().translationY(binding.fabMenuContainer.getHeight() + 100f).setDuration(200).start();
-    }
-
-    public void showFab() {
-    binding.fabMenuContainer.animate().translationY(0f).setDuration(200).start();
-    }
-
     private void allFilesAccessCheck() {
         if (Build.VERSION.SDK_INT > 29) {
             File optOutFile = new File(getFilesDir(), ".skip_all_files_access_notice");
