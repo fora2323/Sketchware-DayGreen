@@ -7,7 +7,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.WindowInsetsCompat
-import com.besome.sketch.editor.manage.library.LibraryItemView
 import com.besome.sketch.lib.base.BaseAppCompatActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.color.MaterialColors
@@ -31,14 +30,10 @@ class BuildToolsActivity : BaseAppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityGenericListBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        
-        Insetter.builder()
-            .padding(WindowInsetsCompat.Type.statusBars())
-            .applyToView(binding.toolbar)
-            
-        Insetter.builder()
-            .padding(WindowInsetsCompat.Type.navigationBars())
-            .applyToView(binding.listContainer)
+
+        Insetter.builder().padding(WindowInsetsCompat.Type.statusBars()).applyToView(binding.toolbar)
+
+        Insetter.builder().padding(WindowInsetsCompat.Type.navigationBars()).applyToView(binding.listContainer)
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -51,7 +46,7 @@ class BuildToolsActivity : BaseAppCompatActivity() {
     private fun setupItems() {
         val abi = DownloadUtility.getDeviceAbi()
         binding.listContainer.removeAllViews()
-        
+
         // NDK
         val ndkAbi = when (abi) {
             "arm64-v8a" -> "aarch64"
@@ -73,7 +68,7 @@ class BuildToolsActivity : BaseAppCompatActivity() {
             "arm64-v8a" -> "arm64"
             "armeabi-v7a" -> "arm"
             "x86_64" -> "x64"
-            else -> "arm64" // Default
+            else -> "arm64"
         }
         addToolCard(
             title = "CMake (3.25.3)",
@@ -93,18 +88,29 @@ class BuildToolsActivity : BaseAppCompatActivity() {
             url = "https://github.com/gus23-okta/sketchware-daygreen-build-tools/releases/download/2.19/aapt2-$abi",
             destination = File(filesDir, "bin/aapt2")
         )
+
+        // AIDL
+        val aidlAbi = when (abi) {
+            "arm64-v8a" -> "arm64"
+            "armeabi-v7a" -> "arm32"
+            "x86_64" -> "x86_64"
+            else -> "x86"
+        }
+        addToolCard(
+            title = "AIDL (Android Interface Definition Language)",
+            description = "Tool for compiling .aidl files to Java",
+            isInstalled = File(filesDir, "bin/aidl").exists(),
+            size = if (File(filesDir, "bin/aidl").exists())
+                "%.1f MB".format(File(filesDir, "bin/aidl").length() / 1024f / 1024f)
+            else "~3 MB",
+            url = "https://github.com/gus23-okta/sketchware-daygreen-build-tools/releases/download/35/aidl-$aidlAbi",
+            destination = File(filesDir, "bin/aidl")
+        )
     }
 
-    private fun addToolCard(
-        title: String,
-        description: String,
-        isInstalled: Boolean,
-        size: String,
-        url: String,
-        destination: File
-    ) {
+    private fun addToolCard(title: String, description: String, isInstalled: Boolean, size: String, url: String, destination: File) {
         val cardView = layoutInflater.inflate(R.layout.item_download_card, binding.listContainer, false)
-        
+
         val tvTitle = cardView.findViewById<TextView>(R.id.title)
         val tvDesc = cardView.findViewById<TextView>(R.id.description)
         val tvStatusChip = cardView.findViewById<TextView>(R.id.status_chip)
@@ -117,9 +123,9 @@ class BuildToolsActivity : BaseAppCompatActivity() {
         tvDesc.text = description
         tvStatusChip.text = if (isInstalled) "Installed" else "Not Installed"
         tvStatusChip.alpha = if (isInstalled) 1.0f else 0.6f
-        
+
         tvStatusText.text = "Status: ${if (isInstalled) "Installed" else "Not installed"} ($size ${if (isInstalled) "used" else "download"})"
-        
+
         val downloadBtn = btnDownload as MaterialButton
         if (isInstalled) {
             downloadBtn.text = "Remove"
@@ -132,7 +138,6 @@ class BuildToolsActivity : BaseAppCompatActivity() {
                         if (destination.exists()) {
                             destination.delete()
                         }
-                        // For NDK/CMake we also need to delete the extracted folders
                         if (title.contains("NDK")) {
                             File(filesDir, "native/ndk").deleteRecursively()
                         } else if (title.contains("CMake")) {
@@ -148,10 +153,10 @@ class BuildToolsActivity : BaseAppCompatActivity() {
             downloadBtn.setIconResource(R.drawable.ic_mtrl_download)
             downloadBtn.setOnClickListener {
                 DownloadUtility.downloadFile(this, url, destination) {
-                    if (title.contains("AAPT")) {
+                    if (title.contains("AAPT") || title.contains("AIDL")) {
                         destination.setExecutable(true)
                     }
-                    setupItems() // Refresh UI after download
+                    setupItems()
                 }
             }
         }
@@ -160,7 +165,6 @@ class BuildToolsActivity : BaseAppCompatActivity() {
             importArchive(destination)
         }
 
-        // Set icon based on tool
         if (title.contains("NDK")) {
             imgIcon.setImageResource(R.drawable.ic_mtrl_cpp)
             imgIcon.setColorFilter(MaterialColors.getColor(this, R.attr.colorPrimary, Color.BLACK))
@@ -169,6 +173,9 @@ class BuildToolsActivity : BaseAppCompatActivity() {
             imgIcon.setColorFilter(MaterialColors.getColor(this, R.attr.colorPrimary, Color.BLACK))
         } else if (title.contains("AAPT")) {
             imgIcon.setImageResource(R.drawable.ic_mtrl_box)
+            imgIcon.setColorFilter(MaterialColors.getColor(this, R.attr.colorPrimary, Color.BLACK))
+        } else if (title.contains("AIDL")) {
+            imgIcon.setImageResource(R.drawable.ic_mtrl_code)
             imgIcon.setColorFilter(MaterialColors.getColor(this, R.attr.colorPrimary, Color.BLACK))
         }
 
@@ -180,7 +187,7 @@ class BuildToolsActivity : BaseAppCompatActivity() {
             selectionMode = SelectionMode.FILE
             extensions = arrayOf("zip", "tar.xz", "jar", "tar.gz", "tgz")
         }
-        
+
         val callback = object : FilePickerCallback() {
             override fun onFileSelected(file: File) {
                 destination.parentFile?.mkdirs()
@@ -192,7 +199,7 @@ class BuildToolsActivity : BaseAppCompatActivity() {
                         setupItems()
                     }
                 } else {
-                    if (destination.name.contains("aapt")) {
+                    if (destination.name.contains("aapt") || destination.name.contains("aidl")) {
                         destination.setExecutable(true, false)
                     }
                     Toast.makeText(this@BuildToolsActivity, "Imported ${file.name}", Toast.LENGTH_SHORT).show()
@@ -200,8 +207,7 @@ class BuildToolsActivity : BaseAppCompatActivity() {
                 }
             }
         }
-        
-        FilePickerDialogFragment(options, callback)
-            .show(supportFragmentManager, "file_picker")
+
+        FilePickerDialogFragment(options, callback).show(supportFragmentManager, "file_picker")
     }
 }
