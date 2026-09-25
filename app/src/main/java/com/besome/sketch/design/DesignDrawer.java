@@ -193,6 +193,13 @@ public class DesignDrawer extends LinearLayout {
         view.addView(drawerItem);
     }
 
+    private void addDrawerItem(int id, int iconResId, String title, String description, ViewGroup view) {
+        DrawerItem drawerItem = new DrawerItem(getContext());
+        drawerItem.setContent(iconResId, title, description);
+        drawerItem.setOnClickListener(id, drawerItemClickListener);
+        view.addView(drawerItem);
+    }
+
     private void addDrawerSubheaderItem(@StringRes int subheaderResId, ViewGroup view) {
         TextView subheader = new TextView(getContext());
         subheader.setEllipsize(TextUtils.TruncateAt.END);
