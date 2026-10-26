@@ -107,6 +107,7 @@ public class AppSettings extends BaseAppCompatActivity {
         managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_box, "Local library manager", "Manage and download local libraries", new ActivityLauncher(new Intent(getApplicationContext(), ManageLocalLibraryActivity.class), new Pair<>("sc_id", "system"))), true);
         managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_article, Helper.getResString(R.string.design_drawer_menu_title_logcat_reader), Helper.getResString(R.string.design_drawer_menu_subtitle_logcat_reader), new ActivityLauncher(new Intent(getApplicationContext(), LogReaderActivity.class))), true);
         managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_settings, "Build Tools", "Manage and download build tools", new ActivityLauncher(new Intent(getApplicationContext(), BuildToolsActivity.class))), true);
+        managersCategory.addLibraryItem(createPreference(R.drawable.ic_github, getString(R.string.cooper_github_manager_title), getString(R.string.cooper_github_link_project_description), new ActivityLauncher(new Intent(getApplicationContext(), GithubManagerActivity.class))), true);
         managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_folder, "SDK Manager", "Manage and download SDK platforms", new ActivityLauncher(new Intent(getApplicationContext(), SdkManagerActivity.class))), false);
 
         LibraryCategoryView generalCategory = new LibraryCategoryView(this);

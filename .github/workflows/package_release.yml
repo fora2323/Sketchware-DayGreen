@@ -1,108 +1,56 @@
-name: Android Release
+name: Android Debug APK
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: ["main", "master", "Cooper-integrated-github"]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: android-debug-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  release:
+  build-debug:
+    name: Build and upload Debug APK
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Read version from build.gradle (.kts)
-        id: version
-        run: |
-          FILE="app/build.gradle"
-          [ -f "app/build.gradle.kts" ] && FILE="app/build.gradle.kts"
-          VERSION=$(grep -m1 'versionCode' "$FILE" | grep -oE '[0-9]+')
-          
-          if [ -z "$VERSION" ]; then
-            echo "Error: versionCode tidak ditemukan!"
-            exit 1
-          fi
-          
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Check if tag already exists
-        id: check_tag
-        run: |
-          TAG="v${{ steps.version.outputs.version }}"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Tag $TAG sudah ada di repository. Menghentikan workflow agar tidak duplicate."
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Get commit message
-        id: commit
-        run: |
-          echo "message<<EOF" >> $GITHUB_OUTPUT
-          git log -1 --pretty=%B >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Create and push tag
-        if: steps.check_tag.outputs.exists == 'false'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v${{ steps.version.outputs.version }}"
-          git push origin "v${{ steps.version.outputs.version }}"
+        uses: actions/checkout@v7
 
       - name: Set up JDK 17
-        if: steps.check_tag.outputs.exists == 'false'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
 
-      - name: Grant execute permission for gradlew
-        if: steps.check_tag.outputs.exists == 'false'
-        run: chmod +x gradlew
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
 
-      - name: Build release APKs
-        if: steps.check_tag.outputs.exists == 'false'
-        run: ./gradlew assembleRelease --stacktrace
-
-      - name: Create GitHub Release
-        if: steps.check_tag.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          body: ${{ steps.commit.outputs.message }}
-          files: |
-            app/build/outputs/apk/**/release/*.apk
-
-      - name: Set up Python
-        if: steps.check_tag.outputs.exists == 'false'
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Pyrogram & Dependencies
-        if: steps.check_tag.outputs.exists == 'false'
-        run: pip install pyrofork tgcrypto
-
-      - name: Send APKs to Telegram (Userbot)
-        if: steps.check_tag.outputs.exists == 'false'
+      - name: Build Debug APK
         env:
-          API_ID: ${{ secrets.API_ID }}
-          API_HASH: ${{ secrets.API_HASH }}
-          SESSION_STRING: ${{ secrets.SESSION_STRING }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
-          VERSION: "v${{ steps.version.outputs.version }}"
-          REPO: "${{ github.repository }}"
-          COMMIT_AUTHOR: ${{ github.actor }}
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-          COMMIT_SHA: ${{ github.sha }}
-        run: python send_telegram.py
+          COOPER_GITHUB_CLIENT_ID: ${{ vars.COOPER_GITHUB_CLIENT_ID }}
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Verify Debug APK exists
+        shell: bash
+        run: |
+          mapfile -t apks < <(find app/build/outputs/apk -type f -path '*/debug/*.apk' -print)
+          if (( ${#apks[@]} == 0 )); then
+            echo "::error::No Debug APK was produced."
+            exit 1
+          fi
+          printf 'Generated APK: %s\\n' "${apks[@]}"
+
+      - name: Upload Debug APK for download
+        uses: actions/upload-artifact@v6
+        with:
+          name: Cooper-debug-apk-${{ github.run_number }}
+          path: app/build/outputs/apk/**/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14

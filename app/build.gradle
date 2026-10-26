@@ -22,6 +22,8 @@ android {
         versionName = "v8.0.6-daygreen"
 
         buildConfigField("String", "SKETCHUB_API_KEY", "\"${System.getenv("SKETCHUB_API_KEY")}\"")
+        // Public OAuth client ID supplied by build environment; no client secret is embedded.
+        buildConfigField("String", "COOPER_GITHUB_CLIENT_ID", "\"${System.getenv("COOPER_GITHUB_CLIENT_ID") ?: ""}\"")
     }
 
     signingConfigs {
@@ -128,6 +130,9 @@ dependencies {
     implementation "androidx.viewpager:viewpager:1.1.0"
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.2.0"
     implementation "com.google.android.material:material:1.14.0"
+
+    // Cooper local Git engine; pure-Java JGit, no system Git binary required.
+    implementation "org.eclipse.jgit:org.eclipse.jgit:6.10.1.202505221210-r"
     implementation "com.airbnb.android:lottie:6.7.1"
     implementation "com.google.android.flexbox:flexbox:3.0.0"
 

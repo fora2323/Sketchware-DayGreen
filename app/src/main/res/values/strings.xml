@@ -1304,6 +1304,7 @@ You must enter the API key to operate the map normally."</string>
     <string name="design_tab_title_component">Component</string>
     <string name="design_tab_title_event">Event</string>
     <string name="design_tab_title_view">View</string>
+    <string name="design_tab_title_strings">Strings</string>
     <string name="developer_tools_component_add_var">Additional Variables</string>
     <string name="developer_tools_component_build_class">Build Class</string>
     <string name="developer_tools_component_define_add_var">Define Additional Variables</string>
@@ -2319,4 +2320,140 @@ Please try again later"</string>
     <string name="daydream_subtitile">Magic for your project.</string>
 
 
+
+    <!-- Cooper Directly Git beginner flow -->
+    <string name="cooper_github_directly_section">Quick start</string>
+    <string name="cooper_github_directly_title">Cooper Directly 💡</string>
+    <string name="cooper_github_directly_description">A simpler guided path to publish one Cooper project to GitHub.</string>
+    <string name="cooper_github_directly_login_required">Connect your GitHub account before using Directly Git. Your project will not be uploaded until you review and confirm the publishing steps.</string>
+    <string name="cooper_github_directly_intro">Publish one project with fewer steps. GitHub Manager remains available for advanced controls.</string>
+    <string name="cooper_github_directly_project_icon">Selected Cooper project icon</string>
+    <string name="cooper_github_directly_no_project">Choose a Cooper project</string>
+    <string name="cooper_github_directly_project_details">Project details appear here after selection.</string>
+    <string name="cooper_github_directly_selected_project_details">Project ID: %1$s\nPath: %2$s</string>
+    <string name="cooper_github_directly_choose_project">Cooper Projects</string>
+    <string name="cooper_github_directly_safety_note">Directly Git will use one selected project and one destination repository. Review the repository details before publishing. Existing or previously linked destinations must not be overwritten.</string>
+    <string name="cooper_github_directly_advanced">Continue in GitHub Manager</string>
+    <string name="cooper_github_directly_project_picker_hint">Choose a project in the picker. Return to Directly Git to continue the guided flow.</string>
+
+    <!-- Missing GitHub Manager resources repaired for Cooper-integrated-github -->
+    <string name="cooper_github_directly_change_project">Change project</string>
+    <string name="cooper_github_directly_approve">I\'M Approve</string>
+    <string name="cooper_github_directly_repository_name">Repository name</string>
+    <string name="cooper_github_directly_repository_rules">Use 1–100 letters, numbers, dots, underscores, or hyphens. Do not start/end with a dot or end in .git.</string>
+    <string name="cooper_github_directly_name_counter">%1$d / 100 characters (%2$d remaining)</string>
+    <string name="cooper_github_directly_description_hint">Optional repository description (up to 350 characters)</string>
+    <string name="cooper_github_directly_choose_images">Choose images (up to 6)</string>
+    <string name="cooper_github_directly_no_images">No images selected</string>
+    <string name="cooper_github_directly_readme">README</string>
+    <string name="cooper_github_directly_empty">Empty</string>
+    <string name="cooper_github_directly_readme_choice_required">Choose README or Empty before publishing.</string>
+    <string name="cooper_github_directly_git_push">Git Push</string>
+    <string name="cooper_github_directly_invalid_repository_name">Enter a valid GitHub repository name.</string>
+    <string name="cooper_github_directly_publish_confirm">Review publication</string>
+    <string name="cooper_github_directly_publish_review">Publish project “%2$s” to a new GitHub repository named “%1$s”?</string>
+    <string name="cooper_github_directly_readme_project">Project name</string>
+    <string name="cooper_github_directly_readme_developers">Developer(s)</string>
+    <string name="cooper_github_directly_readme_contributors">Contributors</string>
+    <string name="cooper_github_directly_readme_information">Introduction / additional information</string>
+    <string name="cooper_github_directly_readme_title">Create README</string>
+    <string name="cooper_github_directly_readme_format_markdown">Markdown</string>
+    <string name="cooper_github_directly_readme_format_text">Plain text</string>
+    <string name="cooper_github_directly_discard_title">Discard publishing session?</string>
+    <string name="cooper_github_directly_discard_message">Your entered details and selected images will be lost.</string>
+    <string name="cooper_github_directly_keep_editing">Continue editing</string>
+    <string name="cooper_github_directly_discard">Discard</string>
+    <string name="cooper_github_directly_publish_unavailable_title">Publishing unavailable</string>
+    <string name="cooper_github_directly_publish_unavailable_message">Directly Git publishing is not yet available. No repository was created and no project files were uploaded.</string>
+    <string name="cooper_github_directly_image_limit">You can select up to six images. The previous selection was kept.</string>
+    <string name="cooper_github_directly_invalid_image">Choose valid JPEG, PNG, WebP, or GIF images.</string>
+    <string name="cooper_github_directly_unreadable_image">Cooper could not read one of the selected images. Choose it again.</string>
+    <string name="cooper_github_directly_images_selected">%1$d image(s) selected.</string>
+    <string name="cooper_github_directly_publish_progress_title">Publishing with Directly Git</string>
+    <string name="cooper_github_directly_stop_push">Stop Push</string>
+    <string name="cooper_github_directly_stop_requested">Stop requested. Cooper will stop at the next safe checkpoint.</string>
+    <string name="cooper_github_directly_publish_success">Publishing verified.
+Repository: %1$s
+Branch: %2$s
+Commit: %3$s</string>
+    <string name="cooper_github_directly_publish_partial">Publishing did not finish. The remote repository may already exist: %1$s
+
+%2$s
+
+Do not create another repository with the same name. Inspect the remote state before retrying.</string>
+    <string name="cooper_github_directly_publish_failed">Publishing failed before a remote repository was created.
+
+%1$s</string>
+    <string name="cooper_github_directly_phase_validate">Validating project and GitHub credentials</string>
+    <string name="cooper_github_directly_phase_assets">Preparing README and selected images</string>
+    <string name="cooper_github_directly_phase_manifest">Building and validating the reviewed file manifest</string>
+    <string name="cooper_github_directly_phase_commit">Preparing the local commit</string>
+    <string name="cooper_github_directly_phase_create">Creating a new GitHub repository</string>
+    <string name="cooper_github_directly_phase_remote">Configuring the new remote</string>
+    <string name="cooper_github_directly_phase_push">Pushing the reviewed branch and commit</string>
+    <string name="cooper_github_directly_phase_verify">Verifying the remote branch and commit</string>
+    <string name="cooper_github_directly_phase_finalize">Saving the verified project association</string>
+    <string name="cooper_github_directly_publish_failed_title">Directly Git could not publish</string>
+    <string name="cooper_github_directly_publish_partial_title">Publishing stopped after repository creation</string>
+    <string name="cooper_github_directly_publish_success_title">Directly Git publication verified</string>
+    <string name="cooper_github_open_repository">Open repository</string>
+    <string name="cooper_github_directly_image_preview">Selected project image %1$d</string>
+    <string name="cooper_github_directly_remove_image">Remove selected image %1$d</string>
+    <string name="cooper_github_directly_review_project">Project: %1$s (ID %2$s)</string>
+    <string name="cooper_github_directly_review_repository">Repository: %1$s/%2$s</string>
+    <string name="cooper_github_directly_review_readme_mode">README mode: %1$s</string>
+    <string name="cooper_github_directly_review_images">Images selected: %1$d</string>
+    <string name="cooper_github_directly_review_included_files">Files to include: %1$d</string>
+    <string name="cooper_github_directly_review_excluded_files">Generated/cache files excluded: %1$d</string>
+    <string name="cooper_github_directly_review_visibility">Visibility: private (safer default)</string>
+    <string name="cooper_github_directly_reset_repository_name">Reset repository name to project default</string>
+    <string name="cooper_github_directly_application_name">Application name: %1$s</string>
+    <string name="cooper_github_directly_recovery_title">Recover Directly Git publication</string>
+    <string name="cooper_github_directly_recovery_message">An earlier publication was interrupted. Cooper will verify the project, account, repository and remote commit before continuing.\n\nRepository: %1$s/%2$s\nSaved stage: %3$s\nBranch: %4$s\nExpected commit: %5$s\n\nA different remote commit will never be overwritten.</string>
+    <string name="cooper_github_directly_resume_publish">Verify and resume</string>
+    <string name="cooper_github_directly_recovery_later">Later</string>
+    <string name="cooper_github_directly_recovery_failed">Cooper could not safely resume this session. The saved recovery data remains available; inspect the local and remote state before trying again.\n\n%1$s</string>
+    <string name="cooper_github_directly_pending_session_exists">An interrupted publication for %1$s/%2$s is still saved. Verify and resume it from GitHub Manager before starting another Directly Git session.</string>
+    <string name="cooper_github_directly_recovery_project_mismatch">The interrupted publication belongs to a different Cooper project. Select the original project before restoring this draft.</string>
+    <string name="cooper_github_directly_package_name">Package ID: %1$s</string>
+    <string name="cooper_github_directly_package_unavailable">Package ID: not available in project metadata</string>
+    <string name="cooper_github_directly_application_version">App version: %1$s (code %2$s)</string>
+    <string name="cooper_github_directly_version_unavailable">App version metadata: not available</string>
+    <string name="cooper_github_directly_metadata_unavailable">not available</string>
+    <string name="cooper_github_directly_close">Close</string>
+
+    <string name="cooper_github_directly_visibility_private">Private repository</string>
+    <string name="cooper_github_directly_visibility_public">Public repository</string>
+    <string name="cooper_github_directly_visibility_hint">Repository visibility — choose who can access this repository</string>
+    <string name="cooper_github_directly_visibility_required">Choose Public or Private repository visibility before publishing.</string>
+    <string name="cooper_github_history_action_title">Cooper Git · Publication history</string>
+    <string name="cooper_github_history_action_description">View verified Directly Git and Advanced Git publication records saved on this device.</string>
+    <string name="cooper_github_history_title">Cooper Git 🔥</string>
+    <string name="cooper_github_history_subtitle">Verified publication history · %1$d record(s)</string>
+    <string name="cooper_github_history_empty">No verified publications have been recorded on this device yet.</string>
+    <string name="cooper_github_history_package">Package: %1$s</string>
+    <string name="cooper_github_history_project_id">Project ID: %1$s</string>
+    <string name="cooper_github_history_date">%1$s</string>
+    <string name="cooper_github_history_method">%1$s · %2$s · %3$s</string>
+    <string name="cooper_github_history_commit">Commit: %1$s</string>
+    <string name="cooper_github_history_saved">Push was verified and saved to Cooper Git publication history.</string>
+    <string name="cooper_github_history_save_failed">Push was verified, but Cooper could not save its publication-history entry.</string>
+    <string name="cooper_github_recovery_clean_action_title">Clean Directly Git recovery</string>
+    <string name="cooper_github_recovery_clean_action_description">Review and clear a stale recovery blocker without deleting project files or changing GitHub repositories.</string>
+    <string name="cooper_github_recovery_no_session_title">No recovery session</string>
+    <string name="cooper_github_recovery_no_session_message">There is no saved Directly Git recovery blocker to clear.</string>
+    <string name="cooper_github_recovery_clear_title">Clear recovery session?</string>
+    <string name="cooper_github_recovery_clear_details">Clearing removes only the saved Cooper recovery record. It does not delete project files or the GitHub repository, and it does not undo a push. Inspect local and remote state first.</string>
+    <string name="cooper_github_recovery_saved_stage">Saved stage</string>
+    <string name="cooper_github_recovery_project_id">Project ID</string>
+    <string name="cooper_github_recovery_expected_commit">Expected commit</string>
+    <string name="cooper_github_recovery_target">Target</string>
+    <string name="cooper_github_recovery_clear_button">Clear saved session</string>
+    <string name="cooper_github_recovery_clear_success">Saved recovery blocker cleared. Local and remote data were not changed.</string>
+    <string name="cooper_github_recovery_clear_failed">Cooper could not clear the saved recovery record.</string>
+    <string name="cooper_github_recovery_select_saved_project">Select saved project</string>
+    <string name="cooper_github_recovery_original_project_selected">Original recovery project selected: %1$s</string>
+    <string name="cooper_github_recovery_original_project_mismatch">The original project path no longer matches the saved recovery record. Clear recovery only after inspecting local and remote state.</string>
+    <string name="cooper_github_recovery_original_project_failed">Cooper could not safely select the saved project.</string>
+    <string name="cooper_github_project_icon_content_description">Project application icon</string>
 </resources>

@@ -35,6 +35,7 @@ import a.a.a.oq;
 import mod.hey.studios.project.ProjectSettings;
 import mod.pranav.viewbinding.ViewBindingBuilder;
 import pro.sketchware.R;
+import pro.sketchware.utility.ProjectStrings;
 
 public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickListener {
     private final boolean b = false;
@@ -769,8 +770,14 @@ public class ViewPropertyItems extends LinearLayout implements Kw, View.OnClickL
                     }
                     case "property_convert" -> bean.convert = inputItem.getValue();
                     case "property_inject" -> bean.inject = inputItem.getValue();
-                    case "property_text" -> bean.text.text = inputItem.getValue();
-                    case "property_hint" -> bean.text.hint = inputItem.getValue();
+                    case "property_text" -> {
+                        bean.text.text = ProjectStrings.assign(sc_id, bean.id, ProjectStrings.FIELD_TEXT, bean.text.text, inputItem.getValue());
+                        inputItem.setValue(bean.text.text);
+                    }
+                    case "property_hint" -> {
+                        bean.text.hint = ProjectStrings.assign(sc_id, bean.id, ProjectStrings.FIELD_HINT, bean.text.hint, inputItem.getValue());
+                        inputItem.setValue(bean.text.hint);
+                    }
                     case "property_text_size" -> {
                         String val = inputItem.getValue();
                         if (val != null && val.startsWith("@dimen/")) {

@@ -2,7 +2,7 @@ name: Android Debug Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "Cooper-integrated-github" ]
   workflow_dispatch:
 
 jobs:
@@ -49,27 +49,38 @@ jobs:
         if: steps.check_version.outputs.changed == 'false'
         run: chmod +x gradlew
 
-      # Python & Pyrogram dipindah ke atas, karena dibutuhkan live_log.py saat build
-      - name: Set up Python
+      - name: Build debug APKs
         if: steps.check_version.outputs.changed == 'false'
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+        env:
+          # Public OAuth client ID required by GitHub Device Flow.
+          COOPER_GITHUB_CLIENT_ID: ${{ vars.COOPER_GITHUB_CLIENT_ID }}
+        run: ./gradlew assembleDebug --stacktrace
 
-      - name: Install Pyrogram & Dependencies
-        if: steps.check_version.outputs.changed == 'false'
-        run: pip install pyrofork tgcrypto
-
-      - name: Build debug APKs (live log ke Telegram)
+      - name: Check optional Telegram notification configuration
+        id: telegram_config
         if: steps.check_version.outputs.changed == 'false'
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
           SESSION_STRING: ${{ secrets.SESSION_STRING }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          LOG_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID2 }}
-          LOG_TITLE: "Debug #${{ github.run_number }}"
-        run: python live_log.py ./gradlew assembleDebug --stacktrace
+        run: |
+          if [ -n "$API_ID" ] && [ -n "$API_HASH" ] && [ -n "$SESSION_STRING" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "Telegram notification skipped: optional Telegram secrets are not configured."
+          fi
+
+      - name: Set up Python for optional Telegram notification
+        if: steps.check_version.outputs.changed == 'false' && steps.telegram_config.outputs.configured == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Pyrogram for optional Telegram notification
+        if: steps.check_version.outputs.changed == 'false' && steps.telegram_config.outputs.configured == 'true'
+        run: pip install pyrofork tgcrypto
 
       - name: Upload android26 debug APK
         if: steps.check_version.outputs.changed == 'false'
@@ -90,7 +101,7 @@ jobs:
           retention-days: 30
 
       - name: Send APK to Telegram (Userbot)
-        if: steps.check_version.outputs.changed == 'false'
+        if: steps.check_version.outputs.changed == 'false' && steps.telegram_config.outputs.configured == 'true'
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}

@@ -155,18 +155,49 @@ public class ProjectBuilder {
 
         File defaultAndroidJar = null;
         String compileSdk = settings.getValue(ProjectSettings.SETTING_COMPILE_SDK_VERSION, "");
-        if (!compileSdk.isEmpty()) {
-            File customSdk = new File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android-" + compileSdk + ".jar");
-            if (customSdk.exists() && customSdk.length() > 0) {
-                defaultAndroidJar = customSdk;
+        int configuredSdk = -1;
+        try {
+            configuredSdk = Integer.parseInt(compileSdk);
+        } catch (NumberFormatException ignored) {
+            // Older projects may not persist a compile SDK setting.
+        }
+
+        /*
+         * The bundled Material Components 1.14.0 resources reference Android
+         * system palette resources that are unavailable in older platform jars.
+         * Use API 35 or newer for resource linking whenever such a platform is
+         * installed, even if a legacy project_config still says API 33/34.
+         * compileSdk affects compilation only; it does not change the app's
+         * minSdk or targetSdk.
+         */
+        File sdkDirectory = BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH;
+        java.util.List<Integer> installedSdks = org.sketchware.daygreen.FileCheckUtils.getInstalledSdks(context);
+        int minimumMaterialSdk = 35;
+        int preferredSdk = Math.max(configuredSdk, minimumMaterialSdk);
+        if (installedSdks.contains(preferredSdk)) {
+            defaultAndroidJar = new File(sdkDirectory, "android-" + preferredSdk + ".jar");
+        } else {
+            for (int i = installedSdks.size() - 1; i >= 0; i--) {
+                int installedSdk = installedSdks.get(i);
+                if (installedSdk >= minimumMaterialSdk && installedSdk >= configuredSdk) {
+                    defaultAndroidJar = new File(sdkDirectory, "android-" + installedSdk + ".jar");
+                    break;
+                }
+            }
+        }
+
+        // Preserve legacy behavior only when no compatible platform is installed.
+        if (defaultAndroidJar == null && configuredSdk >= minimumMaterialSdk) {
+            File configuredJar = new File(sdkDirectory, "android-" + configuredSdk + ".jar");
+            if (configuredJar.exists() && configuredJar.length() > 0) {
+                defaultAndroidJar = configuredJar;
             }
         }
 
         if (defaultAndroidJar == null) {
-            java.util.List<Integer> installedSdks = org.sketchware.daygreen.FileCheckUtils.getInstalledSdks(context);
             if (!installedSdks.isEmpty()) {
                 int highestSdk = installedSdks.get(installedSdks.size() - 1);
-                File fallbackJar = new File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android-" + highestSdk + ".jar");
+                File fallbackJar = new File(sdkDirectory, "android-" + highestSdk + ".jar");
                 if (fallbackJar.exists() && fallbackJar.length() > 0) {
                     defaultAndroidJar = fallbackJar;
                 }
@@ -174,11 +205,11 @@ public class ProjectBuilder {
         }
 
         if (defaultAndroidJar == null || !defaultAndroidJar.exists() || defaultAndroidJar.length() == 0) {
-            File legacyJar = new File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android.jar");
+            File legacyJar = new File(sdkDirectory, "android.jar");
             if (legacyJar.exists() && legacyJar.length() > 0) {
                 defaultAndroidJar = legacyJar;
             } else {
-                defaultAndroidJar = new File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android.jar");
+                defaultAndroidJar = new File(sdkDirectory, "android.jar");
             }
         }
 
