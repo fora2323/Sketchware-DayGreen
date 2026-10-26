@@ -18,7 +18,7 @@ android {
         //noinspection ExpiredTargetSdkVersion
         targetSdk = 28
         minSdk = 26
-        versionCode = 190
+        versionCode = 191
         versionName = "v8.0.6-daygreen"
 
         buildConfigField("String", "SKETCHUB_API_KEY", "\"${System.getenv("SKETCHUB_API_KEY")}\"")
