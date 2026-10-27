@@ -101,12 +101,12 @@ class BuildTaskNew @JvmOverloads constructor(
         val modeName = if (isRelease) "Release" else "Debug"
 
         try {
-            step("deleteTempFiles", 1) {
+            step("deleteTempFiles$modeName", 1) {
                 FileUtil.deleteFile(q.projectMyscPath)
                 false
             }
 
-            step("generateSourceCode", 2) {
+            step("generateSourceCode$modeName", 2) {
                 q.c(context)
                 q.a()
                 q.a(context, wq.e("600"))
@@ -135,7 +135,7 @@ class BuildTaskNew @JvmOverloads constructor(
                 false
             }
 
-            step("prepareProject", 3) {
+            step("prepareProject$modeName", 3) {
                 val fileManager = jC.b(scId)
                 val dataManager = jC.a(scId)
                 val libraryManager = jC.c(scId)
@@ -149,25 +149,25 @@ class BuildTaskNew @JvmOverloads constructor(
                 false
             }
 
-            step("extractBuiltInLibraries", 4) {
+            step("extractBuiltInLibraries$modeName", 4) {
                 BuiltInLibraries.extractCompileAssets(silentReceiver)
                 false
             }
 
             step(
-                name = "mergeAssets",
+                name = "mergeAssets$modeName",
                 stepNo = 5,
                 skipIf = { !hasFiles(File(q.assetsPath)) }
             ) {
                 false
             }
 
-            step("compileResources", 6) {
+            step("compileResources$modeName", 6) {
                 builder.compileResources()
             }
 
             step(
-                name = "generateViewBinding",
+                name = "generateViewBinding$modeName",
                 stepNo = 7,
                 skipIf = {
                     builder.settings.getValue(
@@ -180,13 +180,13 @@ class BuildTaskNew @JvmOverloads constructor(
                 false
             }
 
-            step("compileKotlin", 8) {
+            step("compileKotlin$modeName", 8) {
                 KotlinCompilerBridge.compileKotlinCodeIfPossible(silentReceiver, builder)
                 false
             }
 
             step(
-                name = "compileAidl",
+                name = "compileAidl$modeName",
                 stepNo = 9,
                 skipIf = { !hasAidlFiles() }
             ) {
@@ -194,12 +194,12 @@ class BuildTaskNew @JvmOverloads constructor(
                 false
             }
 
-            step("compileJavaCode", 10) {
+            step("compileJavaCode$modeName", 10) {
                 builder.compileJavaCode()
             }
 
             step(
-                name = "compileNativeCode",
+                name = "compileNativeCode$modeName",
                 stepNo = 11,
                 skipIf = {
                     builder.settings.getValue(ProjectSettings.SETTING_ENABLE_NATIVE, "false") != "true"
@@ -210,7 +210,7 @@ class BuildTaskNew @JvmOverloads constructor(
             }
 
             step(
-                name = "stringFog",
+                name = "stringFog$modeName",
                 stepNo = 12,
                 skipIf = { !StringfogHandler(scId).isStringfogEnabled() }
             ) {
@@ -219,7 +219,7 @@ class BuildTaskNew @JvmOverloads constructor(
             }
 
             step(
-                name = "proguard",
+                name = "proguard$modeName",
                 stepNo = 13,
                 skipIf = { !builder.proguard.isShrinkingEnabled() }
             ) {
