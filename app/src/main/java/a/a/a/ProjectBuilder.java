@@ -204,7 +204,7 @@ public class ProjectBuilder {
         return size;
     }
 
-    private void smartSyncDirectory(File src, File dest) {
+    private void smartSyncDirectory(File src, File dest) throws IOException {
         if (dest.exists() && getFolderSize(dest) == getFolderSize(src)) {
             return;
         }
