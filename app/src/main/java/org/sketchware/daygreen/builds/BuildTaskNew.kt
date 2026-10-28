@@ -235,12 +235,23 @@ class BuildTaskNew @JvmOverloads constructor(
                 builder.getDexFilesReady()
             }
 
-            step("package$modeName", 16) {
+            // PERUBAHAN B2: Menyisipkan step shrink resources setelah dexBuilder dan mergeDex selesai.
+            step(
+                name = "shrinkResources$modeName",
+                stepNo = 16,
+                skipIf = { !builder.proguard.isShrinkResourcesEnabled() }
+            ) {
+                val shrinker = ResourceShrinker(context, builder)
+                shrinker.shrink()
+                false
+            }
+
+            step("package$modeName", 17) {
                 builder.buildApk()
                 false
             }
 
-            step("sign$modeName", 17) {
+            step("sign$modeName", 18) {
                 if (isRelease) {
                     builder.signReleaseApk()
                 } else {

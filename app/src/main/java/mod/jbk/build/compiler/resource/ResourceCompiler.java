@@ -61,6 +61,13 @@ public class ResourceCompiler {
         });
         resourceCompiler.compile();
     }
+    
+    // --- PERUBAHAN B3: Dukungan eksekusi Re-link dari luar (oleh ResourceShrinker) ---
+    public void compileAndRelinkShrunk(String filteredResPath) throws zy, MissingFileException {
+        if (progressReceiver != null) progressReceiver.onProgress("Re-linking shrunk resources...", 16);
+        Aapt2Compiler compiler = new Aapt2Compiler(builder, aaptFile, willBuildAppBundle);
+        compiler.compileAndRelinkShrunk(filteredResPath);
+    }
 
     /**
      * A base class of a resource compiler.
@@ -194,6 +201,17 @@ public class ResourceCompiler {
             String versionName = buildHelper.yq.versionName;
             args.add((versionName == null || versionName.isEmpty()) ? "1.0" : versionName);
 
+            // --- PERUBAHAN B3: Dukungan file ID untuk stable-ids ---
+            // Tujuannya agar saat resource dihapus, ID resource yang tersisa tidak bergeser nilainya
+            // dan tidak merusak class di dalam dex yang sudah terkompilasi
+            File idFile = new File(buildHelper.yq.binDirectoryPath, "resource_ids.txt");
+            args.add("--emit-ids");
+            args.add(idFile.getAbsolutePath());
+            if (idFile.exists() && idFile.length() > 0) {
+                args.add("--stable-ids");
+                args.add(idFile.getAbsolutePath());
+            }
+
             args.add("-I");
             String customAndroidSdk = buildHelper.build_settings.getValue(BuildSettings.SETTING_ANDROID_JAR_PATH, "");
             String effectiveAndroidJar = customAndroidSdk.isEmpty() ? buildHelper.androidJarPath : customAndroidSdk;
@@ -319,6 +337,126 @@ public class ResourceCompiler {
                     log += "\n\n[Tip] AAPT2 failed to open an archive (SDK jar or resource zip). Ensure your Android SDK is downloaded in App Settings > SDK Manager.";
                 }
                 throw new zy(log);
+            }
+        }
+        
+        // --- PERUBAHAN B3: Melakukan kompilasi ulang dari folder project (yang disusutkan) lalu menghubungkannya lagi
+        public void compileAndRelinkShrunk(String filteredResPath) throws zy, MissingFileException {
+            String outputPath = buildHelper.yq.binDirectoryPath + File.separator + "res";
+            File shrunkZip = new File(outputPath, "project_shrunk.zip");
+            
+            ArrayList<String> commands = new ArrayList<>();
+            commands.add(aapt2.getAbsolutePath());
+            commands.add("compile");
+            commands.add("--dir");
+            commands.add(filteredResPath);
+            commands.add("-o");
+            commands.add(shrunkZip.getAbsolutePath());
+            
+            LogUtil.d(TAG + ":cARS", "Compiling filtered resources: " + commands);
+            BinaryExecutor executor = new BinaryExecutor();
+            executor.setCommands(commands);
+            if (!executor.execute().isEmpty()) {
+                throw new zy(executor.getLog());
+            }
+
+            relinkShrunk(shrunkZip);
+        }
+
+        private void relinkShrunk(File filteredProjectZip) throws zy, MissingFileException {
+            String resourcesPath = buildHelper.yq.binDirectoryPath + File.separator + "res";
+
+            ArrayList<String> args = new ArrayList<>();
+            args.add(aapt2.getAbsolutePath());
+            args.add("link");
+            if (buildAppBundle) args.add("--proto-format");
+            args.add("--allow-reserved-package-id");
+            args.add("--auto-add-overlay");
+            args.add("--no-version-vectors");
+            args.add("--no-version-transitions");
+
+            args.add("--min-sdk-version");
+            args.add(String.valueOf(buildHelper.settings.getMinSdkVersion()));
+            args.add("--target-sdk-version");
+            args.add(buildHelper.settings.getValue(ProjectSettings.SETTING_TARGET_SDK_VERSION, String.valueOf(VAR_DEFAULT_TARGET_SDK_VERSION)));
+
+            args.add("--version-code");
+            String versionCode = buildHelper.yq.versionCode;
+            args.add((versionCode == null || versionCode.isEmpty()) ? "1" : versionCode);
+            args.add("--version-name");
+            String versionName = buildHelper.yq.versionName;
+            args.add((versionName == null || versionName.isEmpty()) ? "1.0" : versionName);
+
+            File idFile = new File(buildHelper.yq.binDirectoryPath, "resource_ids.txt");
+            if (idFile.exists() && idFile.length() > 0) {
+                args.add("--stable-ids");
+                args.add(idFile.getAbsolutePath());
+            }
+
+            args.add("-I");
+            String customAndroidSdk = buildHelper.build_settings.getValue(BuildSettings.SETTING_ANDROID_JAR_PATH, "");
+            String effectiveAndroidJar = customAndroidSdk.isEmpty() ? buildHelper.androidJarPath : customAndroidSdk;
+            args.add(effectiveAndroidJar);
+
+            linkingAssertDirectoryExists(buildHelper.yq.assetsPath);
+            args.add("-A"); args.add(buildHelper.yq.assetsPath);
+
+            String importedAssetsPath = buildHelper.fpu.getPathAssets(buildHelper.yq.sc_id);
+            if (FileUtil.isExistFile(importedAssetsPath)) {
+                args.add("-A"); args.add(importedAssetsPath);
+            }
+
+            for (Jp library : buildHelper.builtInLibraryManager.getLibraries()) {
+                if (library.hasAssets()) {
+                    args.add("-A"); args.add(BuiltInLibraries.getLibraryAssetsPath(library.getName()));
+                }
+            }
+
+            for (String localLibraryAssetsDirectory : new ManageLocalLibrary(buildHelper.yq.sc_id).getAssets()) {
+                args.add("-A"); args.add(localLibraryAssetsDirectory);
+            }
+
+            for (Jp library : buildHelper.builtInLibraryManager.getLibraries()) {
+                if (library.hasResources()) {
+                    args.add("-R"); args.add(new File(compiledBuiltInLibraryResourcesDirectory, library.getName() + ".zip").getAbsolutePath());
+                }
+            }
+
+            File[] filesInCompiledResourcesPath = new File(resourcesPath).listFiles();
+            if (filesInCompiledResourcesPath != null) {
+                java.util.Arrays.sort(filesInCompiledResourcesPath, (f1, f2) -> f1.getName().compareTo(f2.getName()));
+                for (File file : filesInCompiledResourcesPath) {
+                    if (file.isFile()) {
+                        if (!file.getName().equals("project.zip") && !file.getName().equals("project-imported.zip") && !file.getName().equals("project_shrunk.zip")) {
+                            args.add("-R"); args.add(file.getAbsolutePath());
+                        }
+                    }
+                }
+            }
+
+            args.add("-R"); args.add(filteredProjectZip.getAbsolutePath());
+
+            File projectImportedArchive = new File(resourcesPath, "project-imported.zip");
+            if (projectImportedArchive.exists()) {
+                args.add("-R"); args.add(projectImportedArchive.getAbsolutePath());
+            }
+
+            args.add("--java"); args.add(buildHelper.yq.rJavaDirectoryPath);
+            args.add("--proguard"); args.add(buildHelper.yq.proguardAaptRules);
+            args.add("--manifest"); args.add(buildHelper.yq.androidManifestPath);
+
+            String extraPackages = buildHelper.getLibraryPackageNames();
+            if (!extraPackages.isEmpty()) {
+                args.add("--extra-packages"); args.add(extraPackages);
+            }
+
+            args.add("-o"); args.add(buildHelper.yq.resourcesApkPath);
+
+            LogUtil.d(TAG + ":rs", args.toString());
+            BinaryExecutor executor = new BinaryExecutor();
+            executor.setCommands(args);
+            if (!executor.execute().isEmpty()) {
+                throw new zy(executor.getLog());
             }
         }
 

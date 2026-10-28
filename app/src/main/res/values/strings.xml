@@ -19,6 +19,8 @@
     <string name="link_github_url">https://github.com/fora2323/Sketchware-DayGreen.git</string>
     <string name="link_donation_url">https://tako.id/azura_xd23</string>
     <!--atribut lagecy-->
+    <string name="shrink_resources_title">Shrink Resources</string>
+    <string name="shrink_resources_desc">Remove unused resources from the final APK to reduce app size. Requires Code Shrinking to be enabled.</string>
     <string name="appbar_scrolling_view_behavior">com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior</string>
     <string name="besome_blog_url">http://medium.com/sketchware</string>
     <string name="block_add_list_int_body_1">to</string>

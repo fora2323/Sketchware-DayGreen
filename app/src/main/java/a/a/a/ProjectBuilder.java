@@ -28,6 +28,7 @@ import com.iyxan23.zipalignjava.ZipAlign;
 
 import org.xml.sax.SAXException;
 
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -1209,9 +1210,50 @@ public class ProjectBuilder {
                 jars.add(hashMap.get("jarPath").toString());
             }
         }
+        
+        // --- PERUBAHAN A1: Filter Memory R8 ---
+        // Alasan: Mengirimkan semua library (termasuk yang tidak terpakai) membuat memori R8 habis saat menguraikan graph.
+        // Solusi: Filter array libs dari `getProguardClasspath()` hanya untuk JAR yang setidaknya
+        // menyediakan satu package yang dirujuk oleh file kelas di project atau file keep.
+        Set<String> projectRefs = getProjectReferencedPackages();
+        List<String> filteredLibs = new ArrayList<>();
+        Set<String> providedPackages = new HashSet<>();
+
+        String[] allLibs = getProguardClasspath().split(":");
+        for (String libPath : allLibs) {
+            if (libPath.trim().isEmpty()) continue;
+            File libFile = new File(libPath);
+            Set<String> libPkgs = getJarProvidedPackages(libFile);
+
+            boolean used = false;
+            for (String pkg : libPkgs) {
+                if (projectRefs.contains(pkg)) {
+                    used = true;
+                    break;
+                }
+            }
+            if (used) {
+                filteredLibs.add(libPath);
+                providedPackages.addAll(libPkgs);
+            } else {
+                LogUtil.d(TAG, "R8 Optimization: Skipping unused library " + libFile.getName());
+            }
+        }
+
+        // Tambahkan -dontwarn untuk class-class yang dirujuk project tapi tidak ada di library
+        for (String ref : projectRefs) {
+            if (!providedPackages.contains(ref) && !ref.isEmpty()) {
+                rules.add("-dontwarn " + ref + ".**");
+            }
+        }
+        
+        // Mencegah R8 gagal karena dependency antar library (seperti superclass library lain) 
+        // yang ikut di-drop dan tak ditemukan
+        rules.add("-dontwarn **");
+
         try {
             JarBuilder.INSTANCE.generateJar(new File(yq.compiledClassesPath));
-            new R8Compiler(rules, config.toArray(new String[0]), getProguardClasspath().split(":"), jars.toArray(new String[0]), settings.getMinSdkVersion(), yq).compile();
+            new R8Compiler(rules, config.toArray(new String[0]), filteredLibs.toArray(new String[0]), jars.toArray(new String[0]), settings.getMinSdkVersion(), yq).compile();
         } catch (Exception e) {
             throw new IOException(e);
         }
@@ -1379,5 +1421,160 @@ public class ProjectBuilder {
             throw new Exception("File keystore release tidak ditemukan: " + keystorePath);
         }
         signApk(keystorePath, alias, storePass, keyPass, yq.unsignedUnalignedApkPath, yq.finalToInstallApkPath);
+    }
+    
+    // --- Helper A1: Mendapatkan daftar rujukan packages dari class dan konfigurasi project
+    private Set<String> getProjectReferencedPackages() {
+        Set<String> refs = new HashSet<>();
+        File compiledDir = new File(yq.compiledClassesPath);
+        extractFromDir(compiledDir, refs);
+
+        // Ekstrak rujukan dari rule aapt2 (XML/Manifest class inflations)
+        File aaptRules = new File(yq.proguardAaptRules);
+        if (aaptRules.exists()) {
+            try {
+                String content = FileUtil.readFile(aaptRules.getAbsolutePath());
+                Matcher m = Pattern.compile("-keep\\s+class\\s+([a-zA-Z0-9_\\$\\.]+)").matcher(content);
+                while (m.find()) {
+                    String cls = m.group(1);
+                    int dot = cls.lastIndexOf('.');
+                    if (dot != -1) refs.add(cls.substring(0, dot));
+                    else refs.add("");
+                }
+            } catch (Exception e) {}
+        }
+
+        // Ekstrak rujukan dari custom proguard rules yang ditetapkan oleh user
+        File customRules = new File(proguard.getCustomProguardRules());
+        if (customRules.exists()) {
+            try {
+                String content = FileUtil.readFile(customRules.getAbsolutePath());
+                Matcher m = Pattern.compile("-keep\\s+class\\s+([a-zA-Z0-9_\\$\\.]+)").matcher(content);
+                while (m.find()) {
+                    String cls = m.group(1);
+                    int dot = cls.lastIndexOf('.');
+                    if (dot != -1) refs.add(cls.substring(0, dot));
+                    else refs.add("");
+                }
+            } catch (Exception e) {}
+        }
+        return refs;
+    }
+
+    private void extractFromDir(File dir, Set<String> refs) {
+        if (!dir.exists()) return;
+        File[] files = dir.listFiles();
+        if (files == null) return;
+        for (File f : files) {
+            if (f.isDirectory()) {
+                extractFromDir(f, refs);
+            } else if (f.getName().endsWith(".class")) {
+                try (InputStream is = new FileInputStream(f)) {
+                    extractClassReferencesFromStream(is, refs);
+                } catch (Exception e) {}
+            }
+        }
+    }
+
+    private void extractClassReferencesFromStream(InputStream is, Set<String> outPackages) {
+        try {
+            DataInputStream dis = new DataInputStream(is);
+            if (dis.readInt() != 0xCAFEBABE) return;
+            dis.readUnsignedShort(); // minor
+            dis.readUnsignedShort(); // major
+            int cpCount = dis.readUnsignedShort();
+            int[] classIndices = new int[cpCount];
+            String[] strings = new String[cpCount];
+
+            for (int i = 1; i < cpCount; i++) {
+                int tag = dis.readUnsignedByte();
+                switch (tag) {
+                    case 1:
+                        strings[i] = dis.readUTF();
+                        break;
+                    case 3: case 4: case 9: case 10: case 11: case 12:
+                    case 17: case 18:
+                        dis.skipBytes(4);
+                        break;
+                    case 5: case 6:
+                        dis.skipBytes(8);
+                        i++;
+                        break;
+                    case 7:
+                        classIndices[i] = dis.readUnsignedShort();
+                        break;
+                    case 8: case 16: case 19: case 20:
+                        dis.skipBytes(2);
+                        break;
+                    case 15:
+                        dis.skipBytes(3);
+                        break;
+                    default:
+                        return; // Unknown tag, abort read
+                }
+            }
+            for (int i = 1; i < cpCount; i++) {
+                if (classIndices[i] > 0 && classIndices[i] < cpCount) {
+                    String className = strings[classIndices[i]];
+                    if (className != null) {
+                        if (className.startsWith("[")) {
+                            int lPos = className.indexOf('L');
+                            if (lPos != -1) {
+                                className = className.substring(lPos + 1, className.length() - 1);
+                            } else continue;
+                        }
+                        int slash = className.lastIndexOf('/');
+                        if (slash != -1) {
+                            outPackages.add(className.substring(0, slash).replace('/', '.'));
+                        } else {
+                            outPackages.add(""); // default package
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {}
+    }
+
+    private Set<String> getJarProvidedPackages(File jar) {
+        Set<String> pkgs = new HashSet<>();
+        if (!jar.exists()) return pkgs;
+        String key = BuildCache.hashStrings(jar.getAbsolutePath(), String.valueOf(jar.length()), String.valueOf(jar.lastModified()));
+        File cacheDir = new File(context.getCacheDir(), "jar_pkg_cache");
+        cacheDir.mkdirs();
+        File cacheFile = new File(cacheDir, key + ".txt");
+        if (cacheFile.exists()) {
+            try {
+                String content = FileUtil.readFile(cacheFile.getAbsolutePath());
+                if (!content.trim().isEmpty()) {
+                    pkgs.addAll(Arrays.asList(content.split("\n")));
+                }
+                return pkgs;
+            } catch (Exception e) {}
+        }
+
+        try (ZipFile zip = new ZipFile(jar)) {
+            Enumeration<? extends ZipEntry> entries = zip.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+                if (entry.getName().endsWith(".class")) {
+                    String name = entry.getName();
+                    int slash = name.lastIndexOf('/');
+                    if (slash != -1) {
+                        pkgs.add(name.substring(0, slash).replace('/', '.'));
+                    } else {
+                        pkgs.add("");
+                    }
+                }
+            }
+        } catch (Exception e) {}
+
+        StringBuilder sb = new StringBuilder();
+        for (String p : pkgs) {
+            if (!p.trim().isEmpty()) {
+                sb.append(p).append("\n");
+            }
+        }
+        FileUtil.writeFile(cacheFile.getAbsolutePath(), sb.toString().trim());
+        return pkgs;
     }
 }

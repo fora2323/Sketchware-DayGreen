@@ -129,6 +129,7 @@ public class ProguardHandler {
 
         defaultConfig.put("enabled", "false");
         defaultConfig.put("debug", "false");
+        defaultConfig.put("shrink_resources", "false"); // Setting default untuk Shrink Resources B1
 
         return new Gson().toJson(defaultConfig);
     }
@@ -211,6 +212,30 @@ public class ProguardHandler {
         var config = new Gson().fromJson(FileUtil.readFile(config_path), Helper.TYPE_STRING_MAP);
         config.put("r8", String.valueOf(r8Enabled));
 
+        FileUtil.writeFile(config_path, new Gson().toJson(config));
+    }
+
+    // --- PERUBAHAN B1: Menambahkan method untuk membaca konfigurasi Shrink Resources ---
+    public boolean isShrinkResourcesEnabled() {
+        boolean shrinkResourcesEnabled = false; // Default-nya mati sesuai instruksi B1
+        if (FileUtil.isExistFile(config_path)) {
+            try {
+                var config = new Gson().fromJson(FileUtil.readFile(config_path), Helper.TYPE_STRING_MAP);
+                String enabled = config.get("shrink_resources");
+                if (enabled != null) {
+                    shrinkResourcesEnabled = enabled.equals("true");
+                }
+            } catch (Exception e) {
+                shrinkResourcesEnabled = false;
+            }
+        }
+        return shrinkResourcesEnabled;
+    }
+
+    public void setShrinkResourcesEnabled(boolean shrinkResourcesEnabled) {
+        var config = new Gson().fromJson(FileUtil.readFile(config_path), Helper.TYPE_STRING_MAP);
+        if (config == null) config = new HashMap<>();
+        config.put("shrink_resources", String.valueOf(shrinkResourcesEnabled));
         FileUtil.writeFile(config_path, new Gson().toJson(config));
     }
 
