@@ -186,7 +186,7 @@ dependencies {
     implementation 'javax.xml.stream:stax-api:1.0-2'
 
     implementation "com.github.Cosmic-Ide:DependencyResolver:05ec26af0b"
-    implementation "com.github.PranavPurwar:filepicker:74526bea66"
+    // FilePicker vendored in app/src/main/java/dev/pranav/filepicker with date/time formatting fix
 
     implementation 'com.guardsquare:proguard-core:9.0.2'
 
