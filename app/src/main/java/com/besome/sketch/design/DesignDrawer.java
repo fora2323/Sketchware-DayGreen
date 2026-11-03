@@ -51,12 +51,8 @@ public class DesignDrawer extends LinearLayout {
             designActivity.toSoundManager();
         } else if (id == R.id.item_font_manager) {
             designActivity.toFontManager();
-        } else if (id == R.id.item_java_manager) {
-            designActivity.toJavaManager();
         } else if (id == R.id.item_native_manager) {
             designActivity.toNativeManager();
-        } else if (id == R.id.item_resource_manager) {
-            designActivity.toResourceManager();
         } else if (id == R.id.item_resource_editor) {
             designActivity.toResourceEditor();
         } else if (id == R.id.item_assets_manager) {
@@ -130,7 +126,6 @@ public class DesignDrawer extends LinearLayout {
         addDrawerItem(R.id.item_image_manager, R.drawable.ic_mtrl_image, R.string.design_drawer_menu_title_image, R.string.design_drawer_menu_description_image, content);
         addDrawerItem(R.id.item_sound_manager, R.drawable.ic_mtrl_music, R.string.design_drawer_menu_title_sound, R.string.design_drawer_menu_description_sound, content);
         addDrawerItem(R.id.item_font_manager, R.drawable.ic_mtrl_font, R.string.design_drawer_menu_title_font, R.string.design_drawer_menu_description_font, content);
-        addDrawerItem(R.id.item_java_manager, R.drawable.ic_mtrl_java, R.string.text_title_menu_java, R.string.text_subtitle_menu_java, content);
         //native
         Activity activity = (Activity) getContext();
         String drawerScId = activity instanceof DesignActivity ? DesignActivity.sc_id : null;
@@ -141,7 +136,6 @@ public class DesignDrawer extends LinearLayout {
             }
         }
         addDrawerItem(R.id.item_aidl_manager, R.drawable.ic_mtrl_code, "AIDL Manager", "Manage AIDL interface files", content);
-        addDrawerItem(R.id.item_resource_manager, R.drawable.ic_mtrl_folder, R.string.text_title_menu_resource, R.string.text_subtitle_menu_resource, content);
         addDrawerItem(R.id.item_resource_editor, R.drawable.ic_mtrl_folder_code, R.string.text_title_menu_resource_editor, R.string.text_subtitle_menu_resource_editor, content);
         addDrawerItem(R.id.item_assets_manager, R.drawable.ic_mtrl_file_present, R.string.text_title_menu_assets, R.string.text_subtitle_menu_assets, content);
         addDrawerItem(R.id.item_permission_manager, R.drawable.ic_mtrl_shield_check, R.string.text_title_menu_permission, R.string.text_subtitle_menu_permission, content);

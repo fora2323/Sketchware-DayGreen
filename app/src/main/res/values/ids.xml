@@ -9,14 +9,12 @@
     <item name="item_image_manager" type="id" />
     <item name="item_sound_manager" type="id" />
     <item name="item_font_manager" type="id" />
-    <item name="item_java_manager" type="id" />
     <item name="item_native_manager" type="id" />
     <item name="item_aidl_manager" type="id" />
     <item name="chip_aidl_interface" type="id" />
     <item name="chip_cpp_file" type="id" />
     <item name="chip_c_file" type="id" />
     <item name="chip_header_file" type="id" />
-    <item name="item_resource_manager" type="id" />
     <item name="item_resource_editor" type="id" />
     <item name="item_assets_manager" type="id" />
     <item name="item_permission_manager" type="id" />

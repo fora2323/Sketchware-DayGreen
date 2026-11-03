@@ -312,16 +312,10 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:windowSoftInputMode="stateHidden" />
         <activity
-            android:name="mod.agus.jcoderz.editor.manage.resource.ManageResourceActivity"
-            android:configChanges="orientation|screenSize" />
-        <activity
             android:name="mod.hey.studios.activity.managers.assets.ManageAssetsActivity"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name="mod.hey.studios.activity.managers.assets.HtmlPreviewActivity"
-            android:configChanges="orientation|screenSize" />
-        <activity
-            android:name="mod.hey.studios.activity.managers.java.ManageJavaActivity"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name="mod.hey.studios.activity.managers.native_code.ManageNativeActivity"

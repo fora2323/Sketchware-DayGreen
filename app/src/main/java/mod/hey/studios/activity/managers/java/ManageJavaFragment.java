@@ -14,10 +14,12 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
 import android.widget.PopupMenu;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.gson.Gson;
 
@@ -45,7 +47,7 @@ import pro.sketchware.utility.FileResConfig;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 
-public class ManageJavaActivity extends BaseAppCompatActivity {
+public class ManageJavaFragment extends Fragment {
 
     // works for both Java & Kotlin files
     private static final String PACKAGE_DECL_REGEX = "package (.*?);?\\n";
@@ -101,16 +103,48 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
     private FilePathUtil fpu;
     private FileResConfig frc;
     private String sc_id;
+    private String pkgName;
     private FilesAdapter filesAdapter;
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        enableEdgeToEdgeNoContrast();
-        super.onCreate(savedInstanceState);
-        binding = ManageFileBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+    private final OnBackPressedCallback backPressedCallback = new OnBackPressedCallback(false) {
+        @Override
+        public void handleOnBackPressed() {
+            if (fpu != null && !Objects.equals(Uri.parse(current_path).getPath(), Uri.parse(fpu.getPathJava(sc_id)).getPath())) {
+                current_path = current_path.substring(0, current_path.lastIndexOf("/"));
+                refresh();
+            }
+        }
+    };
 
-        sc_id = getIntent().getStringExtra("sc_id");
+    public static ManageJavaFragment newInstance(String scId, String pkgName) {
+        ManageJavaFragment fragment = new ManageJavaFragment();
+        Bundle args = new Bundle();
+        args.putString("sc_id", scId);
+        args.putString("pkgName", pkgName);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            sc_id = getArguments().getString("sc_id");
+            pkgName = getArguments().getString("pkgName");
+        }
+        requireActivity().getOnBackPressedDispatcher().addCallback(this, backPressedCallback);
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        binding = ManageFileBinding.inflate(inflater, container, false);
+        return binding.getRoot();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         Helper.fixFileprovider();
         setupUI();
         frc = new FileResConfig(sc_id);
@@ -119,19 +153,16 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
         refresh();
     }
 
-    @Override
-    public void onBackPressed() {
-        if (Objects.equals(Uri.parse(current_path).getPath(), Uri.parse(fpu.getPathJava(sc_id)).getPath())) {
-            super.onBackPressed();
-        } else {
-            current_path = current_path.substring(0, current_path.lastIndexOf("/"));
-            refresh();
+    private void updateBackPressedCallback() {
+        if (fpu != null && current_path != null) {
+            boolean isNotRoot = !Objects.equals(Uri.parse(current_path).getPath(), Uri.parse(fpu.getPathJava(sc_id)).getPath());
+            backPressedCallback.setEnabled(isNotRoot);
         }
     }
 
     private void setupUI() {
-        binding.topAppBar.setNavigationOnClickListener(Helper.getBackPressedClickListener(this));
         binding.topAppBar.setTitle("Java/Kotlin Manager");
+        binding.topAppBar.setNavigationIcon(null);
         binding.showOptionsButton.setOnClickListener(view -> hideShowOptionsButton(false));
         binding.closeButton.setOnClickListener(view -> hideShowOptionsButton(true));
         binding.createNewButton.setOnClickListener(v -> {
@@ -142,7 +173,6 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
             showImportDialog();
             hideShowOptionsButton(true);
         });
-
     }
 
     private void hideShowOptionsButton(boolean isHide) {
@@ -152,8 +182,6 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
     }
 
     private String getCurrentPkgName() {
-        String pkgName = getIntent().getStringExtra("pkgName");
-
         try {
             String trimmedPath = Helper.trimPath(fpu.getPathJava(sc_id));
             String substring = current_path.substring(current_path.indexOf(trimmedPath) + trimmedPath.length());
@@ -177,7 +205,7 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
         DialogCreateNewFileLayoutBinding dialogBinding = DialogCreateNewFileLayoutBinding.inflate(getLayoutInflater());
         var inputText = dialogBinding.inputText;
 
-        var dialog = new MaterialAlertDialogBuilder(this)
+        var dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setView(dialogBinding.getRoot())
                 .setTitle("Create new")
                 .setMessage("File extension will be added automatically based on the file type you select")
@@ -268,7 +296,7 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
             }
         };
 
-        new FilePickerDialogFragment(options, callback).show(getSupportFragmentManager(), "filePicker");
+        new FilePickerDialogFragment(options, callback).show(getChildFragmentManager(), "filePicker");
     }
 
     private void showRenameDialog(int position) {
@@ -277,7 +305,7 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
         var inputText = dialogBinding.inputText;
         var renameOccurrencesCheckBox = dialogBinding.renameOccurrencesCheckBox;
 
-        var dialog = new MaterialAlertDialogBuilder(this).setTitle("Rename " + filesAdapter.getFileName(position)).setView(dialogBinding.getRoot()).setNegativeButton("Cancel", (dialogInterface, i) -> dialogInterface.dismiss()).setPositiveButton("Rename", (dialogInterface, i) -> {
+        var dialog = new MaterialAlertDialogBuilder(requireContext()).setTitle("Rename " + filesAdapter.getFileName(position)).setView(dialogBinding.getRoot()).setNegativeButton("Cancel", (dialogInterface, i) -> dialogInterface.dismiss()).setPositiveButton("Rename", (dialogInterface, i) -> {
             if (!Helper.getText(inputText).isEmpty()) {
                 if (!filesAdapter.isFolder(position)) {
                     if (frc.getJavaManifestList().contains(filesAdapter.getFullName(position))) {
@@ -317,7 +345,7 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
     private void showDeleteDialog(int position) {
         boolean isInManifest = frc.getJavaManifestList().contains(filesAdapter.getFullName(position));
 
-        new MaterialAlertDialogBuilder(this).setTitle("Delete " + filesAdapter.getFileName(position) + "?").setMessage("Are you sure you want to delete this " + (filesAdapter.isFolder(position) ? "folder" : "file") + "? " + (isInManifest ? "This will also remove it from AndroidManifest. " : "") + "This action cannot be undone.").setPositiveButton(R.string.common_word_delete, (dialog, which) -> {
+        new MaterialAlertDialogBuilder(requireContext()).setTitle("Delete " + filesAdapter.getFileName(position) + "?").setMessage("Are you sure you want to delete this " + (filesAdapter.isFolder(position) ? "folder" : "file") + "? " + (isInManifest ? "This will also remove it from AndroidManifest. " : "") + "This action cannot be undone.").setPositiveButton(R.string.common_word_delete, (dialog, which) -> {
             if (!filesAdapter.isFolder(position) && isInManifest) {
                 frc.getJavaManifestList().remove(filesAdapter.getFullName(position));
                 FileUtil.writeFile(fpu.getManifestJava(sc_id), new Gson().toJson(frc.listJavaManifest));
@@ -339,6 +367,8 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
             FileUtil.writeFile(fpu.getManifestJava(sc_id), "");
             refresh();
         }
+
+        updateBackPressedCallback();
 
         currentTree.clear();
         FileUtil.listDir(current_path, currentTree);
@@ -393,7 +423,7 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
                 holder.binding.icon.setImageResource(R.drawable.ic_mtrl_kotlin);
             }
 
-            Helper.applyRipple(ManageJavaActivity.this, holder.binding.more);
+            Helper.applyRipple(requireContext(), holder.binding.more);
 
             holder.binding.more.setOnClickListener(v -> itemContextMenu(v, position, Gravity.RIGHT));
         }
@@ -431,7 +461,7 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
         /**
          * @param position The Java file's position in this adapter's {@code ArrayList}
          * @return The file's filename with extension
-         * @see ManageJavaActivity.FilesAdapter#getFileNameWoExt(int)
+         * @see ManageJavaFragment.FilesAdapter#getFileNameWoExt(int)
          */
         public String getFileName(int position) {
             String item = getItem(position);
@@ -441,7 +471,7 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
         /**
          * @param position The Java file's position in this adapter's {@code ArrayList}
          * @return The file's filename without extension
-         * @see ManageJavaActivity.FilesAdapter#getFileName(int)
+         * @see ManageJavaFragment.FilesAdapter#getFileName(int)
          */
         public String getFileNameWoExt(int position) {
             return FileUtil.getFileNameNoExtension(getItem(position));
@@ -453,7 +483,7 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
 
         public void goEditFile(int position) {
             Intent intent = new Intent();
-            intent.setClass(getApplicationContext(), SrcCodeEditor.class);
+            intent.setClass(requireContext(), SrcCodeEditor.class);
             intent.putExtra("java", "");
             intent.putExtra("sc_id", sc_id);
             intent.putExtra("title", getFileName(position));
@@ -463,7 +493,7 @@ public class ManageJavaActivity extends BaseAppCompatActivity {
         }
 
         private void itemContextMenu(View v, int position, int gravity) {
-            PopupMenu popupMenu = new PopupMenu(ManageJavaActivity.this, v, gravity);
+            PopupMenu popupMenu = new PopupMenu(requireContext(), v, gravity);
             popupMenu.inflate(R.menu.popup_menu_double);
 
             Menu popupMenuMenu = popupMenu.getMenu();

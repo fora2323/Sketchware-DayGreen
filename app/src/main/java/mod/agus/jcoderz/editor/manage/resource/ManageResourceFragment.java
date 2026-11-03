@@ -1,6 +1,5 @@
 package mod.agus.jcoderz.editor.manage.resource;
 
-import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
@@ -13,10 +12,12 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
 import android.widget.PopupMenu;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.bumptech.glide.Glide;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -45,8 +46,7 @@ import pro.sketchware.utility.FileResConfig;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 
-@SuppressLint("SetTextI18n")
-public class ManageResourceActivity extends BaseAppCompatActivity {
+public class ManageResourceFragment extends Fragment {
 
     private CustomAdapter adapter;
     private FilePickerDialogFragment dialog;
@@ -56,6 +56,28 @@ public class ManageResourceActivity extends BaseAppCompatActivity {
     private String temp;
 
     private ManageFileBinding binding;
+
+    private final OnBackPressedCallback backPressedCallback = new OnBackPressedCallback(false) {
+        @Override
+        public void handleOnBackPressed() {
+            try {
+                temp = temp.substring(0, temp.lastIndexOf("/"));
+                if (temp.contains("resource")) {
+                    handleAdapter(temp);
+                    handleFab();
+                }
+            } catch (IndexOutOfBoundsException ignored) {
+            }
+        }
+    };
+
+    public static ManageResourceFragment newInstance(String scId) {
+        ManageResourceFragment fragment = new ManageResourceFragment();
+        Bundle args = new Bundle();
+        args.putString("sc_id", scId);
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     public static String getLastDirectory(String path) {
         // Get the index of the last occurrence of '/' character
@@ -72,21 +94,37 @@ public class ManageResourceActivity extends BaseAppCompatActivity {
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        enableEdgeToEdgeNoContrast();
+    public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = ManageFileBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-
-        if (getIntent().hasExtra("sc_id")) {
-            numProj = getIntent().getStringExtra("sc_id");
+        if (getArguments() != null) {
+            numProj = getArguments().getString("sc_id");
         }
+        requireActivity().getOnBackPressedDispatcher().addCallback(this, backPressedCallback);
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        binding = ManageFileBinding.inflate(inflater, container, false);
+        return binding.getRoot();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         Helper.fixFileprovider();
         frc = new FileResConfig(numProj);
         fpu = new FilePathUtil();
         setupDialog();
         checkDir();
         initToolbar();
+    }
+
+    private void updateBackPressedCallback() {
+        if (fpu != null && temp != null) {
+            boolean isNotRoot = !temp.equals(fpu.getPathResource(numProj));
+            backPressedCallback.setEnabled(isNotRoot);
+        }
     }
 
     private void checkDir() {
@@ -114,10 +152,11 @@ public class ManageResourceActivity extends BaseAppCompatActivity {
         binding.filesListRecyclerView.setAdapter(adapter);
 
         binding.noContentLayout.setVisibility(resourceFile.isEmpty() ? View.VISIBLE : View.GONE);
+        updateBackPressedCallback();
     }
 
     private boolean isInMainDirectory() {
-        return temp.equals(fpu.getPathResource(numProj));
+        return temp != null && temp.equals(fpu.getPathResource(numProj));
     }
 
     private void handleFab() {
@@ -132,7 +171,7 @@ public class ManageResourceActivity extends BaseAppCompatActivity {
 
     private void initToolbar() {
         binding.topAppBar.setTitle("Resource Manager");
-        binding.topAppBar.setNavigationOnClickListener(v -> onBackPressed());
+        binding.topAppBar.setNavigationIcon(null);
         binding.showOptionsButton.setOnClickListener(view -> {
             if (isInMainDirectory()) {
                 createNewDialog(true);
@@ -146,10 +185,9 @@ public class ManageResourceActivity extends BaseAppCompatActivity {
             hideShowOptionsButton(true);
         });
         binding.importNewButton.setOnClickListener(v -> {
-            dialog.show(getSupportFragmentManager(), "filePicker");
+            dialog.show(getChildFragmentManager(), "filePicker");
             hideShowOptionsButton(true);
         });
-
     }
 
     private void hideShowOptionsButton(boolean isHide) {
@@ -167,30 +205,16 @@ public class ManageResourceActivity extends BaseAppCompatActivity {
     @Override
     public void onResume() {
         super.onResume();
-        binding.filesListRecyclerView.getAdapter().notifyDataSetChanged();
-    }
-
-    @Override
-    public void onBackPressed() {
-        try {
-            temp = temp.substring(0, temp.lastIndexOf("/"));
-            if (temp.contains("resource")) {
-                handleAdapter(temp);
-                handleFab();
-                return;
-            }
-        } catch (IndexOutOfBoundsException ignored) {
+        if (binding != null && binding.filesListRecyclerView.getAdapter() != null) {
+            binding.filesListRecyclerView.getAdapter().notifyDataSetChanged();
         }
-        setResult(RESULT_OK);
-        finish();
-        super.onBackPressed();
     }
 
     private void createNewDialog(boolean isFolder) {
         DialogCreateNewFileLayoutBinding dialogBinding = DialogCreateNewFileLayoutBinding.inflate(getLayoutInflater());
         var inputText = dialogBinding.inputText;
 
-        var dialog = new MaterialAlertDialogBuilder(this)
+        var dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setView(dialogBinding.getRoot())
                 .setTitle(isFolder ? "Create a new folder" : "Create a new file")
                 .setMessage("Enter a name for the new " + (isFolder ? "folder" : "file"))
@@ -280,7 +304,7 @@ public class ManageResourceActivity extends BaseAppCompatActivity {
 
         var inputText = dialogBinding.inputText;
 
-        var dialog = new MaterialAlertDialogBuilder(this)
+        var dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Rename")
                 .setView(dialogBinding.getRoot())
                 .setNegativeButton("Cancel", (dialogInterface, i) -> dialogInterface.dismiss())
@@ -313,7 +337,7 @@ public class ManageResourceActivity extends BaseAppCompatActivity {
     }
 
     private void showDeleteDialog(int position) {
-        new MaterialAlertDialogBuilder(this)
+        new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Delete " + Uri.fromFile(new File(adapter.getItem(position))).getLastPathSegment() + "?")
                 .setMessage("Are you sure you want to delete this " + (FileUtil.isDirectory(adapter.getItem(position)) ? "folder" : "file") + "? "
                         + "This action cannot be undone.")
@@ -330,7 +354,7 @@ public class ManageResourceActivity extends BaseAppCompatActivity {
     private void goEdit(int position) {
         if (frc.listFileResource.get(position).endsWith("xml")) {
             Intent intent = new Intent();
-            intent.setClass(getApplicationContext(), SrcCodeEditor.class);
+            intent.setClass(requireContext(), SrcCodeEditor.class);
             intent.putExtra("title", Uri.parse(frc.listFileResource.get(position)).getLastPathSegment());
             intent.putExtra("content", frc.listFileResource.get(position));
             intent.putExtra("xml", "");
@@ -344,7 +368,7 @@ public class ManageResourceActivity extends BaseAppCompatActivity {
     private void goEdit2(int position) {
         if (frc.listFileResource.get(position).endsWith("xml")) {
             Intent intent = new Intent();
-            intent.setClass(getApplicationContext(), SrcCodeEditor.class);
+            intent.setClass(requireContext(), SrcCodeEditor.class);
             intent.putExtra("title", Uri.parse(frc.listFileResource.get(position)).getLastPathSegment());
             intent.putExtra("content", frc.listFileResource.get(position));
             intent.putExtra("xml", "");
@@ -383,7 +407,7 @@ public class ManageResourceActivity extends BaseAppCompatActivity {
             } else {
                 try {
                     if (FileUtil.isImageFile(path)) {
-                        Glide.with(ManageResourceActivity.this).load(new File(path)).into(binding.icon);
+                        Glide.with(ManageResourceFragment.this).load(new File(path)).into(binding.icon);
                     } else if (path.endsWith(".xml") && "drawable".equals(getLastDirectory(path))) {
                         new VectorDrawableLoader().setImageVectorFromFile(binding.icon, path);
                     } else {
@@ -395,7 +419,7 @@ public class ManageResourceActivity extends BaseAppCompatActivity {
             }
 
             binding.more.setOnClickListener(v -> {
-                PopupMenu popupMenu = new PopupMenu(ManageResourceActivity.this, v);
+                PopupMenu popupMenu = new PopupMenu(requireContext(), v);
                 popupMenu.inflate(R.menu.popup_menu_double);
                 popupMenu.getMenu().getItem(0).setVisible(false);
                 popupMenu.setOnMenuItemClickListener(item -> {
@@ -423,7 +447,7 @@ public class ManageResourceActivity extends BaseAppCompatActivity {
 
             binding.getRoot().setOnLongClickListener(v -> {
                 if (FileUtil.isDirectory(frc.listFileResource.get(position))) {
-                    PopupMenu popupMenu = new PopupMenu(ManageResourceActivity.this, binding.more);
+                    PopupMenu popupMenu = new PopupMenu(requireContext(), binding.more);
                     popupMenu.getMenu().add("Delete");
                     popupMenu.setOnMenuItemClickListener(item -> {
                         showDeleteDialog(position);

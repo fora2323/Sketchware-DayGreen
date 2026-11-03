@@ -106,9 +106,9 @@ import extensions.anbui.daydream.project.DRProjectTracker;
 import extensions.anbui.daydream.settings.DRSettings;
 import extensions.anbui.daydream.tools.project.CleanUpCore;
 import mod.agus.jcoderz.editor.manage.permission.ManagePermissionActivity;
-import mod.agus.jcoderz.editor.manage.resource.ManageResourceActivity;
+import mod.agus.jcoderz.editor.manage.resource.ManageResourceFragment;
 import mod.hey.studios.activity.managers.assets.ManageAssetsActivity;
-import mod.hey.studios.activity.managers.java.ManageJavaActivity;
+import mod.hey.studios.activity.managers.java.ManageJavaFragment;
 import mod.hey.studios.compiler.kotlin.KotlinCompilerBridge;
 import mod.hey.studios.project.custom_blocks.CustomBlocksDialog;
 import mod.hey.studios.project.proguard.ManageProguardActivity;
@@ -280,7 +280,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 xmlFileName = ProjectFileBean.DEFAULT_XML_NAME;
             }
             fileName.setText(xmlFileName);
-        } else {
+        } else if (viewPager.getCurrentItem() == 1 || viewPager.getCurrentItem() == 2) {
             if (!ProjectFileBean.DEFAULT_JAVA_NAME.equals(currentJavaFileName) && jC.b(sc_id).a(currentJavaFileName) == null) {
                 projectFile = getDefaultProjectFile();
                 currentJavaFileName = ProjectFileBean.DEFAULT_JAVA_NAME;
@@ -321,7 +321,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         refreshFileSelector();
         if (viewPager.getCurrentItem() == 0) {
             refreshViewTabAdapter();
-        } else {
+        } else if (viewPager.getCurrentItem() == 1 || viewPager.getCurrentItem() == 2) {
             refreshEventTabAdapter();
             refreshComponentTabAdapter();
         }
@@ -479,9 +479,14 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
 
     @Override
     public void onBackPressed() {
+        if (getOnBackPressedDispatcher().hasEnabledCallbacks()) {
+            super.onBackPressed();
+            return;
+        }
+
         if (drawer.isDrawerOpen(GravityCompat.END)) {
             drawer.closeDrawer(GravityCompat.END);
-        } else if (viewTabAdapter.isPropertyViewVisible()) {
+        } else if (viewTabAdapter != null && viewTabAdapter.isPropertyViewVisible()) {
             hideViewPropertyView();
         } else {
             if (currentTabNumber > 0) {
@@ -497,7 +502,9 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     }
 
     public void hideViewPropertyView() {
-        viewTabAdapter.a(false);
+        if (viewTabAdapter != null) {
+            viewTabAdapter.a(false);
+        }
     }
 
     private void saveChangesAndCloseProject() {
@@ -648,7 +655,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         xmlLayoutOrientation = findViewById(R.id.img_orientation);
         viewPager = findViewById(R.id.viewpager);
         viewPager.setAdapter(new ViewPagerAdapter(getSupportFragmentManager()));
-        viewPager.setOffscreenPageLimit(3);
+        viewPager.setOffscreenPageLimit(4);
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
 
             @Override
@@ -668,6 +675,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 } else if (currentTabNumber == 2 && componentTabAdapter != null) {
                     componentTabAdapter.unselectAll();
                 }
+                
                 if (position == 0) {
                     bottomMenu.findItem(7).setVisible(true);
                     if (viewTabAdapter != null) {
@@ -683,7 +691,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                             eventTabAdapter.refreshEvents();
                         }
                     }
-                } else {
+                } else if (position == 2) {
                     bottomMenu.findItem(7).setVisible(false);
                     if (viewTabAdapter != null) {
                         xmlLayoutOrientation.setImageResource(R.drawable.ic_mtrl_code);
@@ -691,6 +699,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                         if (componentTabAdapter != null) {
                             componentTabAdapter.refreshData();
                         }
+                    }
+                } else {
+                    bottomMenu.findItem(7).setVisible(false);
+                    if (viewTabAdapter != null) {
+                        xmlLayoutOrientation.setImageResource(R.drawable.ic_mtrl_code);
+                        viewTabAdapter.showHidePropertyView(false);
                     }
                 }
                 refresh();
@@ -723,7 +737,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             handler.post(() -> {
                 bottomMenu.findItem(2).setVisible(q != null && FileUtil.isExistFile(q.projectMyscPath));
                 var isDebugApkExists = isDebugApkExists();
-                //bottomMenu.findItem(99).setVisible(isDebugApkExists);
                 bottomMenu.findItem(4).setVisible(isDebugApkExists);
                 bottomMenu.findItem(6).setVisible(isDebugApkExists);
             });
@@ -782,8 +795,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             projectLoader.execute();
         } catch (Exception e) {
             e.printStackTrace();
-//            crashlytics.log("ProjectLoader failed");
-//            crashlytics.recordException(e);
         } finally {
             SystemLogPrinter.stop();
         }
@@ -835,7 +846,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         if (view.getId() == R.id.file_name_container) {
             if (viewPager.getCurrentItem() == 0) {
                 showAvailableViews(false);
-            } else {
+            } else if (viewPager.getCurrentItem() == 1 || viewPager.getCurrentItem() == 2) {
                 showAvailableViews(true);
             }
         }
@@ -856,7 +867,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                     saveChangesAndCloseProject();
                 } catch (Exception e) {
                     e.printStackTrace();
-//                  crashlytics.recordException(e);
                     h();
                 }
             }
@@ -870,7 +880,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                     discardChangesProjectCloser.execute();
                 } catch (Exception e) {
                     e.printStackTrace();
-//                  crashlytics.recordException(e);
                     h();
                 }
             }
@@ -1037,7 +1046,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         k();
         new Thread(() -> {
             String filename = Helper.getText(fileName);
-            // var yq = new yq(getApplicationContext(), sc_id);
             var xmlGenerator = new Ox(q.N, projectFile);
             var projectDataManager = jC.a(sc_id);
             var viewBeans = projectDataManager.d(filename);
@@ -1104,14 +1112,11 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
      * Opens {@link ManageNativeActivity}.
      */
     void toNativeManager() {
-        launchActivity(mod.hey.studios.activity.managers.native_code.ManageNativeActivity.class, null, new Pair<>("pkgName", q.packageName));
+        launchActivity(mod.hey.studios.activity.managers.native_code.ManageNativeActivity.class, null, new Pair<>("pkgName", q != null ? q.packageName : ""));
     }
 
-    /**
-     * Opens {@link ManageJavaActivity}.
-     */
     void toJavaManager() {
-        launchActivity(ManageJavaActivity.class, null, new Pair<>("pkgName", q.packageName));
+        viewPager.setCurrentItem(3);
     }
 
     /**
@@ -1128,11 +1133,8 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         launchActivity(ManageProguardActivity.class, null);
     }
 
-    /**
-     * Opens {@link ManageResourceActivity}.
-     */
     void toResourceManager() {
-        launchActivity(ManageResourceActivity.class, openResourcesManager);
+        viewPager.setCurrentItem(4);
     }
 
     /**
@@ -1207,7 +1209,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     }
     
     void toAidlManager() {
-        launchActivity(ManageAidlActivity.class, null, new Pair<>("pkgName", q.packageName));
+        launchActivity(ManageAidlActivity.class, null, new Pair<>("pkgName", q != null ? q.packageName : ""));
     }
 
     @SafeVarargs
@@ -1432,7 +1434,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                     } else if (isBuildFinished) {
                         finishUI();
                     }
-                }, 200); // 200ms delay agar teks sempat terbaca 
+                }, 200); 
             } else {
                 isProcessingProgress = false;
             }
@@ -1698,12 +1700,14 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             labels = new String[]{
                     Helper.getResString(R.string.design_tab_title_view),
                     Helper.getResString(R.string.design_tab_title_event),
-                    Helper.getResString(R.string.design_tab_title_component)};
+                    Helper.getResString(R.string.design_tab_title_component),
+                    Helper.getResString(R.string.design_tab_title_java),
+                    Helper.getResString(R.string.design_tab_title_resource)};
         }
 
         @Override
         public int getCount() {
-            return 3;
+            return 5;
         }
 
         @Override
@@ -1719,7 +1723,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 viewTabAdapter = (ViewEditorFragment) fragment;
             } else if (position == 1) {
                 eventTabAdapter = (rs) fragment;
-            } else {
+            } else if (position == 2) {
                 componentTabAdapter = (br) fragment;
             }
 
@@ -1731,8 +1735,25 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         public Fragment getItem(int position) {
             if (position == 0) {
                 return new ViewEditorFragment();
+            } else if (position == 1) {
+                return new rs();
+            } else if (position == 2) {
+                return new br();
+            } else if (position == 3) {
+                String pkgName = "";
+                if (q != null) {
+                    pkgName = q.packageName;
+                } else {
+                    HashMap<String, Object> projectInfo = lC.b(sc_id);
+                    if (projectInfo != null && projectInfo.containsKey("my_sc_pkg_name")) {
+                        pkgName = (String) projectInfo.get("my_sc_pkg_name");
+                    } else if (projectInfo != null && projectInfo.containsKey("my_ws_pkg_name")) {
+                        pkgName = (String) projectInfo.get("my_ws_pkg_name");
+                    }
+                }
+                return ManageJavaFragment.newInstance(sc_id, pkgName);
             } else {
-                return position == 1 ? new rs() : new br();
+                return ManageResourceFragment.newInstance(sc_id);
             }
         }
     }

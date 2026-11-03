@@ -533,7 +533,7 @@ public class ProjectBuilder {
 
                 for (Integer typeId : dex.typeIds()) {
                     if (!newDexTypeIds.contains(typeId)) {
-                        if (mergedDexTypes.size() + newDexProtoIds.size() + 1 > 0xffff) {
+                        if (mergedDexTypes.size() + newDexTypeIds.size() + 1 > 0xffff) {
                             LogUtil.d(TAG, "Can't merge DEX file to " + nextMergedDexFilename + " because it has too many new type IDs. " + nextMergedDexFilename + " will have " + mergedDexTypes.size() + " type IDs");
                             canMerge = false;
                             break bruh;
@@ -990,6 +990,15 @@ public class ProjectBuilder {
             File f = new File(file);
             dexes.add(f);
             projectDexes.add(f);
+        }
+
+        /* Debug build: tidak merge DEX, kemas setiap DEX apa adanya sebagai multi-dex */
+        boolean isRelease = build_settings.getValue(BuildSettings.SETTING_BUILD_MODE, BuildSettings.BUILD_MODE_DEBUG)
+                .equals(BuildSettings.BUILD_MODE_RELEASE);
+        if (!isRelease) {
+            dexesToAddButNotMerge = new ArrayList<>(dexes);
+            LogUtil.d(TAG, "Debug build: DEX tidak di-merge, " + dexes.size() + " file dikemas langsung");
+            return false;
         }
 
         String mergeInputHash = BuildCache.combine(
