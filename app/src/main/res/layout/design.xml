@@ -35,7 +35,12 @@
                     android:id="@+id/tab_layout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@android:color/transparent" />
+                    android:background="@android:color/transparent"
+                    app:tabMode="scrollable"
+                    app:tabGravity="start"
+                    app:tabMinWidth="0dp"
+                    app:tabPaddingStart="16dp"
+                    app:tabPaddingEnd="16dp" />
 
                 <com.google.android.material.divider.MaterialDivider
                     android:layout_width="match_parent"

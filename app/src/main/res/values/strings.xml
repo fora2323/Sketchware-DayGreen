@@ -12,6 +12,9 @@
     <string name="name_tag_create_new">New Project</string>
     <string name="title_sketchware">Sketchware-DayGreen</string>
     <string name="program_information_title_open_source_license">Open Source Licenses</string>
+    <string name="settings_design_tabs_title">Design tabs</string>
+    <string name="settings_design_tabs_desc">Choose which tabs appear in the project editor</string>
+    <string name="design_tabs_empty_error">Select at least one tab</string>
     <!--link new-->
     <string name="link_github_release">https://github.com/fora2323/Sketchware-DayGreen/releases</string>
     <string name="link_discord_invite">https://discord.gg/ukRxYdXVF</string>
@@ -1312,8 +1315,7 @@ You must enter the API key to operate the map normally."</string>
     <string name="developer_tools_component_build_class">Build Class</string>
     <string name="developer_tools_component_define_add_var">Define Additional Variables</string>
     <string name="developer_tools_component_description">Description (Optional)</string>
-    <string name="developer_tools_component_description_guide_add_component">"If you add a component here
- You can use it in Logic Editor"</string>
+    <string name="developer_tools_component_description_guide_add_component">"If you add a component here You can use it in Logic Editor"</string>
     <string name="developer_tools_component_url">Document URL (Optional)</string>
     <string name="developer_tools_component_id">Component ID (Optional)</string>
     <string name="developer_tools_component_icon">Component Icon (Optional)</string>

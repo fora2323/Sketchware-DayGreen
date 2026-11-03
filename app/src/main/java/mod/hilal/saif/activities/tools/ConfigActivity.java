@@ -5,6 +5,7 @@ import static pro.sketchware.utility.GsonUtils.getGson;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -61,6 +62,7 @@ public class ConfigActivity extends BaseAppCompatActivity {
     public static final String SETTING_CRITICAL_UPDATE_REMINDER = "critical-update-reminder";
     public static final String SETTING_BLOCKMANAGER_DIRECTORY_PALETTE_FILE_PATH = "palletteDir";
     public static final String SETTING_BLOCKMANAGER_DIRECTORY_BLOCK_FILE_PATH = "blockDir";
+    public static final String SETTING_VISIBLE_DESIGN_TABS = "visible-design-tabs";
 
     public static String getBackupPath() {
         return DataStore.getInstance().getString(SETTING_BACKUP_DIRECTORY, "/.sketchware/backups/");
@@ -99,6 +101,24 @@ public class ConfigActivity extends BaseAppCompatActivity {
             throw new IllegalArgumentException("Unhandled data type " + value.getClass());
         }
         dataStore.persist();
+    }
+    
+    public static List<String> getVisibleDesignTabs() {
+        String saved = DataStore.getInstance().getString(SETTING_VISIBLE_DESIGN_TABS, "view,event");
+        if (saved == null || saved.trim().isEmpty()) {
+            return Arrays.asList("view", "event");
+        }
+        List<String> validTabs = Arrays.asList("view", "event", "component", "java", "resource");
+        List<String> result = new ArrayList<>();
+        for (String tab : validTabs) {
+            if (saved.contains(tab)) {
+                result.add(tab);
+            }
+        }
+        if (result.isEmpty()) {
+            return Arrays.asList("view", "event");
+        }
+        return result;
     }
 
     @NonNull
@@ -143,7 +163,8 @@ public class ConfigActivity extends BaseAppCompatActivity {
                 SETTING_USE_NEW_VERSION_CONTROL,
                 SETTING_USE_ASD_HIGHLIGHTER,
                 SETTING_BLOCKMANAGER_DIRECTORY_PALETTE_FILE_PATH,
-                SETTING_BLOCKMANAGER_DIRECTORY_BLOCK_FILE_PATH);
+                SETTING_BLOCKMANAGER_DIRECTORY_BLOCK_FILE_PATH,
+                SETTING_VISIBLE_DESIGN_TABS);
 
         for (String key : keys) {
             settings.put(key, getDefaultValue(key));
@@ -163,6 +184,7 @@ public class ConfigActivity extends BaseAppCompatActivity {
                     "/.sketchware/resources/block/My Block/palette.json";
             case SETTING_BLOCKMANAGER_DIRECTORY_BLOCK_FILE_PATH ->
                     "/.sketchware/resources/block/My Block/block.json";
+            case SETTING_VISIBLE_DESIGN_TABS -> "view,event";
             default -> throw new IllegalArgumentException("Unknown key '" + key + "'!");
         };
     }
@@ -369,6 +391,44 @@ public class ConfigActivity extends BaseAppCompatActivity {
         
         appearanceCategory.addLibraryItem(createPreference(R.drawable.ic_language, "Change Language", "Change the display language of the app", v -> {
             LanguagePickerDialog.show(this);
+        }), true);
+        
+        appearanceCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_devices, Helper.getResString(R.string.settings_design_tabs_title), Helper.getResString(R.string.settings_design_tabs_desc), v -> {
+            String[] tabNames = {"View", "Event", "Component", "Java & Kotlin", "Resource"};
+            String[] tabKeys = {"view", "event", "component", "java", "resource"};
+            boolean[] checkedItems = new boolean[5];
+            
+            List<String> currentTabs = getVisibleDesignTabs();
+            for (int i = 0; i < tabKeys.length; i++) {
+                checkedItems[i] = currentTabs.contains(tabKeys[i]);
+            }
+
+            AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                    .setTitle(Helper.getResString(R.string.settings_design_tabs_title))
+                    .setMultiChoiceItems(tabNames, checkedItems, (dialog1, which, isChecked) -> {
+                        checkedItems[which] = isChecked;
+                    })
+                    .setNegativeButton(R.string.common_word_cancel, null)
+                    .setPositiveButton(R.string.common_word_save, null)
+                    .create();
+
+            dialog.setOnShowListener(dialogInterface -> {
+                dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(view -> {
+                    List<String> selectedKeys = new ArrayList<>();
+                    for (int i = 0; i < checkedItems.length; i++) {
+                        if (checkedItems[i]) {
+                            selectedKeys.add(tabKeys[i]);
+                        }
+                    }
+                    if (selectedKeys.isEmpty()) {
+                        SketchwareUtil.toast(Helper.getResString(R.string.design_tabs_empty_error));
+                    } else {
+                        setSetting(SETTING_VISIBLE_DESIGN_TABS, TextUtils.join(",", selectedKeys));
+                        dialog.dismiss();
+                    }
+                });
+            });
+            dialog.show();
         }), false);
 
         LibraryCategoryView systemCategory = new LibraryCategoryView(this);

@@ -168,6 +168,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     private String currentJavaFileName;
     private ViewEditorFragment viewTabAdapter;
     private Thread buildThread;
+    private List<String> activeTabs;
     public static boolean needReloadProjectData = false;
     public static boolean isFirstLaunch = true;
     private Bundle mSavedInstanceState;
@@ -180,7 +181,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     });
     private final ActivityResultLauncher<Intent> openResourcesManager = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == RESULT_OK) {
-            if (viewTabAdapter != null && viewPager.getCurrentItem() == 0) {
+            if (viewTabAdapter != null && activeTabs.size() > viewPager.getCurrentItem() && activeTabs.get(viewPager.getCurrentItem()).equals("view")) {
                 viewTabAdapter.i();
                 refreshViewTabAdapter();
             }
@@ -274,13 +275,16 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             currentJavaFileName = javaFileName;
         }
 
-        if (viewPager.getCurrentItem() == 0) {
+        if (activeTabs.isEmpty() || activeTabs.size() <= viewPager.getCurrentItem()) return;
+        String currentTabId = activeTabs.get(viewPager.getCurrentItem());
+
+        if (currentTabId.equals("view")) {
             if (!ProjectFileBean.DEFAULT_XML_NAME.equals(xmlFileName) && jC.b(sc_id).b(xmlFileName) == null) {
                 projectFile = getDefaultProjectFile();
                 xmlFileName = ProjectFileBean.DEFAULT_XML_NAME;
             }
             fileName.setText(xmlFileName);
-        } else if (viewPager.getCurrentItem() == 1 || viewPager.getCurrentItem() == 2) {
+        } else if (currentTabId.equals("event") || currentTabId.equals("component")) {
             if (!ProjectFileBean.DEFAULT_JAVA_NAME.equals(currentJavaFileName) && jC.b(sc_id).a(currentJavaFileName) == null) {
                 projectFile = getDefaultProjectFile();
                 currentJavaFileName = ProjectFileBean.DEFAULT_JAVA_NAME;
@@ -319,9 +323,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
 
     private void refresh() {
         refreshFileSelector();
-        if (viewPager.getCurrentItem() == 0) {
+        if (activeTabs.isEmpty() || activeTabs.size() <= viewPager.getCurrentItem()) return;
+        
+        String currentTabId = activeTabs.get(viewPager.getCurrentItem());
+        if (currentTabId.equals("view")) {
             refreshViewTabAdapter();
-        } else if (viewPager.getCurrentItem() == 1 || viewPager.getCurrentItem() == 2) {
+        } else if (currentTabId.equals("event") || currentTabId.equals("component")) {
             refreshEventTabAdapter();
             refreshComponentTabAdapter();
         }
@@ -525,6 +532,9 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         super.onCreate(savedInstanceState);
         mSavedInstanceState = savedInstanceState;
         setContentView(R.layout.design);
+        
+        activeTabs = ConfigActivity.getVisibleDesignTabs();
+        
         if (!isStoragePermissionGranted()) {
             finish();
         }
@@ -655,7 +665,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         xmlLayoutOrientation = findViewById(R.id.img_orientation);
         viewPager = findViewById(R.id.viewpager);
         viewPager.setAdapter(new ViewPagerAdapter(getSupportFragmentManager()));
-        viewPager.setOffscreenPageLimit(4);
+        viewPager.setOffscreenPageLimit(activeTabs.size() > 0 ? activeTabs.size() - 1 : 1);
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
 
             @Override
@@ -668,47 +678,38 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
 
             @Override
             public void onPageSelected(int position) {
-                if (currentTabNumber == 1) {
-                    if (eventTabAdapter != null) {
+                if (currentTabNumber < activeTabs.size()) {
+                    String prevTabId = activeTabs.get(currentTabNumber);
+                    if (prevTabId.equals("event") && eventTabAdapter != null) {
                         eventTabAdapter.c();
+                    } else if (prevTabId.equals("component") && componentTabAdapter != null) {
+                        componentTabAdapter.unselectAll();
                     }
-                } else if (currentTabNumber == 2 && componentTabAdapter != null) {
-                    componentTabAdapter.unselectAll();
                 }
                 
-                if (position == 0) {
-                    bottomMenu.findItem(7).setVisible(true);
+                String currentTabId = activeTabs.get(position);
+                
+                if (currentTabId.equals("view")) {
+                    if (bottomMenu != null && bottomMenu.findItem(7) != null) bottomMenu.findItem(7).setVisible(true);
                     if (viewTabAdapter != null) {
                         viewTabAdapter.showHidePropertyView(true);
                         xmlLayoutOrientation.setImageResource(R.drawable.ic_mtrl_screen);
                     }
-                } else if (position == 1) {
-                    bottomMenu.findItem(7).setVisible(false);
-                    if (viewTabAdapter != null) {
-                        xmlLayoutOrientation.setImageResource(R.drawable.ic_mtrl_code);
-                        viewTabAdapter.showHidePropertyView(false);
-                        if (eventTabAdapter != null) {
-                            eventTabAdapter.refreshEvents();
-                        }
-                    }
-                } else if (position == 2) {
-                    bottomMenu.findItem(7).setVisible(false);
-                    if (viewTabAdapter != null) {
-                        xmlLayoutOrientation.setImageResource(R.drawable.ic_mtrl_code);
-                        viewTabAdapter.showHidePropertyView(false);
-                        if (componentTabAdapter != null) {
-                            componentTabAdapter.refreshData();
-                        }
-                    }
                 } else {
-                    bottomMenu.findItem(7).setVisible(false);
+                    if (bottomMenu != null && bottomMenu.findItem(7) != null) bottomMenu.findItem(7).setVisible(false);
                     if (viewTabAdapter != null) {
                         xmlLayoutOrientation.setImageResource(R.drawable.ic_mtrl_code);
                         viewTabAdapter.showHidePropertyView(false);
+                    }
+                    if (currentTabId.equals("event") && eventTabAdapter != null) {
+                        eventTabAdapter.refreshEvents();
+                    } else if (currentTabId.equals("component") && componentTabAdapter != null) {
+                        componentTabAdapter.refreshData();
                     }
                 }
-                refresh();
+                
                 currentTabNumber = position;
+                refresh();
                 invalidateOptionsMenu();
             }
         });
@@ -755,7 +756,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         getMenuInflater().inflate(R.menu.design_menu, menu);
         MenuItem searchItem = menu.findItem(R.id.design_option_menu_search);
         if (searchItem != null) {
-            searchItem.setVisible(currentTabNumber == 1);
+            searchItem.setVisible(currentTabNumber < activeTabs.size() && activeTabs.get(currentTabNumber).equals("event"));
         }
         return true;
     }
@@ -844,9 +845,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.file_name_container) {
-            if (viewPager.getCurrentItem() == 0) {
+            if (activeTabs.isEmpty()) return;
+            String currentTabId = activeTabs.get(viewPager.getCurrentItem());
+            
+            if (currentTabId.equals("view")) {
                 showAvailableViews(false);
-            } else if (viewPager.getCurrentItem() == 1 || viewPager.getCurrentItem() == 2) {
+            } else if (currentTabId.equals("event") || currentTabId.equals("component")) {
                 showAvailableViews(true);
             }
         }
@@ -1116,7 +1120,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     }
 
     void toJavaManager() {
-        viewPager.setCurrentItem(3);
+        int idx = activeTabs.indexOf("java");
+        if (idx != -1) {
+            viewPager.setCurrentItem(idx);
+        } else {
+            SketchwareUtil.toast("Java & Kotlin tab is disabled in Settings");
+        }
     }
 
     /**
@@ -1134,7 +1143,12 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     }
 
     void toResourceManager() {
-        viewPager.setCurrentItem(4);
+        int idx = activeTabs.indexOf("resource");
+        if (idx != -1) {
+            viewPager.setCurrentItem(idx);
+        } else {
+            SketchwareUtil.toast("Resource tab is disabled in Settings");
+        }
     }
 
     /**
@@ -1693,67 +1707,78 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     }
 
     private class ViewPagerAdapter extends FragmentPagerAdapter {
-        private final String[] labels;
-
+        
         public ViewPagerAdapter(FragmentManager fragmentManager) {
             super(fragmentManager);
-            labels = new String[]{
-                    Helper.getResString(R.string.design_tab_title_view),
-                    Helper.getResString(R.string.design_tab_title_event),
-                    Helper.getResString(R.string.design_tab_title_component),
-                    Helper.getResString(R.string.design_tab_title_java),
-                    Helper.getResString(R.string.design_tab_title_resource)};
         }
 
         @Override
         public int getCount() {
-            return 5;
+            return activeTabs.size();
         }
 
         @Override
         public CharSequence getPageTitle(int position) {
-            return labels[position];
+            String tabId = activeTabs.get(position);
+            switch (tabId) {
+                case "view":
+                    return Helper.getResString(R.string.design_tab_title_view);
+                case "event":
+                    return Helper.getResString(R.string.design_tab_title_event);
+                case "component":
+                    return Helper.getResString(R.string.design_tab_title_component);
+                case "java":
+                    return Helper.getResString(R.string.design_tab_title_java);
+                case "resource":
+                    return Helper.getResString(R.string.design_tab_title_resource);
+                default:
+                    return "";
+            }
         }
 
         @Override
         @NonNull
         public Object instantiateItem(@NonNull ViewGroup container, int position) {
             Fragment fragment = (Fragment) super.instantiateItem(container, position);
-            if (position == 0) {
+            String tabId = activeTabs.get(position);
+            if (tabId.equals("view")) {
                 viewTabAdapter = (ViewEditorFragment) fragment;
-            } else if (position == 1) {
+            } else if (tabId.equals("event")) {
                 eventTabAdapter = (rs) fragment;
-            } else if (position == 2) {
+            } else if (tabId.equals("component")) {
                 componentTabAdapter = (br) fragment;
             }
-
             return fragment;
         }
 
         @Override
         @NonNull
         public Fragment getItem(int position) {
-            if (position == 0) {
-                return new ViewEditorFragment();
-            } else if (position == 1) {
-                return new rs();
-            } else if (position == 2) {
-                return new br();
-            } else if (position == 3) {
-                String pkgName = "";
-                if (q != null) {
-                    pkgName = q.packageName;
-                } else {
-                    HashMap<String, Object> projectInfo = lC.b(sc_id);
-                    if (projectInfo != null && projectInfo.containsKey("my_sc_pkg_name")) {
-                        pkgName = (String) projectInfo.get("my_sc_pkg_name");
-                    } else if (projectInfo != null && projectInfo.containsKey("my_ws_pkg_name")) {
-                        pkgName = (String) projectInfo.get("my_ws_pkg_name");
+            String tabId = activeTabs.get(position);
+            switch (tabId) {
+                case "view":
+                    return new ViewEditorFragment();
+                case "event":
+                    return new rs();
+                case "component":
+                    return new br();
+                case "java":
+                    String pkgName = "";
+                    if (q != null) {
+                        pkgName = q.packageName;
+                    } else {
+                        HashMap<String, Object> projectInfo = lC.b(sc_id);
+                        if (projectInfo != null && projectInfo.containsKey("my_sc_pkg_name")) {
+                            pkgName = (String) projectInfo.get("my_sc_pkg_name");
+                        } else if (projectInfo != null && projectInfo.containsKey("my_ws_pkg_name")) {
+                            pkgName = (String) projectInfo.get("my_ws_pkg_name");
+                        }
                     }
-                }
-                return ManageJavaFragment.newInstance(sc_id, pkgName);
-            } else {
-                return ManageResourceFragment.newInstance(sc_id);
+                    return ManageJavaFragment.newInstance(sc_id, pkgName);
+                case "resource":
+                    return ManageResourceFragment.newInstance(sc_id);
+                default:
+                    return new Fragment();
             }
         }
     }
