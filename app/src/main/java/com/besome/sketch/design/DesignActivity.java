@@ -716,7 +716,17 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         if (viewPager.getAdapter() != null) {
             viewPager.getAdapter().notifyDataSetChanged();
         }
-        ((TabLayout) findViewById(R.id.tab_layout)).setupWithViewPager(viewPager);
+        
+        TabLayout tabLayout = findViewById(R.id.tab_layout);
+        tabLayout.setupWithViewPager(viewPager);
+        
+        if (activeTabs.size() <= 2) {
+            tabLayout.setTabMode(TabLayout.MODE_FIXED);
+            tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
+        } else {
+            tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
+            tabLayout.setTabGravity(TabLayout.GRAVITY_START);
+        }
 
         IntentFilter filter = new IntentFilter(BuildTask.ACTION_CANCEL_BUILD);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

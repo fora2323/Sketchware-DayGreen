@@ -39,7 +39,7 @@ import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 import pro.sketchware.databinding.DialogCreateNewFileLayoutBinding;
 import pro.sketchware.databinding.DialogInputLayoutBinding;
-import pro.sketchware.databinding.ManageFileBinding;
+import pro.sketchware.databinding.FrManageFileBinding;
 import pro.sketchware.databinding.ManageJavaItemHsBinding;
 import pro.sketchware.utility.FilePathUtil;
 import pro.sketchware.utility.FileResConfig;
@@ -55,7 +55,7 @@ public class ManageResourceFragment extends Fragment {
     private String numProj;
     private String temp;
 
-    private ManageFileBinding binding;
+    private FrManageFileBinding binding;
 
     private final OnBackPressedCallback backPressedCallback = new OnBackPressedCallback(false) {
         @Override
@@ -105,7 +105,7 @@ public class ManageResourceFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        binding = ManageFileBinding.inflate(inflater, container, false);
+        binding = FrManageFileBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
 
@@ -117,7 +117,7 @@ public class ManageResourceFragment extends Fragment {
         fpu = new FilePathUtil();
         setupDialog();
         checkDir();
-        initToolbar();
+        setupUI();
     }
 
     private void updateBackPressedCallback() {
@@ -160,18 +160,12 @@ public class ManageResourceFragment extends Fragment {
     }
 
     private void handleFab() {
-        var optionsButton = binding.showOptionsButton;
         if (isInMainDirectory()) {
-            optionsButton.setText("Create new");
             hideShowOptionsButton(true);
-        } else {
-            optionsButton.setText("Create or import");
         }
     }
 
-    private void initToolbar() {
-        binding.topAppBar.setTitle("Resource Manager");
-        binding.topAppBar.setNavigationIcon(null);
+    private void setupUI() {
         binding.showOptionsButton.setOnClickListener(view -> {
             if (isInMainDirectory()) {
                 createNewDialog(true);

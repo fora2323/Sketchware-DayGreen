@@ -40,7 +40,7 @@ import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 import pro.sketchware.databinding.DialogCreateNewFileLayoutBinding;
 import pro.sketchware.databinding.DialogInputLayoutBinding;
-import pro.sketchware.databinding.ManageFileBinding;
+import pro.sketchware.databinding.FrManageFileBinding;
 import pro.sketchware.databinding.ManageJavaItemHsBinding;
 import pro.sketchware.utility.FilePathUtil;
 import pro.sketchware.utility.FileResConfig;
@@ -98,7 +98,7 @@ public class ManageJavaFragment extends Fragment {
             """;
 
     private final ArrayList<String> currentTree = new ArrayList<>();
-    ManageFileBinding binding;
+    private FrManageFileBinding binding;
     private String current_path;
     private FilePathUtil fpu;
     private FileResConfig frc;
@@ -138,7 +138,7 @@ public class ManageJavaFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        binding = ManageFileBinding.inflate(inflater, container, false);
+        binding = FrManageFileBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
 
@@ -161,8 +161,6 @@ public class ManageJavaFragment extends Fragment {
     }
 
     private void setupUI() {
-        binding.topAppBar.setTitle("Java/Kotlin Manager");
-        binding.topAppBar.setNavigationIcon(null);
         binding.showOptionsButton.setOnClickListener(view -> hideShowOptionsButton(false));
         binding.closeButton.setOnClickListener(view -> hideShowOptionsButton(true));
         binding.createNewButton.setOnClickListener(v -> {
@@ -177,7 +175,6 @@ public class ManageJavaFragment extends Fragment {
 
     private void hideShowOptionsButton(boolean isHide) {
         binding.optionsLayout.animate().translationY(isHide ? 300 : 0).alpha(isHide ? 0 : 1).setInterpolator(new OvershootInterpolator());
-
         binding.showOptionsButton.animate().translationY(isHide ? 0 : 300).alpha(isHide ? 1 : 0).setInterpolator(new OvershootInterpolator());
     }
 
