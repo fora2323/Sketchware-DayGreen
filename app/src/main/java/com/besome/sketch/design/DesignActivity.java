@@ -111,6 +111,7 @@ import mod.agus.jcoderz.editor.manage.resource.ManageResourceFragment;
 import mod.hey.studios.activity.managers.assets.ManageAssetsActivity;
 import mod.hey.studios.activity.managers.java.ManageJavaCreateDialog;
 import mod.hey.studios.activity.managers.java.ManageJavaFragment;
+import mod.hey.studios.code.SrcCodeEditor;
 import mod.hey.studios.compiler.kotlin.KotlinCompilerBridge;
 import mod.hey.studios.project.custom_blocks.CustomBlocksDialog;
 import mod.hey.studios.project.proguard.ManageProguardActivity;
@@ -720,7 +721,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             return true;
         });
         bottomMenu.add(Menu.NONE, 10, 8, "Direct Java editor").setOnMenuItemClickListener(item -> {
-            ManageJavaCreateDialog.show(this, sc_id, q != null ? q.packageName : "", this::refreshVisibleTabs);
+            toDirectJavaEditor();
             return true;
         });
 
@@ -1144,6 +1145,75 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 launchActivity(ViewCodeEditorActivity.class, openViewCodeEditor, new Pair<>("title", filename), new Pair<>("content", content));
             });
         }).start();
+    }
+
+    private void toDirectJavaEditor() {
+        if (projectFile == null) return;
+        String javaName = projectFile.getJavaName();
+        if (javaName == null || javaName.isEmpty() || !javaName.endsWith(".java")) {
+            javaName = ProjectFileBean.DEFAULT_JAVA_NAME;
+        }
+
+        HashMap<String, Object> projectMetadata = lC.b(sc_id);
+        String defaultPkg = q != null ? q.packageName : "";
+        if (projectMetadata != null && projectMetadata.containsKey("java_last_package")) {
+            Object savedPkg = projectMetadata.get("java_last_package");
+            if (savedPkg instanceof String && !((String) savedPkg).isEmpty()) {
+                defaultPkg = (String) savedPkg;
+            }
+        }
+
+        String finalJavaName = javaName;
+        ManageJavaCreateDialog.show(this, defaultPkg, pkg -> generateAndOpen(pkg, finalJavaName));
+    }
+
+    private void generateAndOpen(String pkg, String javaName) {
+        File target = new File(new FilePathUtil().getPathJava(sc_id), javaName);
+        if (target.exists()) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle("File sudah ada")
+                    .setMessage("File " + javaName + " sudah ada di folder java. Timpa dengan kode dari block?")
+                    .setPositiveButton("Timpa", (dialog, which) -> generate(pkg, target, javaName))
+                    .setNeutralButton("Buka", (dialog, which) -> openEditor(target, javaName))
+                    .setNegativeButton("Batal", (dialog, which) -> dialog.dismiss())
+                    .show();
+        } else {
+            generate(pkg, target, javaName);
+        }
+    }
+
+    private void generate(String pkg, File target, String javaName) {
+        k();
+        new Thread(() -> {
+            String code = new yq(getApplicationContext(), sc_id).getFileSrc(javaName, jC.b(sc_id), jC.a(sc_id), jC.c(sc_id));
+            runOnUiThread(() -> {
+                if (isFinishing()) return;
+                h();
+                if (code == null || code.isEmpty()) {
+                    SketchwareUtil.toast("Failed to generate source.");
+                    return;
+                }
+                String modifiedCode = code.replaceFirst("(?m)^package [^;]+;", "package " + pkg + ";");
+                FileUtil.writeFile(target.getAbsolutePath(), modifiedCode);
+
+                HashMap<String, Object> map = lC.b(sc_id);
+                if (map == null) map = new HashMap<>();
+                map.put("java_last_package", pkg);
+                lC.b(sc_id, map);
+
+                refreshVisibleTabs();
+                openEditor(target, javaName);
+            });
+        }).start();
+    }
+
+    private void openEditor(File target, String javaName) {
+        Intent intent = new Intent(this, SrcCodeEditor.class);
+        intent.putExtra("java", "");
+        intent.putExtra("sc_id", sc_id);
+        intent.putExtra("title", javaName);
+        intent.putExtra("content", target.getAbsolutePath());
+        startActivity(intent);
     }
 
     /**

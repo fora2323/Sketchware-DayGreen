@@ -1,31 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingHorizontal="20dp"
     android:paddingBottom="10dp">
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/textInputLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="2dp"
-        android:layout_marginTop="4dp"
-        android:hint="Enter a name"
-        app:hintEnabled="true">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/inputText"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:imeOptions="actionNext"
-            android:inputType="text"
-            android:singleLine="true" />
-
-    </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/packageLayout"
@@ -46,57 +26,4 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.materialswitch.MaterialSwitch
-        android:id="@+id/switchSubPackage"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="2dp"
-        android:layout_marginTop="10dp"
-        android:checked="true"
-        android:text="Create folders from package name"
-        android:visibility="gone"
-        tools:visibility="visible" />
-
-    <com.google.android.material.chip.ChipGroup
-        android:id="@+id/chipGroupTypes"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="2dp"
-        android:layout_marginTop="10dp"
-        app:checkedChip="@+id/chip_folder"
-        app:chipSpacingVertical="-5dp"
-        app:selectionRequired="true"
-        app:singleSelection="true">
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_folder"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Folder" />
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_activity"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Activity" />
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_fragment"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Fragment" />
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_dialog_fragment"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="DialogFragment" />
-
-        <com.google.android.material.chip.Chip
-            android:id="@+id/chip_bottom_dialog_fragment"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="BottomDialogFragment" />
-
-    </com.google.android.material.chip.ChipGroup>
 </LinearLayout>
