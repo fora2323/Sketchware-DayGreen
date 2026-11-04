@@ -1149,26 +1149,37 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
 
     private void toDirectJavaEditor() {
         if (projectFile == null) return;
+        
         String javaName = projectFile.getJavaName();
         if (javaName == null || javaName.isEmpty() || !javaName.endsWith(".java")) {
             javaName = ProjectFileBean.DEFAULT_JAVA_NAME;
         }
 
-        HashMap<String, Object> projectMetadata = lC.b(sc_id);
-        String defaultPkg = q != null ? q.packageName : "";
-        if (projectMetadata != null && projectMetadata.containsKey("java_last_package")) {
-            Object savedPkg = projectMetadata.get("java_last_package");
-            if (savedPkg instanceof String && !((String) savedPkg).isEmpty()) {
-                defaultPkg = (String) savedPkg;
-            }
-        }
+        String basePkg = q != null ? q.packageName : "";
+        String activityPkg = projectFile.getPackageName(basePkg);
 
         String finalJavaName = javaName;
-        ManageJavaCreateDialog.show(this, defaultPkg, pkg -> generateAndOpen(pkg, finalJavaName));
+        ManageJavaCreateDialog.show(this, activityPkg, pkg -> generateAndOpen(pkg, finalJavaName, basePkg));
     }
 
-    private void generateAndOpen(String pkg, String javaName) {
-        File target = new File(new FilePathUtil().getPathJava(sc_id), javaName);
+    private void generateAndOpen(String pkg, String javaName, String basePkg) {
+        String root = new FilePathUtil().getPathJava(sc_id);
+        String dirPath;
+
+        if (pkg.equals(basePkg)) {
+            dirPath = root;
+        } else if (pkg.startsWith(basePkg + ".")) {
+            dirPath = root + "/" + pkg.substring(basePkg.length() + 1).replace('.', '/');
+        } else {
+            dirPath = root + "/" + pkg.replace('.', '/');
+        }
+
+        File dir = new File(dirPath);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        File target = new File(dir, javaName);
         if (target.exists()) {
             new MaterialAlertDialogBuilder(this)
                     .setTitle("File sudah ada")
@@ -1193,15 +1204,14 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                     SketchwareUtil.toast("Failed to generate source.");
                     return;
                 }
-                String modifiedCode = code.replaceFirst("(?m)^package [^;]+;", "package " + pkg + ";");
-                FileUtil.writeFile(target.getAbsolutePath(), modifiedCode);
-
-                HashMap<String, Object> map = lC.b(sc_id);
-                if (map == null) map = new HashMap<>();
-                map.put("java_last_package", pkg);
-                lC.b(sc_id, map);
-
-                refreshVisibleTabs();
+                
+                if (!code.matches("(?s).*(?m)^package [^;]+;.*")) {
+                    code = "package " + pkg + ";\n\n" + code;
+                } else {
+                    code = code.replaceFirst("(?m)^package [^;]+;", "package " + pkg + ";");
+                }
+                
+                FileUtil.writeFile(target.getAbsolutePath(), code);
                 openEditor(target, javaName);
             });
         }).start();

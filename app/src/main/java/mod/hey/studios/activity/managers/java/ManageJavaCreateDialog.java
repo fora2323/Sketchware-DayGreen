@@ -35,6 +35,7 @@ public class ManageJavaCreateDialog {
         dialog.setOnShowListener(dialogInterface -> {
             dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
             inputPackageText.requestFocus();
+            inputPackageText.setSelection(inputPackageText.getText() != null ? inputPackageText.getText().length() : 0);
 
             Button positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
             positiveButton.setOnClickListener(v -> {
