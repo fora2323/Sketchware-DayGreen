@@ -1193,29 +1193,31 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         }
     }
 
-    private void generate(String pkg, File target, String javaName) {
-        k();
-        new Thread(() -> {
-            String code = new yq(getApplicationContext(), sc_id).getFileSrc(javaName, jC.b(sc_id), jC.a(sc_id), jC.c(sc_id));
-            runOnUiThread(() -> {
-                if (isFinishing()) return;
-                h();
-                if (code == null || code.isEmpty()) {
-                    SketchwareUtil.toast("Failed to generate source.");
-                    return;
-                }
-                
-                if (!code.matches("(?s).*(?m)^package [^;]+;.*")) {
-                    code = "package " + pkg + ";\n\n" + code;
-                } else {
-                    code = code.replaceFirst("(?m)^package [^;]+;", "package " + pkg + ";");
-                }
-                
-                FileUtil.writeFile(target.getAbsolutePath(), code);
-                openEditor(target, javaName);
-            });
-        }).start();
+private void generate(String pkg, File target, String javaName) {
+    k();
+    new Thread(() -> {
+        String rawCode = new yq(getApplicationContext(), sc_id).getFileSrc(javaName, jC.b(sc_id), jC.a(sc_id), jC.c(sc_id));
+        final String code = fixPackage(rawCode, pkg);
+        runOnUiThread(() -> {
+            if (isFinishing()) return;
+            h();
+            if (code == null || code.isEmpty()) {
+                SketchwareUtil.toast("Failed to generate source.");
+                return;
+            }
+            FileUtil.writeFile(target.getAbsolutePath(), code);
+            openEditor(target, javaName);
+        });
+    }).start();
+}
+
+private String fixPackage(String code, String pkg) {
+    if (code == null || code.isEmpty()) return code;
+    if (!code.matches("(?s).*(?m)^package [^;]+;.*")) {
+        return "package " + pkg + ";\n\n" + code;
     }
+    return code.replaceFirst("(?m)^package [^;]+;", "package " + pkg + ";");
+}
 
     private void openEditor(File target, String javaName) {
         Intent intent = new Intent(this, SrcCodeEditor.class);
