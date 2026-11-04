@@ -73,6 +73,7 @@ import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -108,6 +109,7 @@ import extensions.anbui.daydream.tools.project.CleanUpCore;
 import mod.agus.jcoderz.editor.manage.permission.ManagePermissionActivity;
 import mod.agus.jcoderz.editor.manage.resource.ManageResourceFragment;
 import mod.hey.studios.activity.managers.assets.ManageAssetsActivity;
+import mod.hey.studios.activity.managers.java.ManageJavaCreateDialog;
 import mod.hey.studios.activity.managers.java.ManageJavaFragment;
 import mod.hey.studios.compiler.kotlin.KotlinCompilerBridge;
 import mod.hey.studios.project.custom_blocks.CustomBlocksDialog;
@@ -263,6 +265,69 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         return jC.b(sc_id).b(ProjectFileBean.DEFAULT_XML_NAME);
     }
 
+    private boolean isActivityFullCode(String javaName, File dir) {
+        if (dir == null || !dir.exists() || !dir.isDirectory() || javaName == null || javaName.isEmpty()) return false;
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    if (isActivityFullCode(javaName, file)) return true;
+                } else if (file.getName().equals(javaName)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void computeActiveTabs() {
+        List<String> visibleTabs = ConfigActivity.getVisibleDesignTabs();
+        boolean hideEventComponent = false;
+        if (projectFile != null) {
+            String javaName = projectFile.getJavaName();
+            File javaDir = new File(new FilePathUtil().getPathJava(sc_id));
+            if (isActivityFullCode(javaName, javaDir)) {
+                hideEventComponent = true;
+            }
+        }
+
+        List<String> newActiveTabs = new ArrayList<>();
+        for (String tab : visibleTabs) {
+            if (hideEventComponent && (tab.equals("event") || tab.equals("component"))) {
+                continue;
+            }
+            newActiveTabs.add(tab);
+        }
+
+        if (this.activeTabs == null || !newActiveTabs.equals(this.activeTabs)) {
+            this.activeTabs = newActiveTabs;
+            if (viewPager != null && viewPager.getAdapter() != null) {
+                viewPager.getAdapter().notifyDataSetChanged();
+            }
+            TabLayout tabLayout = findViewById(R.id.tab_layout);
+            if (tabLayout != null) {
+                if (activeTabs.size() <= 2) {
+                    tabLayout.setTabMode(TabLayout.MODE_FIXED);
+                    tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
+                } else {
+                    tabLayout.setTabMode(TabLayout.MODE_SCROLLABLE);
+                    tabLayout.setTabGravity(TabLayout.GRAVITY_START);
+                }
+            }
+
+            if (activeTabs != null && !activeTabs.isEmpty() && viewPager != null) {
+                if (currentTabNumber >= activeTabs.size()) {
+                    currentTabNumber = Math.max(0, activeTabs.size() - 1);
+                    viewPager.setCurrentItem(currentTabNumber);
+                }
+            }
+        }
+    }
+
+    private void refreshVisibleTabs() {
+        refresh();
+    }
+
     private void refreshFileSelector() {
         if (projectFile == null) {
             projectFile = getDefaultProjectFile();
@@ -274,6 +339,8 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         if (!javaFileName.isEmpty()) {
             currentJavaFileName = javaFileName;
         }
+
+        computeActiveTabs();
 
         if (activeTabs.isEmpty() || activeTabs.size() <= viewPager.getCurrentItem()) return;
         String currentTabId = activeTabs.get(viewPager.getCurrentItem());
@@ -650,6 +717,10 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         });
         bottomMenu.add(Menu.NONE, 7, Menu.NONE, "Direct XML editor").setOnMenuItemClickListener(item -> {
             toViewCodeEditor();
+            return true;
+        });
+        bottomMenu.add(Menu.NONE, 10, 8, "Direct Java editor").setOnMenuItemClickListener(item -> {
+            ManageJavaCreateDialog.show(this, sc_id, q != null ? q.packageName : "", this::refreshVisibleTabs);
             return true;
         });
 
@@ -1720,6 +1791,16 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         
         public ViewPagerAdapter(FragmentManager fragmentManager) {
             super(fragmentManager);
+        }
+
+        @Override
+        public int getItemPosition(@NonNull Object object) {
+            return POSITION_NONE;
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return activeTabs.get(position).hashCode();
         }
 
         @Override
