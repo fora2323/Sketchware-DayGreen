@@ -19,6 +19,10 @@ class R8Compiler(
 ) {
 
     fun compile() {
+        // Batasi thread R8 ke 1 agar tidak boros RAM dan tidak memicu OOM di Android
+        System.setProperty("com.android.tools.r8.numberOfThreads", "1")
+        System.gc()
+
         val output = Paths.get(yq.binDirectoryPath, "dex")
         Files.createDirectories(output)
         val command = R8Command.builder()
@@ -33,5 +37,6 @@ class R8Compiler(
             .build()
 
         R8.run(command)
+        System.gc()
     }
 }

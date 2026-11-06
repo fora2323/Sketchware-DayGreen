@@ -28,6 +28,7 @@ import com.iyxan23.zipalignjava.ZipAlign;
 
 import org.xml.sax.SAXException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -633,7 +634,14 @@ public class ProjectBuilder {
             );
             pb.redirectErrorStream(true);
             Process process = pb.start();
-            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buf = new byte[1024];
+            int bytesRead;
+            InputStream is = process.getInputStream();
+            while ((bytesRead = is.read(buf)) != -1) {
+                baos.write(buf, 0, bytesRead);
+            }
+            String output = new String(baos.toByteArray(), StandardCharsets.UTF_8);
             int exitCode;
             try {
                 exitCode = process.waitFor();
@@ -927,25 +935,39 @@ public class ProjectBuilder {
 
     public boolean getDexFilesReady() throws Exception {
         long savedTimeMillis = System.currentTimeMillis();
-        ArrayList<File> dexes = new ArrayList<>();
+        ArrayList<File> allDexes = new ArrayList<>();
 
-        /* Add AndroidX MultiDex library if needed */
-        if (settings.getMinSdkVersion() < 21) {
-            dexes.add(BuiltInLibraries.getLibraryDexFile(BuiltInLibraries.ANDROIDX_MULTIDEX));
+        /* 1. Taruh DEX project di urutan terdepan (agar menjadi classes.dex utama) */
+        List<String> projectDexFiles = FileUtil.listFiles(yq.binDirectoryPath + File.separator + "dex", "dex");
+        Collections.sort(projectDexFiles, (a, b) -> {
+            String nameA = new File(a).getName();
+            String nameB = new File(b).getName();
+            if (nameA.equals("classes.dex")) return -1;
+            if (nameB.equals("classes.dex")) return 1;
+            return nameA.compareTo(nameB);
+        });
+        for (String file : projectDexFiles) {
+            allDexes.add(new File(file));
         }
 
-        /* Add HTTP legacy files if wanted */
+        /* 2. Tambahkan AndroidX MultiDex jika diperlukan */
+        if (settings.getMinSdkVersion() < 21) {
+            allDexes.add(BuiltInLibraries.getLibraryDexFile(BuiltInLibraries.ANDROIDX_MULTIDEX));
+        }
+
+        /* 3. Tambahkan HTTP legacy jika diinginkan */
         if (!build_settings.getValue(BuildSettings.SETTING_NO_HTTP_LEGACY, ProjectSettings.SETTING_GENERIC_VALUE_FALSE)
                 .equals(ProjectSettings.SETTING_GENERIC_VALUE_TRUE)) {
-            dexes.add(BuiltInLibraries.getLibraryDexFile(BuiltInLibraries.HTTP_LEGACY_ANDROID));
+            allDexes.add(BuiltInLibraries.getLibraryDexFile(BuiltInLibraries.HTTP_LEGACY_ANDROID));
         }
 
-        /* Add used built-in libraries' DEX files */
+        /* 4. Tambahkan DEX dari built-in libraries (AndroidX AppCompat, Material, dll) */
+        /* DEX ini sudah pre-built, tidak di-shrink, dan tidak di-merge di memori (mencegah OOM) */
         for (Jp builtInLibrary : builtInLibraryManager.getLibraries()) {
-            dexes.add(BuiltInLibraries.getLibraryDexFile(builtInLibrary.getName()));
+            allDexes.add(BuiltInLibraries.getLibraryDexFile(builtInLibrary.getName()));
         }
 
-        /* Add local libraries' main DEX files */
+        /* 5. Tambahkan local libraries' DEX */
         ArrayList<HashMap<String, Object>> list = mll.list;
         for (int i1 = 0, listSize = list.size(); i1 < listSize; i1++) {
             HashMap<String, Object> localLibrary = list.get(i1);
@@ -956,7 +978,7 @@ public class ProjectBuilder {
 
                 if (localLibraryDexPath instanceof String) {
                     if (!proguard.libIsProguardFMEnabled((String) localLibraryName)) {
-                        dexes.add(new File((String) localLibraryDexPath));
+                        allDexes.add(new File((String) localLibraryDexPath));
                         /* Add library's extra DEX files */
                         File localLibraryDirectory = new File((String) localLibraryDexPath).getParentFile();
 
@@ -969,7 +991,7 @@ public class ProjectBuilder {
 
                                     if (!filename.equals("classes.dex")
                                             && filename.startsWith("classes") && filename.endsWith(".dex")) {
-                                        dexes.add(localLibraryFile);
+                                        allDexes.add(localLibraryFile);
                                     }
                                 }
                             }
@@ -983,59 +1005,11 @@ public class ProjectBuilder {
             }
         }
 
-        List<File> libraryDexes = new ArrayList<>(dexes);
-        List<File> projectDexes = new ArrayList<>();
-
-        for (String file : FileUtil.listFiles(yq.binDirectoryPath + File.separator + "dex", "dex")) {
-            File f = new File(file);
-            dexes.add(f);
-            projectDexes.add(f);
-        }
-
-        /* Debug build: tidak merge DEX, kemas setiap DEX apa adanya sebagai multi-dex */
-        boolean isRelease = build_settings.getValue(BuildSettings.SETTING_BUILD_MODE, BuildSettings.BUILD_MODE_DEBUG)
-                .equals(BuildSettings.BUILD_MODE_RELEASE);
-        if (!isRelease) {
-            dexesToAddButNotMerge = new ArrayList<>(dexes);
-            LogUtil.d(TAG, "Debug build: DEX tidak di-merge, " + dexes.size() + " file dikemas langsung");
-            return false;
-        }
-
-        String mergeInputHash = BuildCache.combine(
-                BuildCache.hashFilesQuick(libraryDexes),
-                BuildCache.hashFiles(projectDexes)
-        );
-
-        if (buildCache.isUpToDate("merge", mergeInputHash)) {
-            File cachedMerge = buildCache.stageOutputDir("merge");
-            File[] cachedDexes = cachedMerge.listFiles((dir, name) -> name.startsWith("classes") && name.endsWith(".dex"));
-            if (cachedDexes != null && cachedDexes.length > 0) {
-                for (File f : cachedDexes) {
-                    smartCopyFile(f, new File(yq.binDirectoryPath, f.getName()));
-                }
-                if (progressReceiver != null) progressReceiver.onProgress("Dex merge UP-TO-DATE", 18);
-                LogUtil.d(TAG, "Dex merge UP-TO-DATE");
-                return true;
-            }
-        }
-
-        LogUtil.d(TAG, "Will merge these " + dexes.size() + " DEX files to classes.dex: " + dexes);
-
-        dexLibraries(new File(yq.binDirectoryPath), dexes);
-        LogUtil.d(TAG, "Merging DEX files took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
-
-        if (mergeInputHash != null) {
-            File cachedMerge = buildCache.stageOutputDir("merge");
-            FileUtil.deleteFile(cachedMerge.getAbsolutePath());
-            cachedMerge.mkdirs();
-            File[] producedDexes = new File(yq.binDirectoryPath).listFiles((dir, name) -> name.startsWith("classes") && name.endsWith(".dex"));
-            if (producedDexes != null) {
-                for (File f : producedDexes) {
-                    FileUtil.copyFile(f.getAbsolutePath(), new File(cachedMerge, f.getName()).getAbsolutePath());
-                }
-            }
-            buildCache.markUpToDate("merge", mergeInputHash);
-        }
+        /* Kemas langsung semua DEX sebagai multi-dex (classes.dex, classes2.dex, classes3.dex, dst).
+         * Mencegah DexMerger yang memakan memori sangat besar dan menyebabkan OOM saat memakai AppCompat/Material,
+         * sekaligus memastikan library AndroidX dari AppCompat tidak kena shrinking dan tetap utuh. */
+        dexesToAddButNotMerge = new ArrayList<>(allDexes);
+        LogUtil.d(TAG, "Multi-dex packaging ready: " + allDexes.size() + " DEX files (classes.dex=" + (allDexes.isEmpty() ? "none" : allDexes.get(0).getName()) + ")");
         return false;
     }
 
@@ -1232,6 +1206,10 @@ public class ProjectBuilder {
         for (String libPath : allLibs) {
             if (libPath.trim().isEmpty()) continue;
             File libFile = new File(libPath);
+            if (libFile.getName().equals("android.jar")) {
+                filteredLibs.add(libPath);
+                continue;
+            }
             Set<String> libPkgs = getJarProvidedPackages(libFile);
 
             boolean used = false;
@@ -1260,11 +1238,14 @@ public class ProjectBuilder {
         // yang ikut di-drop dan tak ditemukan
         rules.add("-dontwarn **");
 
+        System.gc();
         try {
             JarBuilder.INSTANCE.generateJar(new File(yq.compiledClassesPath));
             new R8Compiler(rules, config.toArray(new String[0]), filteredLibs.toArray(new String[0]), jars.toArray(new String[0]), settings.getMinSdkVersion(), yq).compile();
         } catch (Exception e) {
             throw new IOException(e);
+        } finally {
+            System.gc();
         }
         LogUtil.d(TAG, "R8 took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
     }
