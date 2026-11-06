@@ -1396,25 +1396,7 @@ public class ProjectBuilder {
     }
 
     public void signDebugApk() throws Exception {
-        String keystorePath = build_settings.getValue(BuildSettings.SETTING_DEBUG_KEYSTORE_PATH, "");
-        String alias = build_settings.getValue(BuildSettings.SETTING_DEBUG_KEYSTORE_ALIAS, "");
-        String storePass = build_settings.getValue(BuildSettings.SETTING_DEBUG_STORE_PASS, "");
-        String keyPass = build_settings.getValue(BuildSettings.SETTING_DEBUG_KEY_PASS, "");
-
-        boolean isAnyFilled = !keystorePath.isEmpty() || !alias.isEmpty() || !storePass.isEmpty() || !keyPass.isEmpty();
-        boolean isAllFilled = !keystorePath.isEmpty() && !alias.isEmpty() && !storePass.isEmpty() && !keyPass.isEmpty();
-
-        if (isAnyFilled) {
-            if (!isAllFilled) {
-                throw new Exception("Keystore Debug tidak lengkap! Pastikan Path, Alias, Store Password, dan Key Password terisi semua.");
-            }
-            if (!new java.io.File(keystorePath).exists()) {
-                throw new Exception("File keystore debug tidak ditemukan: " + keystorePath);
-            }
-            signApk(keystorePath, alias, storePass, keyPass, yq.unsignedUnalignedApkPath, yq.finalToInstallApkPath);
-        } else {
-            TestkeySignBridge.signWithTestkey(yq.unsignedUnalignedApkPath, yq.finalToInstallApkPath);
-        }
+        TestkeySignBridge.signWithTestkey(yq.unsignedUnalignedApkPath, yq.finalToInstallApkPath);
     }
 
     public void signReleaseApk() throws Exception {

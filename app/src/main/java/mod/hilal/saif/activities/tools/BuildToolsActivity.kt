@@ -5,17 +5,12 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.view.WindowInsetsCompat
 import com.besome.sketch.lib.base.BaseAppCompatActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dev.chrisbanes.insetter.Insetter
-import dev.pranav.filepicker.FilePickerCallback
-import dev.pranav.filepicker.FilePickerDialogFragment
-import dev.pranav.filepicker.FilePickerOptions
-import dev.pranav.filepicker.SelectionMode
 import org.sketchware.daygreen.DownloadUtility
 import org.sketchware.daygreen.FileCheckUtils
 import pro.sketchware.R
@@ -31,13 +26,12 @@ class BuildToolsActivity : BaseAppCompatActivity() {
         binding = ActivityGenericListBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        Insetter.builder().padding(WindowInsetsCompat.Type.statusBars()).applyToView(binding.toolbar)
-
         Insetter.builder().padding(WindowInsetsCompat.Type.navigationBars()).applyToView(binding.listContainer)
 
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "Build Tools"
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+        binding.collapsingToolbar.title = "Build Tools"
         binding.toolbar.setNavigationOnClickListener { finish() }
 
         setupItems()
@@ -115,7 +109,6 @@ class BuildToolsActivity : BaseAppCompatActivity() {
         val tvDesc = cardView.findViewById<TextView>(R.id.description)
         val tvStatusChip = cardView.findViewById<TextView>(R.id.status_chip)
         val tvStatusText = cardView.findViewById<TextView>(R.id.status_text)
-        val btnImport = cardView.findViewById<View>(R.id.btn_import)
         val btnDownload = cardView.findViewById<View>(R.id.btn_download)
         val imgIcon = cardView.findViewById<ImageView>(R.id.icon)
 
@@ -161,10 +154,6 @@ class BuildToolsActivity : BaseAppCompatActivity() {
             }
         }
 
-        btnImport.setOnClickListener {
-            importArchive(destination)
-        }
-
         if (title.contains("NDK")) {
             imgIcon.setImageResource(R.drawable.ic_mtrl_cpp)
             imgIcon.setColorFilter(MaterialColors.getColor(this, R.attr.colorPrimary, Color.BLACK))
@@ -180,34 +169,5 @@ class BuildToolsActivity : BaseAppCompatActivity() {
         }
 
         binding.listContainer.addView(cardView)
-    }
-
-    private fun importArchive(destination: File) {
-        val options = FilePickerOptions().apply {
-            selectionMode = SelectionMode.FILE
-            extensions = arrayOf("zip", "tar.xz", "jar", "tar.gz", "tgz")
-        }
-
-        val callback = object : FilePickerCallback() {
-            override fun onFileSelected(file: File) {
-                destination.parentFile?.mkdirs()
-                file.copyTo(destination, overwrite = true)
-                val name = destination.name.lowercase()
-                if (name.endsWith(".zip") || name.endsWith(".tar.gz") || name.endsWith(".tar.xz") || name.endsWith(".tgz")) {
-                    DownloadUtility.extractArchive(this@BuildToolsActivity, destination) {
-                        Toast.makeText(this@BuildToolsActivity, "Imported and extracted ${file.name}", Toast.LENGTH_SHORT).show()
-                        setupItems()
-                    }
-                } else {
-                    if (destination.name.contains("aapt") || destination.name.contains("aidl")) {
-                        destination.setExecutable(true, false)
-                    }
-                    Toast.makeText(this@BuildToolsActivity, "Imported ${file.name}", Toast.LENGTH_SHORT).show()
-                    setupItems()
-                }
-            }
-        }
-
-        FilePickerDialogFragment(options, callback).show(supportFragmentManager, "file_picker")
     }
 }

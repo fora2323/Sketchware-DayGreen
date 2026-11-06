@@ -43,10 +43,6 @@ public class BuildSettingsBottomSheet extends BottomSheetDialogFragment {
     
     // ====== VIEWS BARU ======
     private static final int VIEW_BUILD_MODE = totalViews++;
-    private static final int VIEW_DEBUG_KEYSTORE_PATH = totalViews++;
-    private static final int VIEW_DEBUG_KEYSTORE_ALIAS = totalViews++;
-    private static final int VIEW_DEBUG_STORE_PASS = totalViews++;
-    private static final int VIEW_DEBUG_KEY_PASS = totalViews++;
     private static final int VIEW_RELEASE_KEYSTORE_PATH = totalViews++;
     private static final int VIEW_RELEASE_KEYSTORE_ALIAS = totalViews++;
     private static final int VIEW_RELEASE_STORE_PASS = totalViews++;
@@ -110,12 +106,8 @@ public class BuildSettingsBottomSheet extends BottomSheetDialogFragment {
         setRadioGroupOptions(binding.rgDexer, new String[]{"Dx", "D8"}, SETTING_DEXER, "Dx");
         setRadioGroupOptions(binding.rgJavaVersion, getAvailableJavaVersions(), SETTING_JAVA_VERSION, "1.7");
         setRadioGroupOptions(binding.rgBuildMode, new String[]{BUILD_MODE_DEBUG, BUILD_MODE_RELEASE}, SETTING_BUILD_MODE, BUILD_MODE_DEBUG);
+        updateKeystoreVisibility(projectSettings.getValue(SETTING_BUILD_MODE, BUILD_MODE_DEBUG));
 
-        binding.tilDebugKeystorePath.getEditText().setText(projectSettings.getValue(SETTING_DEBUG_KEYSTORE_PATH, ""));
-        binding.tilDebugKeystoreAlias.getEditText().setText(projectSettings.getValue(SETTING_DEBUG_KEYSTORE_ALIAS, ""));
-        binding.tilDebugStorePass.getEditText().setText(projectSettings.getValue(SETTING_DEBUG_STORE_PASS, ""));
-        binding.tilDebugKeyPass.getEditText().setText(projectSettings.getValue(SETTING_DEBUG_KEY_PASS, ""));
-        
         binding.tilReleaseKeystorePath.getEditText().setText(projectSettings.getValue(SETTING_RELEASE_KEYSTORE_PATH, ""));
         binding.tilReleaseKeystoreAlias.getEditText().setText(projectSettings.getValue(SETTING_RELEASE_KEYSTORE_ALIAS, ""));
         binding.tilReleaseStorePass.getEditText().setText(projectSettings.getValue(SETTING_RELEASE_STORE_PASS, ""));
@@ -156,15 +148,12 @@ public class BuildSettingsBottomSheet extends BottomSheetDialogFragment {
         });
     }
 
-    private void setupKeystorePickers() {
-        binding.tilDebugKeystorePath.setEndIconMode(com.google.android.material.textfield.TextInputLayout.END_ICON_CUSTOM);
-        binding.tilDebugKeystorePath.setEndIconDrawable(android.R.drawable.ic_menu_search);
-        binding.tilDebugKeystorePath.setEndIconOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-            intent.setType("*/*");
-            startActivityForResult(intent, 123);
-        });
+    private void updateKeystoreVisibility(String buildMode) {
+        boolean isRelease = BUILD_MODE_RELEASE.equals(buildMode);
+        binding.releaseKeystoreSection.setVisibility(isRelease ? View.VISIBLE : View.GONE);
+    }
 
+    private void setupKeystorePickers() {
         binding.tilReleaseKeystorePath.setEndIconMode(com.google.android.material.textfield.TextInputLayout.END_ICON_CUSTOM);
         binding.tilReleaseKeystorePath.setEndIconDrawable(android.R.drawable.ic_menu_search);
         binding.tilReleaseKeystorePath.setEndIconOnClickListener(v -> {
@@ -185,9 +174,7 @@ public class BuildSettingsBottomSheet extends BottomSheetDialogFragment {
                 } else if (path.contains("raw:")) {
                     path = path.replaceFirst(".*raw:", "");
                 }
-                if (requestCode == 123) {
-                    binding.tilDebugKeystorePath.getEditText().setText(path);
-                } else if (requestCode == 124) {
+                if (requestCode == 124) {
                     binding.tilReleaseKeystorePath.getEditText().setText(path);
                 }
             }
@@ -214,10 +201,6 @@ public class BuildSettingsBottomSheet extends BottomSheetDialogFragment {
         binding.chipAbiX8664.setTag(SETTING_CMAKE_ABI_X86_64);
 
         binding.rgBuildMode.setTag(SETTING_BUILD_MODE);
-        binding.tilDebugKeystorePath.getEditText().setTag(SETTING_DEBUG_KEYSTORE_PATH);
-        binding.tilDebugKeystoreAlias.getEditText().setTag(SETTING_DEBUG_KEYSTORE_ALIAS);
-        binding.tilDebugStorePass.getEditText().setTag(SETTING_DEBUG_STORE_PASS);
-        binding.tilDebugKeyPass.getEditText().setTag(SETTING_DEBUG_KEY_PASS);
         binding.tilReleaseKeystorePath.getEditText().setTag(SETTING_RELEASE_KEYSTORE_PATH);
         binding.tilReleaseKeystoreAlias.getEditText().setTag(SETTING_RELEASE_KEYSTORE_ALIAS);
         binding.tilReleaseStorePass.getEditText().setTag(SETTING_RELEASE_STORE_PASS);
@@ -236,10 +219,6 @@ public class BuildSettingsBottomSheet extends BottomSheetDialogFragment {
         views[VIEW_ABI_X86_64] = binding.chipAbiX8664;
         
         views[VIEW_BUILD_MODE] = binding.rgBuildMode;
-        views[VIEW_DEBUG_KEYSTORE_PATH] = binding.tilDebugKeystorePath.getEditText();
-        views[VIEW_DEBUG_KEYSTORE_ALIAS] = binding.tilDebugKeystoreAlias.getEditText();
-        views[VIEW_DEBUG_STORE_PASS] = binding.tilDebugStorePass.getEditText();
-        views[VIEW_DEBUG_KEY_PASS] = binding.tilDebugKeyPass.getEditText();
         views[VIEW_RELEASE_KEYSTORE_PATH] = binding.tilReleaseKeystorePath.getEditText();
         views[VIEW_RELEASE_KEYSTORE_ALIAS] = binding.tilReleaseKeystoreAlias.getEditText();
         views[VIEW_RELEASE_STORE_PASS] = binding.tilReleaseStorePass.getEditText();
@@ -264,6 +243,9 @@ public class BuildSettingsBottomSheet extends BottomSheetDialogFragment {
                 if (!isChecked) return;
                 if (key.equals(SETTING_JAVA_VERSION)) {
                     handleJavaVersionChange(option);
+                }
+                if (key.equals(SETTING_BUILD_MODE)) {
+                    updateKeystoreVisibility(option);
                 }
             });
             radioGroup.addView(radioButton);
