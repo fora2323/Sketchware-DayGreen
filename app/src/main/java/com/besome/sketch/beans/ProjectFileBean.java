@@ -227,7 +227,8 @@ public class ProjectFileBean extends SelectableBean implements Parcelable {
     }
 
     public String getCustomPackage() {
-        if (fileType != PROJECT_FILE_TYPE_ACTIVITY || fileName == null) return "";
+        if (fileName == null) return "";
+        if (fileType != PROJECT_FILE_TYPE_ACTIVITY && fileType != PROJECT_FILE_TYPE_FRAGMENT) return "";
         return DayDreamProjectSettings.getActivityPackage(Configs.currentProjectID, fileName);
     }
 
@@ -241,7 +242,8 @@ public class ProjectFileBean extends SelectableBean implements Parcelable {
     }
 
     public String getActivityName() {
-        return fileType != PROJECT_FILE_TYPE_ACTIVITY ? "" : getActivityName(fileName);
+        if (fileType != PROJECT_FILE_TYPE_ACTIVITY && fileType != PROJECT_FILE_TYPE_FRAGMENT) return "";
+        return getActivityName(fileName);
     }
 
     public int getActivityOptions() {
@@ -266,7 +268,8 @@ public class ProjectFileBean extends SelectableBean implements Parcelable {
     }
 
     public String getJavaName() {
-        return fileType != PROJECT_FILE_TYPE_ACTIVITY ? "" : getJavaName(fileName);
+        if (fileType != PROJECT_FILE_TYPE_ACTIVITY && fileType != PROJECT_FILE_TYPE_FRAGMENT) return "";
+        return getJavaName(fileName);
     }
 
     public String getXmlName() {

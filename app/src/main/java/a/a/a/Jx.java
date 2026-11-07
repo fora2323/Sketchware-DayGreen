@@ -238,8 +238,9 @@ public class Jx {
 		if (buildConfig.isAdMobEnabled) {
 			addImport("com.google.android.gms.ads.MobileAds");
 			
-			if (buildConfig.isDebugBuild)
-			addImport("com.google.android.gms.ads.RequestConfiguration");
+			if (buildConfig.isDebugBuild) {
+				addImport("com.google.android.gms.ads.RequestConfiguration");
+			}
 		}
 		
 		if (buildConfig.g) {
@@ -266,7 +267,7 @@ public class Jx {
 			addImport(projectPackage + ".databinding.*");
 		}
 		
-		if (projectFileBean.hasCustomPackage()) {
+		if (projectFileBean.hasCustomPackage() || !packageName.equals(projectPackage)) {
 			addImport(projectPackage + ".R");
 			if (isViewBindingEnabled) addImport(projectPackage + ".databinding.*");
 		}

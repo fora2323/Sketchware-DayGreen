@@ -93,11 +93,19 @@ class DependencyResolver(
 
     fun resolveDependency(callback: DependencyResolverCallback) = runBlocking {
         eventReciever = callback
-        val dependency = getArtifact(groupId, artifactId, version) ?: return@runBlocking
+        val dependency = getArtifact(groupId, artifactId, version)
+        if (dependency == null) {
+            callback.onArtifactNotFound(Artifact(groupId, artifactId, version))
+            return@runBlocking
+        }
 
         if (dependency.extension != "jar" && dependency.extension != "aar") {
-            callback.invalidPackaging(dependency)
-            return@runBlocking
+            if (dependency.extension.isEmpty() || dependency.extension == "bundle") {
+                dependency.extension = "jar"
+            } else {
+                callback.invalidPackaging(dependency)
+                return@runBlocking
+            }
         }
 
         val libraryJars = listOf(

@@ -229,6 +229,14 @@ public class ManageJavaFragment extends Fragment {
                     return;
                 }
 
+                if (pkgName != null && !pkgName.isEmpty() && !packageName.equals(pkgName)) {
+                    if (extension.equals(".java")) {
+                        newFileContent = newFileContent.replaceFirst("package\\s+[^;]+;\\s*", "$0\nimport " + pkgName + ".R;\n");
+                    } else {
+                        newFileContent = newFileContent.replaceFirst("package\\s+[^\n]+\n", "$0\nimport " + pkgName + ".R\n");
+                    }
+                }
+
                 FileUtil.writeFile(new File(current_path, name + extension).getAbsolutePath(), newFileContent);
                 refresh();
                 SketchwareUtil.toast("File was created successfully");

@@ -29,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import mod.hey.studios.build.BuildSettings;
 import mod.hey.studios.util.Helper;
@@ -136,21 +138,62 @@ public class LibraryDownloaderDialogFragment extends BottomSheetDialogFragment {
         this.onLibraryDownloadedTask = onLibraryDownloadedTask;
     }
 
+    private String[] parseDependencyCoordinate(String input) {
+        if (input == null) return null;
+        String cleaned = input.trim();
+
+        if (cleaned.endsWith(";")) {
+            cleaned = cleaned.substring(0, cleaned.length() - 1).trim();
+        }
+
+        if (cleaned.contains("group:") && cleaned.contains("name:") && cleaned.contains("version:")) {
+            Pattern groupPat = Pattern.compile("group\\s*[:=]\\s*['\"]([^'\"]+)['\"]");
+            Pattern namePat = Pattern.compile("name\\s*[:=]\\s*['\"]([^'\"]+)['\"]");
+            Pattern verPat = Pattern.compile("version\\s*[:=]\\s*['\"]([^'\"]+)['\"]");
+            Matcher mG = groupPat.matcher(cleaned);
+            Matcher mN = namePat.matcher(cleaned);
+            Matcher mV = verPat.matcher(cleaned);
+            if (mG.find() && mN.find() && mV.find() && mG.group(1) != null && mN.group(1) != null && mV.group(1) != null) {
+                return new String[]{mG.group(1).trim(), mN.group(1).trim(), mV.group(1).trim()};
+            }
+        }
+
+        cleaned = cleaned.replaceAll("(?i)^(implementation|api|compile|compileOnly|runtimeOnly|runtime|classpath|annotationProcessor|kapt|ksp|testImplementation|androidTestImplementation)\\s*\\(?\\s*", "");
+        cleaned = cleaned.replaceAll("^[(\"']+|[)\"']+$", "").trim();
+        cleaned = cleaned.replace("'", "").replace("\"", "").trim();
+
+        if (cleaned.endsWith("@aar") || cleaned.endsWith("@jar")) {
+            cleaned = cleaned.substring(0, cleaned.lastIndexOf('@')).trim();
+        }
+
+        var parts = cleaned.split(":");
+        if (parts.length >= 3) {
+            String group = parts[0].trim();
+            String artifact = parts[1].trim();
+            String version = parts[2].trim();
+            if (!group.isEmpty() && !artifact.isEmpty() && !version.isEmpty()) {
+                return new String[]{group, artifact, version};
+            }
+        }
+        return null;
+    }
+
     private void initDownloadFlow() {
-        dependencyName = Helper.getText(binding.dependencyInput);
-        if (dependencyName.isEmpty()) {
+        String rawInput = Helper.getText(binding.dependencyInput);
+        if (rawInput.isEmpty()) {
             binding.dependencyInputLayout.setError("Please enter a dependency");
             binding.dependencyInputLayout.setErrorEnabled(true);
             return;
         }
 
-        var parts = dependencyName.split(":");
-        if (parts.length != 3) {
-            binding.dependencyInputLayout.setError("Invalid dependency format");
+        String[] parts = parseDependencyCoordinate(rawInput);
+        if (parts == null) {
+            binding.dependencyInputLayout.setError("Invalid dependency format. Example: groupId:artifactId:version");
             binding.dependencyInputLayout.setErrorEnabled(true);
             return;
         }
 
+        dependencyName = parts[0] + ":" + parts[1] + ":" + parts[2];
         showDownloadConfirmationDialog(parts[0], parts[1], parts[2]);
     }
 
@@ -181,8 +224,17 @@ public class LibraryDownloaderDialogFragment extends BottomSheetDialogFragment {
 
         setDownloadState(true);
 
+        int minApi = 21;
+        try {
+            String minApiStr = binding.actChooseminapi.getText().toString().trim();
+            if (!minApiStr.isEmpty()) {
+                minApi = Integer.parseInt(minApiStr);
+            }
+        } catch (Exception ignored) {
+        }
+
         var resolver = new DependencyResolver(group, artifact, version,
-                binding.cbSkipSubdependencies.isChecked(), buildSettings, Integer.parseInt(binding.actChooseminapi.getText().toString()));
+                binding.cbSkipSubdependencies.isChecked(), buildSettings, minApi);
         var handler = new Handler(Looper.getMainLooper());
 
         downloadExecutor.execute(() -> {
@@ -242,7 +294,7 @@ public class LibraryDownloaderDialogFragment extends BottomSheetDialogFragment {
                 public void onInvalidScope(@NonNull Artifact dep, @NonNull String scope) {
                     handler.post(() -> {
                         DependencyDownloadItem item = findOrCreateDependencyItem(dep);
-                        item.setError("Invalid scope: " + scope);
+                        item.setState(DependencyDownloadItem.DownloadState.COMPLETED);
                         dependencyAdapter.updateDependency(item);
                     });
                 }

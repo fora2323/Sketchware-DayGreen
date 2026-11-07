@@ -124,6 +124,10 @@ public class ProjectBuilder {
     private boolean buildAppBundle = false;
     private ArrayList<File> dexesToAddButNotMerge = new ArrayList<>();
 
+    public ArrayList<File> getDexesToAddButNotMerge() {
+        return dexesToAddButNotMerge;
+    }
+
     private long timestampResourceCompilationStarted;
 
     public ProjectBuilder(Context context, yq yqVar) {
