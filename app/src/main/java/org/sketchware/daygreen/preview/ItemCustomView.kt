@@ -38,19 +38,24 @@ class ItemCustomView(
             background = null
             super.addView(realCustomView, -1, generateChildLayoutParams())
         } else {
-            // Cukup satu baris text nampilin nama class nya aja, tanpa icon
+            // Cukup satu baris text nampilin nama class nya aja, di tengah view dan warna putih
+            gravity = Gravity.CENTER
             val className = bean.convert.ifEmpty { "CustomView" }.substringAfterLast('.')
             fallbackLabel = TextView(context).apply {
                 text = className
-                setTextColor(0xFF78909C.toInt())
+                setTextColor(Color.WHITE)
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
                 setSingleLine(true)
                 maxLines = 1
                 gravity = Gravity.CENTER
             }
-            super.addView(fallbackLabel, -1, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
+            val lp = LayoutParams(
+                if (bean.layout.width == LayoutBean.LAYOUT_WRAP_CONTENT) LayoutParams.WRAP_CONTENT else LayoutParams.MATCH_PARENT,
+                if (bean.layout.height == LayoutBean.LAYOUT_WRAP_CONTENT) LayoutParams.WRAP_CONTENT else LayoutParams.MATCH_PARENT
+            ).apply {
                 gravity = Gravity.CENTER
-            })
+            }
+            super.addView(fallbackLabel, -1, lp)
         }
     }
 
