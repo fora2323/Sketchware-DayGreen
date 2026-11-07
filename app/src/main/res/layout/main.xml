@@ -10,7 +10,9 @@
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/layout_coordinator"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
         <!-- ========================= -->
         <!-- APP BAR                    -->
@@ -73,7 +75,7 @@
                         android:padding="12dp"
                         android:scaleType="center"
                         android:src="@drawable/ic_menu_mtr2"
-                        android:tint="?attr/colorOnSurfaceVariant" />
+                        app:tint="?attr/colorOnSurfaceVariant" />
 
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/search_container"
@@ -120,7 +122,7 @@
                         android:padding="12dp"
                         android:scaleType="center"
                         android:src="@drawable/ic_mtrl_search"
-                        android:tint="?attr/colorOnSurfaceVariant" />
+                        app:tint="?attr/colorOnSurfaceVariant" />
 
                 </LinearLayout>
 
@@ -180,17 +182,22 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:visibility="gone">
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_fab_restore"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
                     app:cardBackgroundColor="?attr/colorSurfaceContainer"
                     app:cardCornerRadius="14dp"
-                    app:cardElevation="0dp"
+                    app:cardElevation="2dp"
                     app:strokeWidth="0dp">
 
                     <TextView
@@ -209,13 +216,8 @@
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/fab_restore"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:elevation="0dp"
-                    android:stateListAnimator="@null"
-                    app:elevation="0dp"
-                    app:hoveredFocusedTranslationZ="0dp"
-                    app:pressedTranslationZ="0dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     app:srcCompat="@drawable/ic_mtrl_history"
                     tools:ignore="ContentDescription" />
 
@@ -231,17 +233,22 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:visibility="gone">
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_fab_create"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
                     app:cardBackgroundColor="?attr/colorSurfaceContainer"
                     app:cardCornerRadius="14dp"
-                    app:cardElevation="0dp"
+                    app:cardElevation="2dp"
                     app:strokeWidth="0dp">
 
                     <TextView
@@ -260,13 +267,8 @@
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/fab_create"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:elevation="0dp"
-                    android:stateListAnimator="@null"
-                    app:elevation="0dp"
-                    app:hoveredFocusedTranslationZ="0dp"
-                    app:pressedTranslationZ="0dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     app:srcCompat="@drawable/ic_mtrl_add"
                     tools:ignore="ContentDescription" />
 
@@ -279,13 +281,8 @@
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/create_new_project"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:elevation="0dp"
-                android:stateListAnimator="@null"
-                app:elevation="0dp"
-                app:hoveredFocusedTranslationZ="0dp"
-                app:pressedTranslationZ="0dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 app:srcCompat="@drawable/ic_mtrl_folder"
                 tools:ignore="ContentDescription" />
 

@@ -8,7 +8,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
 import android.widget.PopupMenu;
 
@@ -21,18 +20,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import dev.pranav.filepicker.FilePickerCallback;
-import dev.pranav.filepicker.FilePickerDialogFragment;
-import dev.pranav.filepicker.FilePickerOptions;
-import dev.pranav.filepicker.SelectionMode;
 import mod.bobur.VectorDrawableLoader;
 import mod.hey.studios.code.SrcCodeEditor;
 import mod.hey.studios.util.Helper;
@@ -49,7 +41,6 @@ import pro.sketchware.utility.SketchwareUtil;
 public class ManageResourceFragment extends Fragment {
 
     private CustomAdapter adapter;
-    private FilePickerDialogFragment dialog;
     private FilePathUtil fpu;
     private FileResConfig frc;
     private String numProj;
@@ -64,7 +55,6 @@ public class ManageResourceFragment extends Fragment {
                 temp = temp.substring(0, temp.lastIndexOf("/"));
                 if (temp.contains("resource")) {
                     handleAdapter(temp);
-                    handleFab();
                 }
             } catch (IndexOutOfBoundsException ignored) {
             }
@@ -115,7 +105,6 @@ public class ManageResourceFragment extends Fragment {
         Helper.fixFileprovider();
         frc = new FileResConfig(numProj);
         fpu = new FilePathUtil();
-        setupDialog();
         checkDir();
         setupUI();
     }
@@ -131,7 +120,6 @@ public class ManageResourceFragment extends Fragment {
         if (FileUtil.isExistFile(fpu.getPathResource(numProj))) {
             temp = fpu.getPathResource(numProj);
             handleAdapter(temp);
-            handleFab();
             return;
         }
         FileUtil.makeDir(fpu.getPathResource(numProj));
@@ -159,41 +147,8 @@ public class ManageResourceFragment extends Fragment {
         return temp != null && temp.equals(fpu.getPathResource(numProj));
     }
 
-    private void handleFab() {
-        if (isInMainDirectory()) {
-            hideShowOptionsButton(true);
-        }
-    }
-
     private void setupUI() {
-        binding.showOptionsButton.setOnClickListener(view -> {
-            if (isInMainDirectory()) {
-                createNewDialog(true);
-                return;
-            }
-            hideShowOptionsButton(false);
-        });
-        binding.closeButton.setOnClickListener(view -> hideShowOptionsButton(true));
-        binding.createNewButton.setOnClickListener(v -> {
-            createNewDialog(isInMainDirectory());
-            hideShowOptionsButton(true);
-        });
-        binding.importNewButton.setOnClickListener(v -> {
-            dialog.show(getChildFragmentManager(), "filePicker");
-            hideShowOptionsButton(true);
-        });
-    }
-
-    private void hideShowOptionsButton(boolean isHide) {
-        binding.optionsLayout.animate()
-                .translationY(isHide ? 300 : 0)
-                .alpha(isHide ? 0 : 1)
-                .setInterpolator(new OvershootInterpolator());
-
-        binding.showOptionsButton.animate()
-                .translationY(isHide ? 0 : 300)
-                .alpha(isHide ? 1 : 0)
-                .setInterpolator(new OvershootInterpolator());
+        binding.showOptionsButton.setOnClickListener(view -> createNewDialog(isInMainDirectory()));
     }
 
     @Override
@@ -265,32 +220,7 @@ public class ManageResourceFragment extends Fragment {
         dialog.show();
     }
 
-    private void setupDialog() {
-        FilePickerOptions options = new FilePickerOptions();
-        options.setSelectionMode(SelectionMode.BOTH);
-        options.setMultipleSelection(true);
-        options.setTitle("Select resource files");
-
-        FilePickerCallback callback = new FilePickerCallback() {
-            @Override
-            public void onFilesSelected(@NotNull List<? extends File> files) {
-                if (files.isEmpty()) {
-                    SketchwareUtil.toastError("No files selected");
-                    return;
-                }
-                for (File file : files) {
-                    try {
-                        FileUtil.copyDirectory(file, new File(temp + File.separator + file.getName()));
-                    } catch (IOException e) {
-                        SketchwareUtil.toastError("Couldn't import resource! [" + e.getMessage() + "]");
-                    }
-                }
-                handleAdapter(temp);
-                handleFab();
-            }
-        };
-
-        dialog = new FilePickerDialogFragment(options, callback);
+    private void handleFab() {
     }
 
     private void showRenameDialog(String path) {

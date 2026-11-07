@@ -432,20 +432,24 @@ binding.drawerToggleBtn.setBackground(drawerCircle);
             clearSearchFocus();
         });
 
-        binding.fabCreate.setOnClickListener(v -> {
+        View.OnClickListener createClick = v -> {
             closeFabMenu();
             if (projectsFragment != null) {
                 projectsFragment.toProjectSettingsActivity();
             }
-        });
+        };
+        binding.fabCreate.setOnClickListener(createClick);
+        binding.cardFabCreate.setOnClickListener(createClick);
 
-        binding.fabRestore.setOnClickListener(v -> {
+        View.OnClickListener restoreClick = v -> {
             closeFabMenu();
             if (backupRestoreManager == null) {
                 backupRestoreManager = new BackupRestoreManager(MainActivity.this, projectsFragment);
             }
             backupRestoreManager.restore();
-        });
+        };
+        binding.fabRestore.setOnClickListener(restoreClick);
+        binding.cardFabRestore.setOnClickListener(restoreClick);
     }
 
     private void openFabMenu() {
@@ -466,6 +470,8 @@ binding.drawerToggleBtn.setBackground(drawerCircle);
         binding.layoutFabRestore.animate().alpha(1f).translationY(0f).setStartDelay(50).setDuration(180).start();
 
         binding.fabOverlay.setVisibility(View.VISIBLE);
+        binding.fabOverlay.setAlpha(0f);
+        binding.fabOverlay.animate().alpha(1f).setDuration(180).start();
     }
 
     private void closeFabMenu() {
@@ -473,9 +479,13 @@ binding.drawerToggleBtn.setBackground(drawerCircle);
 
         binding.createNewProject.animate().rotation(0f).setDuration(150).start();
 
-        binding.layoutFabCreate.setVisibility(View.GONE);
-        binding.layoutFabRestore.setVisibility(View.GONE);
-        binding.fabOverlay.setVisibility(View.GONE);
+        binding.layoutFabCreate.animate().alpha(0f).translationY(20f).setDuration(150)
+                .withEndAction(() -> binding.layoutFabCreate.setVisibility(View.GONE)).start();
+        binding.layoutFabRestore.animate().alpha(0f).translationY(20f).setDuration(150)
+                .withEndAction(() -> binding.layoutFabRestore.setVisibility(View.GONE)).start();
+
+        binding.fabOverlay.animate().alpha(0f).setDuration(150)
+                .withEndAction(() -> binding.fabOverlay.setVisibility(View.GONE)).start();
     }
 
     private Fragment getFragmentForNavId(int navItemId) {

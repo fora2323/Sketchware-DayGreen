@@ -10,7 +10,6 @@ import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.animation.OvershootInterpolator;
 import android.widget.Button;
 import android.widget.PopupMenu;
 
@@ -23,18 +22,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.gson.Gson;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import dev.pranav.filepicker.FilePickerCallback;
-import dev.pranav.filepicker.FilePickerDialogFragment;
-import dev.pranav.filepicker.FilePickerOptions;
 import mod.hey.studios.code.SrcCodeEditor;
 import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
@@ -161,21 +154,7 @@ public class ManageJavaFragment extends Fragment {
     }
 
     private void setupUI() {
-        binding.showOptionsButton.setOnClickListener(view -> hideShowOptionsButton(false));
-        binding.closeButton.setOnClickListener(view -> hideShowOptionsButton(true));
-        binding.createNewButton.setOnClickListener(v -> {
-            showCreateDialog();
-            hideShowOptionsButton(true);
-        });
-        binding.importNewButton.setOnClickListener(v -> {
-            showImportDialog();
-            hideShowOptionsButton(true);
-        });
-    }
-
-    private void hideShowOptionsButton(boolean isHide) {
-        binding.optionsLayout.animate().translationY(isHide ? 300 : 0).alpha(isHide ? 0 : 1).setInterpolator(new OvershootInterpolator());
-        binding.showOptionsButton.animate().translationY(isHide ? 0 : 300).alpha(isHide ? 1 : 0).setInterpolator(new OvershootInterpolator());
+        binding.showOptionsButton.setOnClickListener(view -> showCreateDialog());
     }
 
     private String getCurrentPkgName() {
@@ -269,31 +248,6 @@ public class ManageJavaFragment extends Fragment {
         });
 
         dialog.show();
-    }
-
-    private void showImportDialog() {
-        FilePickerOptions options = new FilePickerOptions();
-        options.setMultipleSelection(true);
-        options.setExtensions(new String[]{"java", "kt"});
-        options.setTitle("Select Java/Kotlin file(s)");
-
-        FilePickerCallback callback = new FilePickerCallback() {
-            @Override
-            public void onFilesSelected(@NotNull List<? extends File> files) {
-                for (File file : files) {
-                    String fileContent = FileUtil.readFile(file.getAbsolutePath());
-
-                    if (fileContent.contains("package ")) {
-                        fileContent = fileContent.replaceFirst(PACKAGE_DECL_REGEX, "package " + getCurrentPkgName() + (file.getName().endsWith(".java") ? ";" : "") + "\n");
-                    }
-
-                    FileUtil.writeFile(new File(current_path, file.getName()).getAbsolutePath(), fileContent);
-                    refresh();
-                }
-            }
-        };
-
-        new FilePickerDialogFragment(options, callback).show(getChildFragmentManager(), "filePicker");
     }
 
     private void showRenameDialog(int position) {
