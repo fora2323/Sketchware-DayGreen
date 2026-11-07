@@ -14,7 +14,7 @@ import java.io.File
 import java.io.FileInputStream
 
 class PreviewResourceResolver private constructor(
-    private val scId: String,
+    val scId: String,
     private val nightMode: Boolean
 ) {
     private val resourceBasePath: String = run {

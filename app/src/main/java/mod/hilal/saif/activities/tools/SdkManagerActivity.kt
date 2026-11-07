@@ -140,6 +140,7 @@ class SdkManagerActivity : BaseAppCompatActivity() {
                         if (destination.exists()) {
                             destination.delete()
                         }
+                        FileCheckUtils.ensureLegacyAndroidJar(this)
                         setupItems()
                     }
                     .setNegativeButton("Cancel", null)
@@ -150,6 +151,7 @@ class SdkManagerActivity : BaseAppCompatActivity() {
             downloadBtn.setIconResource(R.drawable.ic_mtrl_download)
             downloadBtn.setOnClickListener {
                 DownloadUtility.downloadFile(this, url, destination) {
+                    FileCheckUtils.ensureLegacyAndroidJar(this)
                     setupItems()
                 }
             }

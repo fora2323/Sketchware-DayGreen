@@ -362,6 +362,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     }
 
     private void refreshViewTabAdapter() {
+        org.sketchware.daygreen.preview.PreviewClass.clearCache(sc_id);
         if (viewTabAdapter != null && projectFile != null) {
             int orientation = projectFile.orientation;
             if (orientation == ProjectFileBean.ORIENTATION_PORTRAIT) {

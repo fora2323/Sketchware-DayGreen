@@ -16,6 +16,8 @@ import org.cosmic.ide.dependency.resolver.api.Repository
 import org.cosmic.ide.dependency.resolver.eventReciever
 import org.cosmic.ide.dependency.resolver.getArtifact
 import org.cosmic.ide.dependency.resolver.repositories
+import org.sketchware.daygreen.FileCheckUtils
+import pro.sketchware.SketchApplication
 import pro.sketchware.utility.FileUtil
 import java.io.File
 import java.nio.file.Files
@@ -108,21 +110,36 @@ class DependencyResolver(
             }
         }
 
-        val libraryJars = listOf(
-            BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH.toPath()
-                .resolve("core-lambda-stubs.jar"), Paths.get(
-                buildSettings.getValue(
-                    BuildSettings.SETTING_ANDROID_JAR_PATH,
-                    BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH.resolve("android.jar").absolutePath
-                )
-            )
-        )
+        val context = SketchApplication.getContext()
+        FileCheckUtils.ensureLegacyAndroidJar(context)
+
+        val libraryJars = mutableListOf<Path>()
+
+        val customAndroidJarPath = buildSettings.getValue(BuildSettings.SETTING_ANDROID_JAR_PATH, "")
+        val androidJarFile = if (customAndroidJarPath.isNotEmpty() && File(customAndroidJarPath).exists() && File(customAndroidJarPath).length() > 0) {
+            File(customAndroidJarPath)
+        } else {
+            FileCheckUtils.getDefaultAndroidJar(context)
+        }
+
+        if (androidJarFile != null && androidJarFile.exists() && androidJarFile.length() > 0) {
+            libraryJars.add(androidJarFile.toPath())
+        }
+
+        val coreLambdaStubs = BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH.toPath().resolve("core-lambda-stubs.jar")
+        if (Files.isRegularFile(coreLambdaStubs) && Files.size(coreLambdaStubs) > 0) {
+            libraryJars.add(coreLambdaStubs)
+        }
+
         val dependencyClasspath = mutableListOf<Path>()
 
         val classpath = buildSettings.getValue(BuildSettings.SETTING_CLASSPATH, "")
         classpath.split(":").forEach {
             if (it.isEmpty()) return@forEach
-            dependencyClasspath.add(Paths.get(it))
+            val path = Paths.get(it)
+            if (Files.isRegularFile(path) && Files.size(path) > 0) {
+                dependencyClasspath.add(path)
+            }
         }
 
         // 1. Download & unzip (kalau aar) artifact utama dulu — TAPI BELUM di-dex
@@ -269,11 +286,23 @@ class DependencyResolver(
 
     private fun compileJar(jarFile: Path, jars: List<Path>, libraryJars: List<Path>) {
         Files.createDirectories(jarFile.parent)
-        D8.run(
-            D8Command.builder().setIntermediate(true).setMode(CompilationMode.RELEASE)
-                .addProgramFiles(jarFile).addLibraryFiles(libraryJars).addClasspathFiles(jars)
-                .setMinApiLevel(minAPILevel)
-                .setOutput(jarFile.parent, OutputMode.DexIndexed).build()
-        )
+        val validJars = jars.filter { Files.isRegularFile(it) && Files.size(it) > 0 }
+        val validLibraryJars = libraryJars.filter { Files.isRegularFile(it) && Files.size(it) > 0 }
+
+        val builder = D8Command.builder()
+            .setIntermediate(true)
+            .setMode(CompilationMode.RELEASE)
+            .addProgramFiles(jarFile)
+            .setMinApiLevel(minAPILevel)
+            .setOutput(jarFile.parent, OutputMode.DexIndexed)
+
+        if (validLibraryJars.isNotEmpty()) {
+            builder.addLibraryFiles(validLibraryJars)
+        }
+        if (validJars.isNotEmpty()) {
+            builder.addClasspathFiles(validJars)
+        }
+
+        D8.run(builder.build())
     }
 }

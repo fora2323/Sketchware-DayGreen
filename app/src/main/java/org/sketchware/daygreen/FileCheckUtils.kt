@@ -130,4 +130,47 @@ object FileCheckUtils {
                 file.name.removePrefix("android-").removeSuffix(".jar").toIntOrNull()
             }?.sorted() ?: emptyList()
     }
+
+    @JvmStatic
+    fun getDefaultAndroidJar(context: Context): File? {
+        val legacy = File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android.jar")
+        if (legacy.exists() && legacy.length() > 0) {
+            return legacy
+        }
+        val installedSdks = getInstalledSdks(context)
+        if (installedSdks.isNotEmpty()) {
+            val highestSdk = installedSdks.last()
+            val fallbackJar = File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android-$highestSdk.jar")
+            if (fallbackJar.exists() && fallbackJar.length() > 0) {
+                return fallbackJar
+            }
+        }
+        val libsDir = BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH
+        if (libsDir.exists()) {
+            val anySdk = libsDir.listFiles { file ->
+                file.isFile && file.name.startsWith("android-") && file.name.endsWith(".jar") && file.length() > 0
+            }?.maxByOrNull { it.name }
+            if (anySdk != null) {
+                return anySdk
+            }
+        }
+        return null
+    }
+
+    @JvmStatic
+    fun ensureLegacyAndroidJar(context: Context) {
+        val defaultJar = getDefaultAndroidJar(context) ?: return
+        val legacy = File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android.jar")
+        if (!legacy.exists() || legacy.length() == 0L) {
+            try {
+                if (legacy.exists()) legacy.delete()
+                java.nio.file.Files.createSymbolicLink(legacy.toPath(), defaultJar.toPath())
+            } catch (e: Exception) {
+                try {
+                    defaultJar.copyTo(legacy, overwrite = true)
+                } catch (ignored: Exception) {
+                }
+            }
+        }
+    }
 }

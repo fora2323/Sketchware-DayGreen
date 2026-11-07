@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import a.a.a.wq;
+import org.sketchware.daygreen.preview.PreviewClass;
 import org.sketchware.daygreen.preview.PreviewResourceResolver;
 import org.sketchware.daygreen.preview.PreviewViewRegistry;
 import pro.sketchware.utility.InvokeUtil;
@@ -42,6 +43,8 @@ public class ViewBeanParser {
     private boolean skipRoot;
     private Pair<String, Map<String, String>> rootAttributes;
     private PreviewResourceResolver resourceResolver = null;
+    private String scId = null;
+    private static String activeScId = null;
 
     public ViewBeanParser(String xml) throws XmlPullParserException {
         this(new StringReader(xml));
@@ -60,6 +63,21 @@ public class ViewBeanParser {
 
     public void setResourceResolver(PreviewResourceResolver resourceResolver) {
         this.resourceResolver = resourceResolver;
+        if (resourceResolver != null && resourceResolver.getScId() != null) {
+            this.scId = resourceResolver.getScId();
+            activeScId = resourceResolver.getScId();
+        }
+    }
+
+    public void setScId(String scId) {
+        this.scId = scId;
+        activeScId = scId;
+    }
+
+    public String getScId() {
+        if (scId != null && !scId.isEmpty()) return scId;
+        if (resourceResolver != null) return resourceResolver.getScId();
+        return activeScId;
     }
 
     public static String generateUniqueId(Set<String> ids, int type, String className) {
@@ -134,6 +152,9 @@ public class ViewBeanParser {
             type = PreviewViewRegistry.typeOf(getNameFromTag(tag), type);
         }
         if (type == ViewBean.VIEW_TYPE_LAYOUT_LINEAR) {
+            type = PreviewClass.resolveViewType(tag, activeScId, getContext());
+        }
+        if (type == ViewBean.VIEW_TYPE_LAYOUT_LINEAR) {
             var view = InvokeUtil.createView(getContext(), tag);
             if (view != null) {
                 Class<?> clazz = view.getClass();
@@ -175,9 +196,13 @@ public class ViewBeanParser {
                 case XmlPullParser.START_TAG -> {
                     var name = parser.getName();
                     if (!isRootSkipped) {
-                        var view = InvokeUtil.createView(getContext(), name);
-                        if (!(view instanceof ViewGroup)) {
-                            throw new IOException("Root view must be a ViewGroup");
+                        var view = PreviewClass.createView(getContext(), name, getScId());
+                        if (view == null) {
+                            view = InvokeUtil.createView(getContext(), name);
+                        }
+                        if (view == null || !(view instanceof ViewGroup)) {
+                            // Fallback to LinearLayout if not compiled yet or not a ViewGroup
+                            view = PreviewClass.fallbackView(getContext());
                         }
                         Map<String, String> attributes = new LinkedHashMap<>();
                         for (int i = 0; i < parser.getAttributeCount(); i++) {

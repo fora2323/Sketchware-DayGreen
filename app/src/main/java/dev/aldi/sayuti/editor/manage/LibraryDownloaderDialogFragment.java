@@ -3,6 +3,7 @@ package dev.aldi.sayuti.editor.manage;
 import static dev.aldi.sayuti.editor.manage.LocalLibrariesUtil.createLibraryMap;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -24,6 +25,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.gson.Gson;
 
 import org.cosmic.ide.dependency.resolver.api.Artifact;
+import org.sketchware.daygreen.FileCheckUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +36,7 @@ import java.util.regex.Pattern;
 
 import mod.hey.studios.build.BuildSettings;
 import mod.hey.studios.util.Helper;
+import mod.hilal.saif.activities.tools.SdkManagerActivity;
 import mod.jbk.build.BuiltInLibraries;
 import mod.pranav.dependency.resolver.DependencyResolver;
 import pro.sketchware.R;
@@ -100,6 +103,9 @@ public class LibraryDownloaderDialogFragment extends BottomSheetDialogFragment {
                 options
         );
         binding.actChooseminapi.setAdapter(adapter);
+        if (binding.actChooseminapi.getText().toString().trim().isEmpty()) {
+            binding.actChooseminapi.setText("21", false);
+        }
 
         connectivityManager = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         registerNetworkCallback();
@@ -216,6 +222,18 @@ public class LibraryDownloaderDialogFragment extends BottomSheetDialogFragment {
     }
 
     private void startDownloadProcess(String group, String artifact, String version) {
+        if (!FileCheckUtils.isSdkDownloaded(requireContext())) {
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Android SDK Missing")
+                    .setMessage("Android SDK platform JAR is missing.\n\nPlease open Tools > SDK Manager to download an Android SDK (e.g. API 33 or 34) before downloading dependencies.")
+                    .setPositiveButton("Open SDK Manager", (d, w) -> {
+                        startActivity(new Intent(requireContext(), SdkManagerActivity.class));
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            return;
+        }
+
         binding.dependencyInputLayout.setErrorEnabled(false);
 
         binding.dependencyInfo.setVisibility(View.GONE);

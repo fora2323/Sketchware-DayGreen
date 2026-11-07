@@ -82,6 +82,8 @@ import a.a.a.wB;
 import a.a.a.wq;
 import a.a.a.yB;
 import a.a.a.zB;
+import org.sketchware.daygreen.preview.ItemCustomView;
+import org.sketchware.daygreen.preview.PreviewClass;
 import dev.aldi.sayuti.editor.view.item.ItemBadgeView;
 import dev.aldi.sayuti.editor.view.item.ItemCircleImageView;
 import dev.aldi.sayuti.editor.view.item.ItemCodeView;
@@ -236,6 +238,7 @@ public class ViewPane extends RelativeLayout {
 
     public void initialize(String sc_id, boolean isPreviewMode) {
         this.sc_id = sc_id;
+        PreviewClass.setCurrentScId(sc_id);
         material3LibraryManager = new Material3LibraryManager(getContext(), sc_id);
         colorsEditorManager = new ColorsEditorManager(sc_id);
         int viewEditorThemeOverlay = material3LibraryManager.getViewEditorThemeOverlay();
@@ -275,6 +278,16 @@ public class ViewPane extends RelativeLayout {
     }
 
     public View createItemView(ViewBean viewBean) {
+        if (viewBean.convert != null && PreviewClass.isCustomClass(viewBean.convert)) {
+            View customItem = PreviewClass.createItemView(context, viewBean, sc_id);
+            if (customItem != null) {
+                customItem.setId(++b);
+                customItem.setTag(viewBean.id);
+                ((ItemView) customItem).setBean(viewBean);
+                updateItemView(customItem, viewBean);
+                return customItem;
+            }
+        }
         View item = switch (viewBean.type) {
             case ViewBean.VIEW_TYPE_LAYOUT_LINEAR,
                  ViewBeans.VIEW_TYPE_LAYOUT_COLLAPSINGTOOLBARLAYOUT,
@@ -339,6 +352,12 @@ public class ViewPane extends RelativeLayout {
     }
 
     private View getUnknownItemView(ViewBean bean) {
+        if (bean.convert != null && PreviewClass.isCustomClass(bean.convert)) {
+            View customItem = PreviewClass.createItemView(context, bean, sc_id);
+            if (customItem != null) {
+                return customItem;
+            }
+        }
         bean.type = ViewBean.VIEW_TYPE_LAYOUT_LINEAR;
         return new ItemLinearLayout(context);
     }
@@ -496,7 +515,58 @@ public class ViewPane extends RelativeLayout {
         }
         
         Gx classInfo = viewBean.getClassInfo();
-        if (classInfo.a("LinearLayout")) {
+        if (view instanceof ItemCustomView itemCustomView) {
+            View realView = itemCustomView.getRealCustomView();
+            if (realView instanceof EditText editText) {
+                updateEditText(editText, viewBean);
+            } else if (realView instanceof CompoundButton compoundButton) {
+                compoundButton.setChecked(viewBean.checked != 0);
+                updateTextView(compoundButton, viewBean);
+            } else if (realView instanceof TextView textView) {
+                updateTextView(textView, viewBean);
+                if (!classInfo.b("Button") && !classInfo.b("Switch")) {
+                    textView.setGravity(viewBean.layout.gravity);
+                } else {
+                    int gravity = viewBean.layout.gravity;
+                    if (gravity == LayoutBean.GRAVITY_NONE) {
+                        textView.setGravity(Gravity.CENTER);
+                    } else {
+                        textView.setGravity(gravity);
+                    }
+                }
+            } else if (realView instanceof ImageView imageView) {
+                if (viewBean.image != null && !viewBean.image.resName.isEmpty()) {
+                    try {
+                        Drawable customD = DrawablePreviewRenderer.getDrawableFromProject(sc_id, viewBean.image.resName, 0, material3LibraryManager.canUseNightVariantColors());
+                        if (customD != null) {
+                            imageView.setImageDrawable(customD);
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+            } else if (realView instanceof LinearLayout linearLayout) {
+                linearLayout.setOrientation(viewBean.layout.orientation);
+            }
+
+            if (viewBean.layout.backgroundColor != 0) {
+                (realView != null ? realView : view).setBackgroundColor(viewBean.layout.backgroundColor);
+            }
+            if (viewBean.layout.paddingLeft != 0 || viewBean.layout.paddingTop != 0 || viewBean.layout.paddingRight != 0 || viewBean.layout.paddingBottom != 0) {
+                (realView != null ? realView : view).setPadding(viewBean.layout.paddingLeft, viewBean.layout.paddingTop, viewBean.layout.paddingRight, viewBean.layout.paddingBottom);
+            }
+
+            if (viewBean.parentType == ViewBean.VIEW_TYPE_LAYOUT_RELATIVE) {
+                updateRelative(view, injectHandler);
+            }
+            var elevation = injectHandler.getAttributeValueOf("elevation");
+            if (!elevation.isEmpty()) {
+                view.setElevation(PropertiesUtil.resolveSize(elevation, 0));
+            }
+            view.setVisibility(VISIBLE);
+            return;
+        }
+
+        if (classInfo.a("LinearLayout") && view instanceof LinearLayout) {
             LinearLayout linearLayout = (LinearLayout) view;
             linearLayout.setOrientation(viewBean.layout.orientation);
             linearLayout.setWeightSum(resolveDimenToFloat(viewBean.layout.resWeightSum, (float) viewBean.layout.weightSum));
@@ -507,7 +577,7 @@ public class ViewPane extends RelativeLayout {
         if (viewBean.parentType == ViewBean.VIEW_TYPE_LAYOUT_RELATIVE) {
             updateRelative(view, injectHandler);
         }
-        if (classInfo.a("TextView")) {
+        if (classInfo.a("TextView") && view instanceof TextView) {
             TextView textView = (TextView) view;
             updateTextView(textView, viewBean);
             if (!classInfo.b("Button") && !classInfo.b("Switch")) {
@@ -521,10 +591,10 @@ public class ViewPane extends RelativeLayout {
                 }
             }
         }
-        if (classInfo.a("EditText")) {
+        if (classInfo.a("EditText") && view instanceof EditText) {
             updateEditText((EditText) view, viewBean);
         }
-        if (classInfo.a("ImageView")) {
+        if (classInfo.a("ImageView") && view instanceof ImageView) {
             if (resourcesManager != null && resourcesManager.h(viewBean.image.resName) == ProjectResourceBean.PROJECT_RES_TYPE_RESOURCE) {
                 ((ImageView) view).setImageResource(getContext().getResources().getIdentifier(viewBean.image.resName, "drawable", getContext().getPackageName()));
             } else if (viewBean.image.resName.equals("default_image")) {
@@ -562,24 +632,24 @@ public class ViewPane extends RelativeLayout {
                 ((ImageView) view).setScaleType(ImageView.ScaleType.valueOf(viewBean.image.scaleType));
             }
         }
-        if (classInfo.a("CompoundButton")) {
+        if (classInfo.a("CompoundButton") && view instanceof CompoundButton) {
             ((CompoundButton) view).setChecked(viewBean.checked != 0);
         }
-        if (classInfo.b("SeekBar")) {
+        if (classInfo.b("SeekBar") && view instanceof SeekBar) {
             SeekBar seekBar = (SeekBar) view;
             seekBar.setProgress(viewBean.progress);
             seekBar.setMax(viewBean.max);
         }
-        if (classInfo.b("ProgressBar")) {
+        if (classInfo.b("ProgressBar") && view instanceof ItemProgressBar) {
             ((ItemProgressBar) view).setProgressBarStyle(viewBean.progressStyle);
         }
-        if (classInfo.b("CalendarView")) {
+        if (classInfo.b("CalendarView") && view instanceof CalendarView) {
             ((CalendarView) view).setFirstDayOfWeek(viewBean.firstDayOfWeek);
         }
-        if (classInfo.b("AdView")) {
+        if (classInfo.b("AdView") && view instanceof ItemAdView) {
             ((ItemAdView) view).setAdSize(viewBean.adSize);
         }
-        if (classInfo.b("CardView")) {
+        if (classInfo.b("CardView") && view instanceof ItemCardView) {
             var cardView = (ItemCardView) view;
             cardView.setContentPadding(
                     viewBean.layout.paddingLeft,
@@ -588,13 +658,13 @@ public class ViewPane extends RelativeLayout {
                     viewBean.layout.paddingBottom);
             updateCardView(cardView, injectHandler);
         }
-        if (classInfo.b("TabLayout")) {
+        if (classInfo.b("TabLayout") && view instanceof ItemTabLayout) {
             updateTabLayout((ItemTabLayout) view, injectHandler);
         }
-        if (classInfo.b("MaterialButton")) {
+        if (classInfo.b("MaterialButton") && view instanceof ItemMaterialButton) {
             updateMaterialButton((ItemMaterialButton) view, injectHandler);
         }
-        if (classInfo.b("SignInButton")) {
+        if (classInfo.b("SignInButton") && view instanceof ItemSignInButton) {
             ItemSignInButton button = (ItemSignInButton) view;
             boolean hasButtonSize = false;
             boolean hasColorScheme = false;

@@ -4,6 +4,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +26,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import mod.bobur.VectorDrawableLoader;
 import mod.hey.studios.code.SrcCodeEditor;
@@ -39,6 +43,10 @@ import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 
 public class ManageResourceFragment extends Fragment {
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private int loadTaskId = 0;
 
     private CustomAdapter adapter;
     private FilePathUtil fpu;
@@ -117,30 +125,59 @@ public class ManageResourceFragment extends Fragment {
     }
 
     private void checkDir() {
-        if (FileUtil.isExistFile(fpu.getPathResource(numProj))) {
-            temp = fpu.getPathResource(numProj);
-            handleAdapter(temp);
-            return;
+        if (!FileUtil.isExistFile(fpu.getPathResource(numProj))) {
+            FileUtil.makeDir(fpu.getPathResource(numProj));
+            FileUtil.makeDir(fpu.getPathResource(numProj) + "/anim");
+            FileUtil.makeDir(fpu.getPathResource(numProj) + "/drawable");
+            FileUtil.makeDir(fpu.getPathResource(numProj) + "/drawable-xhdpi");
+            FileUtil.makeDir(fpu.getPathResource(numProj) + "/layout");
+            FileUtil.makeDir(fpu.getPathResource(numProj) + "/menu");
+            FileUtil.makeDir(fpu.getPathResource(numProj) + "/values");
         }
-        FileUtil.makeDir(fpu.getPathResource(numProj));
-        FileUtil.makeDir(fpu.getPathResource(numProj) + "/anim");
-        FileUtil.makeDir(fpu.getPathResource(numProj) + "/drawable");
-        FileUtil.makeDir(fpu.getPathResource(numProj) + "/drawable-xhdpi");
-        FileUtil.makeDir(fpu.getPathResource(numProj) + "/layout");
-        FileUtil.makeDir(fpu.getPathResource(numProj) + "/menu");
-        FileUtil.makeDir(fpu.getPathResource(numProj) + "/values");
-        checkDir();
+        temp = fpu.getPathResource(numProj);
+        handleAdapter(temp);
     }
 
     private void handleAdapter(String str) {
-        ArrayList<String> resourceFile = frc.getResourceFile(str);
-        //noinspection Java8ListSort
-        Collections.sort(resourceFile, String.CASE_INSENSITIVE_ORDER);
-        adapter = new CustomAdapter(resourceFile);
-        binding.filesListRecyclerView.setAdapter(adapter);
-
-        binding.noContentLayout.setVisibility(resourceFile.isEmpty() ? View.VISIBLE : View.GONE);
+        final int taskId = ++loadTaskId;
         updateBackPressedCallback();
+
+        if (binding != null) {
+            binding.loadingProgress.setVisibility(View.VISIBLE);
+            binding.noContentLayout.setVisibility(View.GONE);
+        }
+
+        executor.execute(() -> {
+            ArrayList<String> resourceFile = frc.getResourceFile(str);
+            //noinspection Java8ListSort
+            Collections.sort(resourceFile, String.CASE_INSENSITIVE_ORDER);
+
+            mainHandler.post(() -> {
+                if (!isAdded() || binding == null || taskId != loadTaskId) {
+                    return;
+                }
+
+                binding.loadingProgress.setVisibility(View.GONE);
+                adapter = new CustomAdapter(resourceFile);
+                binding.filesListRecyclerView.setAdapter(adapter);
+
+                binding.noContentLayout.setVisibility(resourceFile.isEmpty() ? View.VISIBLE : View.GONE);
+                updateBackPressedCallback();
+            });
+        });
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        loadTaskId++;
+        binding = null;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        executor.shutdownNow();
     }
 
     private boolean isInMainDirectory() {

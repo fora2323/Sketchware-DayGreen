@@ -4,6 +4,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -26,6 +28,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import mod.hey.studios.code.SrcCodeEditor;
@@ -91,6 +95,9 @@ public class ManageJavaFragment extends Fragment {
             """;
 
     private final ArrayList<String> currentTree = new ArrayList<>();
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private int loadTaskId = 0;
     private FrManageFileBinding binding;
     private String current_path;
     private FilePathUtil fpu;
@@ -319,25 +326,55 @@ public class ManageJavaFragment extends Fragment {
     private void refresh() {
         if (!FileUtil.isExistFile(fpu.getPathJava(sc_id))) {
             FileUtil.makeDir(fpu.getPathJava(sc_id));
-            refresh();
         }
 
         if (!FileUtil.isExistFile(fpu.getManifestJava(sc_id))) {
             FileUtil.writeFile(fpu.getManifestJava(sc_id), "");
-            refresh();
         }
 
         updateBackPressedCallback();
 
-        currentTree.clear();
-        FileUtil.listDir(current_path, currentTree);
-        Helper.sortPaths(currentTree);
+        final int taskId = ++loadTaskId;
+        final String pathToScan = current_path;
 
-        filesAdapter = new FilesAdapter(currentTree);
+        if (binding != null) {
+            binding.loadingProgress.setVisibility(View.VISIBLE);
+            binding.noContentLayout.setVisibility(View.GONE);
+        }
 
-        binding.filesListRecyclerView.setAdapter(filesAdapter);
+        executor.execute(() -> {
+            ArrayList<String> scannedFiles = new ArrayList<>();
+            FileUtil.listDir(pathToScan, scannedFiles);
+            Helper.sortPaths(scannedFiles);
 
-        binding.noContentLayout.setVisibility(currentTree.isEmpty() ? View.VISIBLE : View.GONE);
+            mainHandler.post(() -> {
+                if (!isAdded() || binding == null || taskId != loadTaskId) {
+                    return;
+                }
+
+                binding.loadingProgress.setVisibility(View.GONE);
+                currentTree.clear();
+                currentTree.addAll(scannedFiles);
+
+                filesAdapter = new FilesAdapter(currentTree);
+                binding.filesListRecyclerView.setAdapter(filesAdapter);
+                binding.noContentLayout.setVisibility(currentTree.isEmpty() ? View.VISIBLE : View.GONE);
+                updateBackPressedCallback();
+            });
+        });
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        loadTaskId++;
+        binding = null;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        executor.shutdownNow();
     }
 
     public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> {
