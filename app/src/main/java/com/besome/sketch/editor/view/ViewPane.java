@@ -517,42 +517,47 @@ public class ViewPane extends RelativeLayout {
         Gx classInfo = viewBean.getClassInfo();
         if (view instanceof ItemCustomView itemCustomView) {
             View realView = itemCustomView.getRealCustomView();
-            if (realView instanceof EditText editText) {
-                updateEditText(editText, viewBean);
-            } else if (realView instanceof CompoundButton compoundButton) {
-                compoundButton.setChecked(viewBean.checked != 0);
-                updateTextView(compoundButton, viewBean);
-            } else if (realView instanceof TextView textView) {
-                updateTextView(textView, viewBean);
-                if (!classInfo.b("Button") && !classInfo.b("Switch")) {
-                    textView.setGravity(viewBean.layout.gravity);
-                } else {
-                    int gravity = viewBean.layout.gravity;
-                    if (gravity == LayoutBean.GRAVITY_NONE) {
-                        textView.setGravity(Gravity.CENTER);
-                    } else {
-                        textView.setGravity(gravity);
+            if (realView != null) {
+                if (realView instanceof EditText editText) {
+                    if (viewBean.text != null && viewBean.text.text != null && !viewBean.text.text.isEmpty()) {
+                        updateEditText(editText, viewBean);
                     }
-                }
-            } else if (realView instanceof ImageView imageView) {
-                if (viewBean.image != null && !viewBean.image.resName.isEmpty()) {
-                    try {
-                        Drawable customD = DrawablePreviewRenderer.getDrawableFromProject(sc_id, viewBean.image.resName, 0, material3LibraryManager.canUseNightVariantColors());
-                        if (customD != null) {
-                            imageView.setImageDrawable(customD);
+                } else if (realView instanceof CompoundButton compoundButton) {
+                    compoundButton.setChecked(viewBean.checked != 0);
+                    if (viewBean.text != null && viewBean.text.text != null && !viewBean.text.text.isEmpty()) {
+                        updateTextView(compoundButton, viewBean);
+                    }
+                } else if (realView instanceof TextView textView) {
+                    if (viewBean.text != null && viewBean.text.text != null && !viewBean.text.text.isEmpty()) {
+                        updateTextView(textView, viewBean);
+                    }
+                    if (viewBean.layout.gravity != LayoutBean.GRAVITY_NONE) {
+                        textView.setGravity(viewBean.layout.gravity);
+                    }
+                } else if (realView instanceof ImageView imageView) {
+                    if (viewBean.image != null && !viewBean.image.resName.isEmpty() && !viewBean.image.resName.equals("default_image")) {
+                        try {
+                            Drawable customD = DrawablePreviewRenderer.getDrawableFromProject(sc_id, viewBean.image.resName, 0, material3LibraryManager.canUseNightVariantColors());
+                            if (customD != null) {
+                                imageView.setImageDrawable(customD);
+                            }
+                        } catch (Exception ignored) {
                         }
-                    } catch (Exception ignored) {
+                    }
+                } else if (realView instanceof LinearLayout linearLayout) {
+                    if (viewBean.layout.orientation != -1) {
+                        linearLayout.setOrientation(viewBean.layout.orientation);
                     }
                 }
-            } else if (realView instanceof LinearLayout linearLayout) {
-                linearLayout.setOrientation(viewBean.layout.orientation);
-            }
 
-            if (viewBean.layout.backgroundColor != 0) {
-                (realView != null ? realView : view).setBackgroundColor(viewBean.layout.backgroundColor);
-            }
-            if (viewBean.layout.paddingLeft != 0 || viewBean.layout.paddingTop != 0 || viewBean.layout.paddingRight != 0 || viewBean.layout.paddingBottom != 0) {
-                (realView != null ? realView : view).setPadding(viewBean.layout.paddingLeft, viewBean.layout.paddingTop, viewBean.layout.paddingRight, viewBean.layout.paddingBottom);
+                if (viewBean.layout.backgroundColor != 0) {
+                    realView.setBackgroundColor(viewBean.layout.backgroundColor);
+                }
+                if (viewBean.layout.paddingLeft != 0 || viewBean.layout.paddingTop != 0 || viewBean.layout.paddingRight != 0 || viewBean.layout.paddingBottom != 0) {
+                    realView.setPadding(viewBean.layout.paddingLeft, viewBean.layout.paddingTop, viewBean.layout.paddingRight, viewBean.layout.paddingBottom);
+                }
+            } else {
+                itemCustomView.updateFallbackText(viewBean.convert);
             }
 
             if (viewBean.parentType == ViewBean.VIEW_TYPE_LAYOUT_RELATIVE) {

@@ -5,17 +5,14 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.DashPathEffect
 import android.graphics.Paint
-import android.graphics.drawable.GradientDrawable
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
+import com.besome.sketch.beans.LayoutBean
 import com.besome.sketch.beans.ViewBean
 import com.besome.sketch.editor.view.item.ItemLinearLayout
-import pro.sketchware.R
 
 class ItemCustomView(
     context: Context,
@@ -26,88 +23,66 @@ class ItemCustomView(
     private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = 2f * resources.displayMetrics.density
-        color = 0xFF4CAF50.toInt() // Green accent
-        pathEffect = DashPathEffect(floatArrayOf(12f, 12f), 0f)
+        color = 0xFF4CAF50.toInt()
+        pathEffect = DashPathEffect(floatArrayOf(10f, 10f), 0f)
     }
+
+    private var fallbackLabel: TextView? = null
 
     init {
         this.bean = bean
         orientation = VERTICAL
 
         if (realCustomView != null) {
-            // Live rendered custom view from compiled class
-            val lp = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-            super.addView(realCustomView, -1, lp)
+            setPadding(0, 0, 0, 0)
+            background = null
+            super.addView(realCustomView, -1, generateChildLayoutParams())
         } else {
-            // Android Studio style placeholder when not compiled yet
-            setupAndroidStudioPlaceholder(context, bean)
+            // Cukup satu baris text nampilin nama class nya aja, tanpa icon
+            val className = bean.convert.ifEmpty { "CustomView" }.substringAfterLast('.')
+            fallbackLabel = TextView(context).apply {
+                text = className
+                setTextColor(0xFF78909C.toInt())
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                setSingleLine(true)
+                maxLines = 1
+                gravity = Gravity.CENTER
+            }
+            super.addView(fallbackLabel, -1, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
+                gravity = Gravity.CENTER
+            })
         }
     }
 
-    private fun setupAndroidStudioPlaceholder(context: Context, bean: ViewBean) {
-        gravity = Gravity.CENTER
-        val density = resources.displayMetrics.density
-        setPadding((12 * density).toInt(), (10 * density).toInt(), (12 * density).toInt(), (10 * density).toInt())
-        minimumWidth = (120 * density).toInt()
-        minimumHeight = (56 * density).toInt()
-
-        // Background placeholder with dashed border and subtle blueprint tint
-        background = GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            cornerRadius = 6 * density
-            setColor(0x0C4CAF50) // Subtle green/teal tint (5% opacity)
-            setStroke((1.5f * density).toInt(), 0xFF78909C.toInt(), 8 * density, 6 * density)
-        }
-
-        val container = LinearLayout(context).apply {
-            orientation = HORIZONTAL
-            gravity = Gravity.CENTER
-            layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
-        }
-
-        // Custom view widget icon
-        val icon = ImageView(context).apply {
-            setImageResource(R.drawable.ic_mtrl_preview)
-            setColorFilter(0xFF00897B.toInt())
-            val size = (22 * density).toInt()
-            layoutParams = LayoutParams(size, size).apply {
-                marginEnd = (8 * density).toInt()
+    private fun generateChildLayoutParams(): LayoutParams {
+        val w = if (bean.layout.width == LayoutBean.LAYOUT_WRAP_CONTENT) LayoutParams.WRAP_CONTENT else LayoutParams.MATCH_PARENT
+        val h = if (bean.layout.height == LayoutBean.LAYOUT_WRAP_CONTENT) LayoutParams.WRAP_CONTENT else LayoutParams.MATCH_PARENT
+        return LayoutParams(w, h).apply {
+            val grav = bean.layout.gravity
+            if (grav != LayoutBean.GRAVITY_NONE) {
+                gravity = grav
             }
         }
-        container.addView(icon)
+    }
 
-        // Text labels (Class name + compile status hint)
-        val textContainer = LinearLayout(context).apply {
-            orientation = VERTICAL
-            gravity = Gravity.CENTER_VERTICAL
-            layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
+    fun updateFallbackText(className: String) {
+        fallbackLabel?.text = className.ifEmpty { "CustomView" }.substringAfterLast('.')
+    }
+
+    override fun addView(child: View?, index: Int, params: ViewGroup.LayoutParams?) {
+        if (realCustomView is ViewGroup && child != realCustomView) {
+            try {
+                val childParams = params ?: realCustomView.generateLayoutParams(null)
+                realCustomView.addView(child, index, childParams)
+                return
+            } catch (ignored: Throwable) {
+            }
         }
-
-        val className = bean.convert.ifEmpty { "CustomView" }.substringAfterLast('.')
-        val title = TextView(context).apply {
-            text = "<$className>"
-            setTextColor(0xFF37474F.toInt())
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-            typeface = android.graphics.Typeface.MONOSPACE
-            paint.isFakeBoldText = true
-        }
-        textContainer.addView(title)
-
-        val hint = TextView(context).apply {
-            text = "Compile / run project to preview"
-            setTextColor(0xFF90A4AE.toInt())
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
-        }
-        textContainer.addView(hint)
-
-        container.addView(textContainer)
-        super.addView(container, -1, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-            gravity = Gravity.CENTER
-        })
+        super.addView(child, index, params)
     }
 
     override fun addView(child: View?, index: Int) {
-        if (realCustomView is ViewGroup) {
+        if (realCustomView is ViewGroup && child != realCustomView) {
             try {
                 realCustomView.addView(child, index)
                 return
@@ -115,6 +90,24 @@ class ItemCustomView(
             }
         }
         super.addView(child, index)
+    }
+
+    override fun removeView(view: View?) {
+        if (realCustomView is ViewGroup && view != realCustomView) {
+            realCustomView.removeView(view)
+            return
+        }
+        super.removeView(view)
+    }
+
+    override fun removeAllViews() {
+        if (realCustomView is ViewGroup) {
+            realCustomView.removeAllViews()
+        }
+        super.removeAllViews()
+        if (realCustomView != null) {
+            super.addView(realCustomView, -1, generateChildLayoutParams())
+        }
     }
 
     override fun dispatchDraw(canvas: Canvas) {
