@@ -14,10 +14,13 @@ import com.besome.sketch.beans.LayoutBean
 import com.besome.sketch.beans.ViewBean
 import com.besome.sketch.editor.view.item.ItemLinearLayout
 
-class ItemCustomView(
+class ItemCustomView @JvmOverloads constructor(
     context: Context,
     val realCustomView: View?,
-    bean: ViewBean
+    bean: ViewBean,
+    private val creationError: Throwable? = null,
+    private val scId: String? = null,
+    private val isStale: Boolean = false
 ) : ItemLinearLayout(context) {
 
     private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -28,6 +31,7 @@ class ItemCustomView(
     }
 
     private var fallbackLabel: TextView? = null
+    private var previewError: Throwable? = null
 
     init {
         this.bean = bean
@@ -38,7 +42,7 @@ class ItemCustomView(
             background = null
             super.addView(realCustomView, -1, generateChildLayoutParams())
         } else {
-            // Cukup satu baris text nampilin nama class nya aja, di tengah view dan warna putih
+            // Tampilan fallback jika belum dicompile atau gagal instansiasi
             gravity = Gravity.CENTER
             val className = bean.convert.ifEmpty { "CustomView" }.substringAfterLast('.')
             fallbackLabel = TextView(context).apply {
@@ -56,17 +60,47 @@ class ItemCustomView(
                 gravity = Gravity.CENTER
             }
             super.addView(fallbackLabel, -1, lp)
+
+            // Jika ada error instansiasi, tampilkan di bawah label fallback
+            if (creationError != null) {
+                val errorMsg = creationError.cause?.message ?: creationError.message ?: "Unknown Error"
+                val errorLabel = TextView(context).apply {
+                    text = errorMsg
+                    setTextColor(Color.parseColor("#FF5252"))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                    gravity = Gravity.CENTER
+                    maxLines = 3
+                }
+                super.addView(errorLabel, -1, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                    topMargin = (4 * resources.displayMetrics.density).toInt()
+                })
+            }
         }
     }
 
     private fun generateChildLayoutParams(): LayoutParams {
-        val w = if (bean.layout.width == LayoutBean.LAYOUT_WRAP_CONTENT) LayoutParams.WRAP_CONTENT else LayoutParams.MATCH_PARENT
-        val h = if (bean.layout.height == LayoutBean.LAYOUT_WRAP_CONTENT) LayoutParams.WRAP_CONTENT else LayoutParams.MATCH_PARENT
+        val density = resources.displayMetrics.density
+        fun dimenToPx(dimen: Int): Int {
+            return when (dimen) {
+                LayoutBean.LAYOUT_MATCH_PARENT -> LayoutParams.MATCH_PARENT
+                LayoutBean.LAYOUT_WRAP_CONTENT -> LayoutParams.WRAP_CONTENT
+                else -> (dimen * density).toInt()
+            }
+        }
+
+        val w = dimenToPx(bean.layout.width)
+        val h = dimenToPx(bean.layout.height)
+
         return LayoutParams(w, h).apply {
-            val grav = bean.layout.gravity
+            val grav = bean.layout.layoutGravity
             if (grav != LayoutBean.GRAVITY_NONE) {
                 gravity = grav
             }
+            weight = bean.layout.weight.toFloat()
+            leftMargin = (bean.layout.marginLeft * density).toInt()
+            topMargin = (bean.layout.marginTop * density).toInt()
+            rightMargin = (bean.layout.marginRight * density).toInt()
+            bottomMargin = (bean.layout.marginBottom * density).toInt()
         }
     }
 
@@ -115,15 +149,61 @@ class ItemCustomView(
         }
     }
 
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        var lp: LayoutParams? = null
+        var lm = 0; var tm = 0; var rm = 0; var bm = 0
+        if (realCustomView != null) {
+            lp = realCustomView.layoutParams as? LayoutParams
+            if (lp != null) {
+                lm = lp.leftMargin; tm = lp.topMargin; rm = lp.rightMargin; bm = lp.bottomMargin
+                // Sembunyikan margin dari LinearLayout (ItemCustomView) agar ukurannya tidak menggelembung 2x lipat
+                lp.setMargins(0, 0, 0, 0)
+            }
+        }
+        try {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        } catch (t: Throwable) {
+            previewError = t
+            setMeasuredDimension(
+                getDefaultSize(suggestedMinimumWidth, widthMeasureSpec),
+                getDefaultSize(suggestedMinimumHeight, heightMeasureSpec)
+            )
+        } finally {
+            if (lp != null) {
+                // Kembalikan margin agar custom view tetap bisa membacanya dari layout params
+                lp.setMargins(lm, tm, rm, bm)
+            }
+        }
+    }
+
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        try {
+            super.onLayout(changed, l, t, r, b)
+            // Paksa view asli untuk mengisi wrapper dengan presisi dan mengabaikan marginnya secara visual
+            realCustomView?.layout(0, 0, r - l, b - t)
+        } catch (e: Throwable) {
+            previewError = e
+        }
+    }
+
     override fun dispatchDraw(canvas: Canvas) {
         try {
             super.dispatchDraw(canvas)
         } catch (t: Throwable) {
-            val errorPaint = Paint().apply {
-                color = Color.RED
-                textSize = 24f
-            }
-            canvas.drawText("Preview error: ${t.message}", 10f, 40f, errorPaint)
+            previewError = t
+        }
+
+        if (previewError != null) {
+            val p = Paint().apply { color = Color.parseColor("#44FF0000"); style = Paint.Style.FILL }
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), p)
+            val textPaint = Paint().apply { color = Color.WHITE; textSize = 24f; isAntiAlias = true }
+            val errorMsg = previewError?.message ?: previewError?.javaClass?.simpleName ?: "Render Error"
+            canvas.drawText(errorMsg, 10f, 40f, textPaint)
+        }
+
+        if (isStale) {
+            val p = Paint().apply { color = Color.parseColor("#FFA500"); isAntiAlias = true; style = Paint.Style.FILL }
+            canvas.drawCircle(width - 15f, 15f, 10f, p)
         }
     }
 
