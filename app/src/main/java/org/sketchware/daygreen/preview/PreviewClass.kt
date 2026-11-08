@@ -3,6 +3,7 @@ package org.sketchware.daygreen.preview
 import a.a.a.wq
 import android.content.Context
 import android.os.Environment
+import android.os.SystemClock
 import android.util.AttributeSet
 import android.util.Log
 import android.util.Xml
@@ -38,6 +39,37 @@ object PreviewClass {
 
     private val fqnMap = HashMap<String, String>()
     private var fqnMapScId: String? = null
+
+    // ---------------------------------------------------------------------------------------
+    // Cache performa. Dulu semua pemindaian folder/file di bawah diulang untuk SETIAP custom
+    // view yang dibuat. Sekarang hasilnya dipakai bersama dan kedaluwarsa singkat, jadi setelah
+    // project di-Run ulang preview tetap memakai hasil compile terbaru.
+    // Semua cache dibersihkan lewat clearCache(scId).
+    // ---------------------------------------------------------------------------------------
+    private const val CACHE_TTL_MS = 2000L
+    private const val STALE_TTL_MS = 3000L
+    private const val MISS_TTL_MS = 3000L
+
+    // Lock khusus cache. Aturan: jangan melakukan kerja berat saat memegang lock ini.
+    private val cacheLock = Any()
+
+    private class DexListEntry(val files: List<File>, val at: Long)
+    private class BoolEntry(val value: Boolean, val at: Long)
+
+    // Kunci: scId. Isi: daftar dex/apk project. Kedaluwarsa: CACHE_TTL_MS.
+    private val dexListCache = HashMap<String, DexListEntry>()
+
+    // Kunci: scId. Isi: hasil isCompiled(). Kedaluwarsa: CACHE_TTL_MS.
+    private val compiledCache = HashMap<String, BoolEntry>()
+
+    // Kunci: scId. Isi: apakah source lebih baru dari hasil compile. Kedaluwarsa: STALE_TTL_MS.
+    private val staleCache = HashMap<String, BoolEntry>()
+
+    // Kunci: "scId:SimpleName". Isi: waktu kelas itu terakhir TIDAK ditemukan. Kedaluwarsa: MISS_TTL_MS.
+    private val fqnMissCache = HashMap<String, Long>()
+
+    // Factory parser dipakai ulang; membuatnya baru tiap view mahal.
+    private val xmlFactory: XmlPullParserFactory by lazy { XmlPullParserFactory.newInstance() }
 
     private fun ensureDexFromClasses(scId: String, binDir: File, context: Context): File? {
         val classesDir = File(binDir, "classes")
@@ -100,8 +132,25 @@ object PreviewClass {
         }
     }
 
+    /**
+     * Daftar dex/apk project. Hasilnya di-cache selama [CACHE_TTL_MS] karena pemindaiannya
+     * (termasuk walkTopDown ke semua file .class) mahal dan dipanggil tiap loadClass().
+     */
     @JvmStatic
     fun findProjectDexFiles(scId: String): List<File> {
+        val now = SystemClock.elapsedRealtime()
+        val cached = synchronized(cacheLock) { dexListCache[scId] }
+        if (cached != null && now - cached.at < CACHE_TTL_MS && cached.files.all { it.exists() }) {
+            return cached.files
+        }
+        val fresh = scanProjectDexFiles(scId)
+        synchronized(cacheLock) {
+            dexListCache[scId] = DexListEntry(fresh, SystemClock.elapsedRealtime())
+        }
+        return fresh
+    }
+
+    private fun scanProjectDexFiles(scId: String): List<File> {
         val list = mutableListOf<File>()
         try {
             val context = SketchApplication.getContext()
@@ -174,6 +223,18 @@ object PreviewClass {
     @JvmStatic
     fun isCompiled(scId: String?): Boolean {
         if (scId.isNullOrEmpty()) return false
+        val now = SystemClock.elapsedRealtime()
+        val cached = synchronized(cacheLock) { compiledCache[scId] }
+        if (cached != null && now - cached.at < CACHE_TTL_MS) return cached.value
+
+        val value = computeIsCompiled(scId)
+        synchronized(cacheLock) {
+            compiledCache[scId] = BoolEntry(value, SystemClock.elapsedRealtime())
+        }
+        return value
+    }
+
+    private fun computeIsCompiled(scId: String): Boolean {
         try {
             val myscPath = wq.d(scId)
             val binDir = File(myscPath, "bin")
@@ -265,8 +326,26 @@ object PreviewClass {
         }
     }
 
+    /**
+     * Nama sederhana -> nama lengkap kelas. Hasil "tidak ditemukan" juga di-cache sebentar
+     * ([MISS_TTL_MS]) supaya kelas yang memang tidak ada tidak memindai folder dan DEX berulang kali.
+     */
     @JvmStatic
+    @Synchronized
     fun resolveClassFqn(scId: String, simpleName: String): String? {
+        val key = "$scId:$simpleName"
+        val now = SystemClock.elapsedRealtime()
+        val missAt = synchronized(cacheLock) { fqnMissCache[key] }
+        if (missAt != null && now - missAt < MISS_TTL_MS) return null
+
+        val result = resolveClassFqnUncached(scId, simpleName)
+        synchronized(cacheLock) {
+            if (result == null) fqnMissCache[key] = SystemClock.elapsedRealtime() else fqnMissCache.remove(key)
+        }
+        return result
+    }
+
+    private fun resolveClassFqnUncached(scId: String, simpleName: String): String? {
         if (fqnMapScId == scId && fqnMap.containsKey(simpleName)) return fqnMap[simpleName]
 
         if (fqnMapScId != scId) {
@@ -407,7 +486,7 @@ object PreviewClass {
                 append("/>")
             }.toString()
 
-            val parser = XmlPullParserFactory.newInstance().newPullParser()
+            val parser = xmlFactory.newPullParser()
             parser.setInput(StringReader(xml))
             var type = 0
             while (type != XmlPullParser.END_DOCUMENT && type != XmlPullParser.START_TAG) {
@@ -494,6 +573,40 @@ object PreviewClass {
         }
     }
 
+    /**
+     * True kalau ada source yang lebih baru dari hasil compile terakhir. Memindai semua source
+     * project itu mahal, jadi hasilnya di-cache per scId selama [STALE_TTL_MS].
+     */
+    private fun isProjectStale(scId: String): Boolean {
+        val now = SystemClock.elapsedRealtime()
+        val cached = synchronized(cacheLock) { staleCache[scId] }
+        if (cached != null && now - cached.at < STALE_TTL_MS) return cached.value
+
+        val value = try {
+            val myscPath = wq.d(scId)
+            val srcDirs = listOf(File(myscPath, "app/src/main/java"), File(myscPath, "java"))
+            val latestSrc = srcDirs.flatMap { dir ->
+                if (dir.exists()) dir.walkTopDown().filter { it.extension == "java" || it.extension == "kt" }.toList()
+                else emptyList()
+            }.maxOfOrNull { it.lastModified() } ?: 0L
+
+            val binDir = File(myscPath, "bin")
+            val buildTime = maxOf(
+                binDir.listFiles { _, name -> name.endsWith(".apk") || name.endsWith(".apk.unsigned") }?.maxOfOrNull { it.lastModified() } ?: 0L,
+                binDir.listFiles { _, name -> name.endsWith(".dex") }?.maxOfOrNull { it.lastModified() } ?: 0L
+            )
+
+            buildTime > 0 && latestSrc > buildTime
+        } catch (ignored: Throwable) {
+            false
+        }
+
+        synchronized(cacheLock) {
+            staleCache[scId] = BoolEntry(value, SystemClock.elapsedRealtime())
+        }
+        return value
+    }
+
     @JvmStatic
     fun createItemView(context: Context, viewBean: ViewBean, scId: String?): View {
         val targetScId = scId ?: currentScId
@@ -501,24 +614,9 @@ object PreviewClass {
         var isStale = false
 
         val realView = if (!targetScId.isNullOrEmpty() && isCompiled(targetScId)) {
-            // [F] Cache / Data stale logic checker
-            try {
-                val myscPath = wq.d(targetScId)
-                val srcDirs = listOf(File(myscPath, "app/src/main/java"), File(myscPath, "java"))
-                val latestSrc = srcDirs.flatMap { dir ->
-                    if (dir.exists()) dir.walkTopDown().filter { it.extension == "java" || it.extension == "kt" }.toList()
-                    else emptyList()
-                }.maxOfOrNull { it.lastModified() } ?: 0L
-                
-                val binDir = File(myscPath, "bin")
-                val buildTime = maxOf(
-                    binDir.listFiles { _, name -> name.endsWith(".apk") || name.endsWith(".apk.unsigned") }?.maxOfOrNull { it.lastModified() } ?: 0L,
-                    binDir.listFiles { _, name -> name.endsWith(".dex") }?.maxOfOrNull { it.lastModified() } ?: 0L
-                )
-                
-                isStale = buildTime > 0 && latestSrc > buildTime
-            } catch (ignored: Throwable) {}
-            
+            // [F] Cache / Data stale logic checker (di-cache per project, bukan per view)
+            isStale = isProjectStale(targetScId)
+
             createView(context, viewBean.convert, targetScId, viewBean, errorHolder)
         } else {
             errorHolder[0] = IllegalStateException("Project belum pernah di-Compile (Build/Run). Custom View belum tersedia.")
@@ -530,6 +628,22 @@ object PreviewClass {
 
     @JvmStatic
     fun clearCache(scId: String? = null) {
+        // Cache performa: bersihkan untuk project ini (atau semua kalau scId null).
+        synchronized(cacheLock) {
+            if (scId == null) {
+                dexListCache.clear()
+                compiledCache.clear()
+                staleCache.clear()
+                fqnMissCache.clear()
+            } else {
+                dexListCache.remove(scId)
+                compiledCache.remove(scId)
+                staleCache.remove(scId)
+                fqnMissCache.keys.removeAll { it.startsWith("$scId:") }
+            }
+        }
+        ProjectResourcesCache.clear(scId)
+
         if (scId == null || scId == cachedScId) {
             cachedScId = null
             cachedClassLoader = null
