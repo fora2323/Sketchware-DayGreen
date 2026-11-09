@@ -22,7 +22,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import androidx.appcompat.widget.PopupMenu;
@@ -62,7 +61,6 @@ import com.besome.sketch.lib.ui.CustomViewPager;
 import com.besome.sketch.tools.CompileLogActivity;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.progressindicator.CircularProgressIndicator;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
@@ -135,7 +133,6 @@ import mod.khaled.logcat.LogReaderActivity;
 
 import org.sketchware.daygreen.FileCheckUtils;
 import org.sketchware.daygreen.builds.BuildCache;
-import org.sketchware.daygreen.preview.PreviewClass;
 
 import pro.sketchware.R;
 import pro.sketchware.activities.appcompat.ManageAppCompatActivity;
@@ -178,10 +175,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     public static boolean needReloadProjectData = false;
     public static boolean isFirstLaunch = true;
     private Bundle mSavedInstanceState;
-
-    private View previewLoadingOverlay;
-    private final ExecutorService previewExecutor = Executors.newSingleThreadExecutor();
-
     private final ActivityResultLauncher<Intent> openCollectionManager = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == RESULT_OK) {
             if (viewTabAdapter != null) {
@@ -368,51 +361,8 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         }
     }
 
-    private void initLoadingOverlay() {
-        if (previewLoadingOverlay == null && coordinatorLayout != null) {
-            FrameLayout overlay = new FrameLayout(this);
-            CoordinatorLayout.LayoutParams lp = new CoordinatorLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-            );
-            overlay.setLayoutParams(lp);
-            overlay.setBackgroundColor(0x33000000);
-            overlay.setClickable(true);
-            overlay.setFocusable(true);
-
-            CircularProgressIndicator progress = new CircularProgressIndicator(this);
-            FrameLayout.LayoutParams progressLp = new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    Gravity.CENTER
-            );
-            progress.setLayoutParams(progressLp);
-            progress.setIndeterminate(true);
-
-            overlay.addView(progress);
-            overlay.setVisibility(View.GONE);
-            coordinatorLayout.addView(overlay);
-            previewLoadingOverlay = overlay;
-        }
-    }
-
-    private void showPreviewLoading() {
-        if (previewLoadingOverlay == null) {
-            initLoadingOverlay();
-        }
-        if (previewLoadingOverlay != null) {
-            previewLoadingOverlay.setVisibility(View.VISIBLE);
-            previewLoadingOverlay.bringToFront();
-        }
-    }
-
-    private void hidePreviewLoading() {
-        if (previewLoadingOverlay != null) {
-            previewLoadingOverlay.setVisibility(View.GONE);
-        }
-    }
-
     private void refreshViewTabAdapter() {
+        org.sketchware.daygreen.preview.PreviewClass.clearCache(sc_id);
         if (viewTabAdapter != null && projectFile != null) {
             int orientation = projectFile.orientation;
             if (orientation == ProjectFileBean.ORIENTATION_PORTRAIT) {
@@ -422,30 +372,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             } else {
                 xmlLayoutOrientation.setImageResource(R.drawable.ic_screen_rotation_grey600_24dp);
             }
-
-            showPreviewLoading();
-            final ProjectFileBean currentProjectFile = projectFile;
-            previewExecutor.execute(() -> {
-                try {
-                    if (sc_id != null) {
-                        PreviewClass.findProjectDexFiles(sc_id);
-                        PreviewClass.getClassLoader(getApplicationContext(), sc_id);
-                    }
-                    viewTabAdapter.initialize(currentProjectFile);
-                    runOnUiThread(this::hidePreviewLoading);
-                } catch (Throwable t) {
-                    Log.w("DesignActivity", "Background view initialization caught error, retrying on UI thread: " + t.getMessage());
-                    runOnUiThread(() -> {
-                        try {
-                            viewTabAdapter.initialize(currentProjectFile);
-                        } catch (Throwable inner) {
-                            Log.e("DesignActivity", "Error initializing view on UI thread", inner);
-                        } finally {
-                            hidePreviewLoading();
-                        }
-                    });
-                }
-            });
+            viewTabAdapter.initialize(projectFile);
         }
     }
 
@@ -507,7 +434,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
 
     @Override
     public void finish() {
-        PreviewClass.clearCache(sc_id);
         jC.a();
         cC.a();
         bC.a();
@@ -704,8 +630,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         Insetter.builder().margin(WindowInsetsCompat.Type.navigationBars()).applyToView(findViewById(R.id.container));
 
         coordinatorLayout = findViewById(R.id.layout_coordinator);
-        initLoadingOverlay();
-
         fileName = findViewById(R.id.file_name);
 
         findViewById(R.id.file_name_container).setOnClickListener(this);
@@ -759,7 +683,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             new Thread(() -> {
                 FileUtil.deleteFile(q.projectMyscPath);
                 new BuildCache(sc_id).invalidateAll();
-                PreviewClass.clearCache(sc_id);
                 
                 String nativeLibsPath = new FilePathUtil().getPathNativelibs(sc_id);
                 FileUtil.deleteFile(nativeLibsPath);
@@ -909,8 +832,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         super.onDestroy();
         unregisterReceiver(buildCancelReceiver);
         CleanUpCore.cleanAfterExitDesign(sc_id);
-        PreviewClass.clearCache(sc_id);
-        previewExecutor.shutdown();
     }
 
     @Override
@@ -1273,31 +1194,31 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         }
     }
 
-    private void generate(String pkg, File target, String javaName) {
-        k();
-        new Thread(() -> {
-            String rawCode = new yq(getApplicationContext(), sc_id).getFileSrc(javaName, jC.b(sc_id), jC.a(sc_id), jC.c(sc_id));
-            final String code = fixPackage(rawCode, pkg);
-            runOnUiThread(() -> {
-                if (isFinishing()) return;
-                h();
-                if (code == null || code.isEmpty()) {
-                    SketchwareUtil.toast("Failed to generate source.");
-                    return;
-                }
-                FileUtil.writeFile(target.getAbsolutePath(), code);
-                openEditor(target, javaName);
-            });
-        }).start();
-    }
+private void generate(String pkg, File target, String javaName) {
+    k();
+    new Thread(() -> {
+        String rawCode = new yq(getApplicationContext(), sc_id).getFileSrc(javaName, jC.b(sc_id), jC.a(sc_id), jC.c(sc_id));
+        final String code = fixPackage(rawCode, pkg);
+        runOnUiThread(() -> {
+            if (isFinishing()) return;
+            h();
+            if (code == null || code.isEmpty()) {
+                SketchwareUtil.toast("Failed to generate source.");
+                return;
+            }
+            FileUtil.writeFile(target.getAbsolutePath(), code);
+            openEditor(target, javaName);
+        });
+    }).start();
+}
 
-    private String fixPackage(String code, String pkg) {
-        if (code == null || code.isEmpty()) return code;
-        if (!code.matches("(?s).*(?m)^package [^;]+;.*")) {
-            return "package " + pkg + ";\n\n" + code;
-        }
-        return code.replaceFirst("(?m)^package [^;]+;", "package " + pkg + ";");
+private String fixPackage(String code, String pkg) {
+    if (code == null || code.isEmpty()) return code;
+    if (!code.matches("(?s).*(?m)^package [^;]+;.*")) {
+        return "package " + pkg + ";\n\n" + code;
     }
+    return code.replaceFirst("(?m)^package [^;]+;", "package " + pkg + ";");
+}
 
     private void openEditor(File target, String javaName) {
         Intent intent = new Intent(this, SrcCodeEditor.class);
@@ -1712,8 +1633,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         private void finishUI() {
             DesignActivity activity = getActivity();
             if (activity == null || activity.isDestroyed()) return;
-
-            PreviewClass.clearCache(DesignActivity.sc_id);
 
             if (isShowingNotification) {
                 notificationManager.cancel(notificationId);

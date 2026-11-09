@@ -61,23 +61,12 @@ class ItemCustomView @JvmOverloads constructor(
             }
             super.addView(fallbackLabel, -1, lp)
 
-            // Tampilkan status/error di bawah label fallback dengan indikasi warna sesuai jenis error
+            // Jika ada error instansiasi, tampilkan di bawah label fallback
             if (creationError != null) {
-                val isNotFound = creationError is ClassNotFoundException ||
-                        creationError.cause is ClassNotFoundException ||
-                        (creationError is IllegalStateException && creationError.message?.contains("Compile", ignoreCase = true) == true)
-
-                val errorMsg = if (isNotFound) {
-                    "⚠ Belum di-compile"
-                } else {
-                    creationError.cause?.message ?: creationError.message ?: creationError.javaClass.simpleName
-                }
-
-                val errorColor = if (isNotFound) Color.parseColor("#FFA000") else Color.parseColor("#FF5252")
-
+                val errorMsg = creationError.cause?.message ?: creationError.message ?: "Unknown Error"
                 val errorLabel = TextView(context).apply {
                     text = errorMsg
-                    setTextColor(errorColor)
+                    setTextColor(Color.parseColor("#FF5252"))
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
                     gravity = Gravity.CENTER
                     maxLines = 3
@@ -161,43 +150,12 @@ class ItemCustomView @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        // Guard: jika child memiliki ukuran dimensi tetap (> 0), gunakan langsung dan hindari pengukuran ganda
-        if (realCustomView != null) {
-            val childLp = realCustomView.layoutParams
-            if (childLp != null && childLp.width > 0 && childLp.height > 0) {
-                try {
-                    realCustomView.measure(
-                        MeasureSpec.makeMeasureSpec(childLp.width, MeasureSpec.EXACTLY),
-                        MeasureSpec.makeMeasureSpec(childLp.height, MeasureSpec.EXACTLY)
-                    )
-                    setMeasuredDimension(
-                        resolveSize(childLp.width + paddingLeft + paddingRight, widthMeasureSpec),
-                        resolveSize(childLp.height + paddingTop + paddingBottom, heightMeasureSpec)
-                    )
-                    return
-                } catch (t: Throwable) {
-                    previewError = t
-                    setMeasuredDimension(
-                        getDefaultSize(suggestedMinimumWidth, widthMeasureSpec),
-                        getDefaultSize(suggestedMinimumHeight, heightMeasureSpec)
-                    )
-                    return
-                }
-            }
-        }
-
         var lp: LayoutParams? = null
-        var lm = 0
-        var tm = 0
-        var rm = 0
-        var bm = 0
+        var lm = 0; var tm = 0; var rm = 0; var bm = 0
         if (realCustomView != null) {
             lp = realCustomView.layoutParams as? LayoutParams
             if (lp != null) {
-                lm = lp.leftMargin
-                tm = lp.topMargin
-                rm = lp.rightMargin
-                bm = lp.bottomMargin
+                lm = lp.leftMargin; tm = lp.topMargin; rm = lp.rightMargin; bm = lp.bottomMargin
                 // Sembunyikan margin dari LinearLayout (ItemCustomView) agar ukurannya tidak menggelembung 2x lipat
                 lp.setMargins(0, 0, 0, 0)
             }
@@ -211,22 +169,18 @@ class ItemCustomView @JvmOverloads constructor(
                 getDefaultSize(suggestedMinimumHeight, heightMeasureSpec)
             )
         } finally {
-            // Selalu kembalikan margin asli agar custom view tetap dapat membacanya dari layout params
-            lp?.setMargins(lm, tm, rm, bm)
+            if (lp != null) {
+                // Kembalikan margin agar custom view tetap bisa membacanya dari layout params
+                lp.setMargins(lm, tm, rm, bm)
+            }
         }
     }
 
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         try {
             super.onLayout(changed, l, t, r, b)
-            // Hanya paksa fill jika view belum mengisi penuh wrapper agar tidak mengganggu layout internal child
-            realCustomView?.let { v ->
-                val expectedW = r - l
-                val expectedH = b - t
-                if (v.width != expectedW || v.height != expectedH) {
-                    v.layout(0, 0, expectedW, expectedH)
-                }
-            }
+            // Paksa view asli untuk mengisi wrapper dengan presisi dan mengabaikan marginnya secara visual
+            realCustomView?.layout(0, 0, r - l, b - t)
         } catch (e: Throwable) {
             previewError = e
         }
