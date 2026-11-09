@@ -7,6 +7,7 @@ import android.os.SystemClock
 import android.util.AttributeSet
 import android.util.Log
 import android.util.Xml
+import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
 import com.android.tools.r8.CompilationMode
@@ -14,6 +15,7 @@ import com.android.tools.r8.D8
 import com.android.tools.r8.D8Command
 import com.android.tools.r8.OutputMode
 import com.besome.sketch.beans.LayoutBean
+import com.besome.sketch.beans.TextBean
 import com.besome.sketch.beans.ViewBean
 import dalvik.system.DexFile
 import mod.jbk.build.BuiltInLibraries
@@ -31,19 +33,22 @@ object PreviewClass {
     private const val TAG = "PreviewClass"
 
     @JvmStatic
+    @Volatile
     var currentScId: String? = null
 
+    @Volatile
     private var cachedScId: String? = null
+    @Volatile
     private var cachedClassLoader: ClassLoader? = null
+    @Volatile
     private var cachedDexTimestamp: Long = 0L
 
     private val fqnMap = HashMap<String, String>()
     private var fqnMapScId: String? = null
 
     // ---------------------------------------------------------------------------------------
-    // Cache performa. Dulu semua pemindaian folder/file di bawah diulang untuk SETIAP custom
-    // view yang dibuat. Sekarang hasilnya dipakai bersama dan kedaluwarsa singkat, jadi setelah
-    // project di-Run ulang preview tetap memakai hasil compile terbaru.
+    // Cache performa. Hasil pemindaian folder/file dipakai bersama dan kedaluwarsa singkat,
+    // jadi setelah project di-Run ulang preview tetap memakai hasil compile terbaru.
     // Semua cache dibersihkan lewat clearCache(scId).
     // ---------------------------------------------------------------------------------------
     private const val CACHE_TTL_MS = 2000L
@@ -71,18 +76,64 @@ object PreviewClass {
     // Factory parser dipakai ulang; membuatnya baru tiap view mahal.
     private val xmlFactory: XmlPullParserFactory by lazy { XmlPullParserFactory.newInstance() }
 
-    private fun ensureDexFromClasses(scId: String, binDir: File, context: Context): File? {
+    private val ViewBean.textProperty: TextBean?
+        get() = try {
+            val f = this.javaClass.fields.firstOrNull { it.name == "textProperty" || it.name == "text" }
+            f?.get(this) as? TextBean
+        } catch (ignored: Throwable) {
+            null
+        }
+
+    private fun String.xmlEscape(): String {
+        return this.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&apos;")
+    }
+
+    private fun gravityToString(gravity: Int): String {
+        if (gravity == 0 || gravity == LayoutBean.GRAVITY_NONE) return "none"
+        val parts = mutableListOf<String>()
+        if ((gravity and Gravity.CENTER) == Gravity.CENTER) {
+            parts.add("center")
+        } else {
+            if ((gravity and Gravity.CENTER_HORIZONTAL) == Gravity.CENTER_HORIZONTAL) {
+                parts.add("center_horizontal")
+            } else {
+                if ((gravity and Gravity.START) == Gravity.START || (gravity and Gravity.LEFT) == Gravity.LEFT) {
+                    parts.add("left")
+                }
+                if ((gravity and Gravity.END) == Gravity.END || (gravity and Gravity.RIGHT) == Gravity.RIGHT) {
+                    parts.add("right")
+                }
+            }
+            if ((gravity and Gravity.CENTER_VERTICAL) == Gravity.CENTER_VERTICAL) {
+                parts.add("center_vertical")
+            } else {
+                if ((gravity and Gravity.TOP) == Gravity.TOP) {
+                    parts.add("top")
+                }
+                if ((gravity and Gravity.BOTTOM) == Gravity.BOTTOM) {
+                    parts.add("bottom")
+                }
+            }
+        }
+        return if (parts.isEmpty()) "center" else parts.joinToString("|")
+    }
+
+    private fun ensureDexFromClasses(scId: String, binDir: File, context: Context): File? = synchronized(scId.intern()) {
         val classesDir = File(binDir, "classes")
         val cacheClassesDir = File(binDir.parentFile, "build_cache/classes")
 
         val sourceDir = when {
             classesDir.isDirectory && classesDir.walkTopDown().any { it.isFile && it.extension == "class" } -> classesDir
             cacheClassesDir.isDirectory && cacheClassesDir.walkTopDown().any { it.isFile && it.extension == "class" } -> cacheClassesDir
-            else -> return null
+            else -> return@synchronized null
         }
 
         val classFiles = sourceDir.walkTopDown().filter { it.isFile && it.extension == "class" }.toList()
-        if (classFiles.isEmpty()) return null
+        if (classFiles.isEmpty()) return@synchronized null
 
         val appCodeCache = context.codeCacheDir ?: context.cacheDir
         val previewDexDir = File(appCodeCache, "preview_dex_$scId").apply { if (!exists()) mkdirs() }
@@ -90,10 +141,10 @@ object PreviewClass {
 
         val latestClassTime = classFiles.maxOf { it.lastModified() }
         if (targetDex.exists() && targetDex.lastModified() >= latestClassTime && targetDex.length() > 0) {
-            return targetDex
+            return@synchronized targetDex
         }
 
-        return try {
+        return@synchronized try {
             val tempDir = File(previewDexDir, "temp_dex").apply {
                 if (exists()) deleteRecursively()
                 mkdirs()
@@ -483,6 +534,25 @@ object PreviewClass {
                 if (bean.layout.paddingTop > 0) append("android:paddingTop=\"${bean.layout.paddingTop}dp\" ")
                 if (bean.layout.paddingRight > 0) append("android:paddingRight=\"${bean.layout.paddingRight}dp\" ")
                 if (bean.layout.paddingBottom > 0) append("android:paddingBottom=\"${bean.layout.paddingBottom}dp\" ")
+
+                val textProp = bean.textProperty
+                if (textProp != null) {
+                    val textVal = textProp.text
+                    if (!textVal.isNullOrEmpty()) {
+                        append("android:text=\"${textVal.xmlEscape()}\" ")
+                    }
+                    if (textProp.textColor != 0) {
+                        append("android:textColor=\"#${Integer.toHexString(textProp.textColor)}\" ")
+                    }
+                    if (textProp.textSize > 0) {
+                        append("android:textSize=\"${textProp.textSize}sp\" ")
+                    }
+                }
+
+                if (bean.layout.layoutGravity != LayoutBean.GRAVITY_NONE) {
+                    append("android:gravity=\"${gravityToString(bean.layout.layoutGravity)}\" ")
+                }
+
                 append("/>")
             }.toString()
 
@@ -614,7 +684,7 @@ object PreviewClass {
         var isStale = false
 
         val realView = if (!targetScId.isNullOrEmpty() && isCompiled(targetScId)) {
-            // [F] Cache / Data stale logic checker (di-cache per project, bukan per view)
+            // Cache / Data stale logic checker (di-cache per project, bukan per view)
             isStale = isProjectStale(targetScId)
 
             createView(context, viewBean.convert, targetScId, viewBean, errorHolder)
@@ -627,6 +697,7 @@ object PreviewClass {
     }
 
     @JvmStatic
+    @Synchronized
     fun clearCache(scId: String? = null) {
         // Cache performa: bersihkan untuk project ini (atau semua kalau scId null).
         synchronized(cacheLock) {
