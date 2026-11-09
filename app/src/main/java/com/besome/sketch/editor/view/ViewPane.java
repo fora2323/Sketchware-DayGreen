@@ -84,6 +84,7 @@ import a.a.a.yB;
 import a.a.a.zB;
 import org.sketchware.daygreen.preview.ItemCustomView;
 import org.sketchware.daygreen.preview.PreviewClass;
+import org.sketchware.daygreen.preview.PreviewViewRegistry;
 import dev.aldi.sayuti.editor.view.item.ItemBadgeView;
 import dev.aldi.sayuti.editor.view.item.ItemCircleImageView;
 import dev.aldi.sayuti.editor.view.item.ItemCodeView;
@@ -278,7 +279,10 @@ public class ViewPane extends RelativeLayout {
     }
 
     public View createItemView(ViewBean viewBean) {
-        if (viewBean.convert != null && PreviewClass.isCustomClass(viewBean.convert)) {
+        if (viewBean.convert != null
+                && PreviewClass.isCustomClass(viewBean.convert)
+                && !(viewBean.type != ViewBean.VIEW_TYPE_LAYOUT_LINEAR
+                     && PreviewViewRegistry.findHandler(viewBean.convert) != null)) {
             View customItem = PreviewClass.createItemView(context, viewBean, sc_id);
             if (customItem != null) {
                 customItem.setId(++b);
