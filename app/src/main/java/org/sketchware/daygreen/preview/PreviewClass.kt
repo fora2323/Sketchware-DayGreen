@@ -530,16 +530,16 @@ object PreviewClass {
 
             // Text properties — custom view yng extend TextView atau baca attrs text
             try {
-                val text = bean.textProperty?.text
-                if (!text.isNullOrEmpty()) sb.append("android:text=\"${text.xmlEscape()}\" ")
+                val textVal = bean.text?.text
+                if (!textVal.isNullOrEmpty()) sb.append("android:text=\"${textVal.xmlEscape()}\" ")
 
-                val textColor = bean.textProperty?.textColor ?: 0
+                val textColor = bean.text?.textColor ?: 0
                 if (textColor != 0) sb.append("android:textColor=\"#${Integer.toHexString(textColor)}\" ")
 
-                val textSize = bean.textProperty?.textSize ?: 0
+                val textSize = bean.text?.textSize ?: 0
                 if (textSize > 0) sb.append("android:textSize=\"${textSize}sp\" ")
             } catch (ignored: Throwable) {
-                // textProperty mungkin null di beberapa versi bean
+                // text bean mungkin null
             }
 
             sb.append("/>")
