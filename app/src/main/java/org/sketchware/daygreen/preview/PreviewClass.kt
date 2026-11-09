@@ -50,6 +50,25 @@ object PreviewClass {
     // Lock per-scId supaya ensureDexFromClasses tidak dijalankan paralel untuk proyek yang sama
     private val dexBuildLocks = HashMap<String, Any>()
 
+    // Pemetaan custom view ke widget standar Sketchware (urutan penting: ImageButton sebelum Button)
+    private val FALLBACK_BY_SUFFIX = listOf(
+        "Switch" to "android.widget.Switch",
+        "CheckBox" to "android.widget.CheckBox",
+        "RadioButton" to "android.widget.RadioButton",
+        "ImageButton" to "android.widget.ImageButton",
+        "ImageView" to "android.widget.ImageView",
+        "EditText" to "android.widget.EditText",
+        "SeekBar" to "android.widget.SeekBar",
+        "ProgressBar" to "android.widget.ProgressBar",
+        "Spinner" to "android.widget.Spinner",
+        "TextView" to "android.widget.TextView",
+        "Button" to "android.widget.Button",
+        "WebView" to "android.webkit.WebView",
+        "ListView" to "android.widget.ListView"
+    )
+
+    private val defaultHandlers by lazy { PreviewWidgetHandler.createDefaultHandlers() }
+
     private fun getDexBuildLock(scId: String): Any {
         return synchronized(dexBuildLocks) {
             dexBuildLocks.getOrPut(scId) { Any() }
@@ -270,6 +289,19 @@ object PreviewClass {
         return true
     }
 
+    /**
+     * Mengembalikan nama class widget standar untuk custom view yang namanya diakhiri
+     * nama widget standar (misal CustomSwitch -> android.widget.Switch).
+     * Mengembalikan null kalau bukan custom view atau tidak ada padanannya.
+     */
+    @JvmStatic
+    fun standardFallbackClass(className: String?): String? {
+        if (className.isNullOrBlank()) return null
+        val simple = className.substringAfterLast('.')
+        if (!isCustomClass(simple)) return null
+        return FALLBACK_BY_SUFFIX.firstOrNull { simple.endsWith(it.first) }?.second
+    }
+
     @JvmStatic
     @Synchronized
     fun getClassLoader(context: Context, scId: String): ClassLoader? {
@@ -447,6 +479,14 @@ object PreviewClass {
         scId: String? = null,
         context: Context? = null
     ): Int {
+        // Custom view yang punya padanan widget standar langsung pakai tipe widget standar
+        val fallback = standardFallbackClass(className)
+        if (fallback != null) {
+            val simple = fallback.substringAfterLast('.')
+            return defaultHandlers.firstOrNull { it.matchesExact(simple) }?.viewType
+                ?: ViewBean.VIEW_TYPE_LAYOUT_LINEAR
+        }
+
         val ctx = context ?: SketchApplication.getContext()
         val clazz = loadClass(ctx, className, scId)
         if (clazz == null) return ViewBean.VIEW_TYPE_LAYOUT_LINEAR
@@ -648,59 +688,20 @@ object PreviewClass {
         }
     }
 
-    private fun isProjectStale(scId: String): Boolean {
-        val now = SystemClock.elapsedRealtime()
-        val cached = synchronized(cacheLock) { staleCache[scId] }
-        if (cached != null && now - cached.at < STALE_TTL_MS) return cached.value
-
-        val value = try {
-            val myscPath = wq.d(scId)
-            val srcDirs = listOf(
-                File(myscPath, "app/src/main/java"),
-                File(myscPath, "java")
-            )
-            val latestSrc = srcDirs.flatMap { dir ->
-                if (dir.exists()) dir.walkTopDown()
-                    .filter { it.extension == "java" || it.extension == "kt" }.toList()
-                else emptyList()
-            }.maxOfOrNull { it.lastModified() } ?: 0L
-
-            val binDir = File(myscPath, "bin")
-            val buildTime = maxOf(
-                binDir.listFiles { _, name -> name.endsWith(".apk") || name.endsWith(".apk.unsigned") }
-                    ?.maxOfOrNull { it.lastModified() } ?: 0L,
-                binDir.listFiles { _, name -> name.endsWith(".dex") }
-                    ?.maxOfOrNull { it.lastModified() } ?: 0L
-            )
-
-            buildTime > 0 && latestSrc > buildTime
-        } catch (ignored: Throwable) {
-            false
-        }
-
-        synchronized(cacheLock) {
-            staleCache[scId] = BoolEntry(value, SystemClock.elapsedRealtime())
-        }
-        return value
-    }
-
+    /**
+     * Membuat view untuk item preview.
+     * Custom view yang punya padanan widget standar ditampilkan sebagai widget standar,
+     * tanpa memuat class hasil compile, sehingga tidak perlu Compile dulu.
+     */
     @JvmStatic
     fun createItemView(context: Context, viewBean: ViewBean, scId: String?): View {
         val targetScId = scId ?: currentScId
         val errorHolder = arrayOfNulls<Throwable>(1)
-        var isStale = false
 
-        val realView = if (!targetScId.isNullOrEmpty() && isCompiled(targetScId)) {
-            isStale = isProjectStale(targetScId)
-            createView(context, viewBean.convert, targetScId, viewBean, errorHolder)
-        } else {
-            errorHolder[0] = IllegalStateException(
-                "Project belum di-Compile. Custom View belum tersedia."
-            )
-            null
-        }
+        val viewName = standardFallbackClass(viewBean.convert) ?: viewBean.convert
+        val realView = createView(context, viewName, null, viewBean, errorHolder)
 
-        return ItemCustomView(context, realView, viewBean, errorHolder[0], targetScId, isStale)
+        return ItemCustomView(context, realView, viewBean, errorHolder[0], targetScId, false)
     }
 
     /**
