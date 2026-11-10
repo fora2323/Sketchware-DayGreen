@@ -281,8 +281,7 @@ public class ViewPane extends RelativeLayout {
     }
 
     public View createItemView(ViewBean viewBean) {
-        boolean useBuiltInItem = isPreviewMode
-                && viewBean.convert != null
+        boolean useBuiltInItem = viewBean.convert != null
                 && viewBean.type != ViewBean.VIEW_TYPE_LAYOUT_LINEAR
                 && PreviewViewRegistry.findHandler(viewBean.convert) != null;
 
@@ -357,7 +356,11 @@ public class ViewPane extends RelativeLayout {
         item.setId(++b);
         item.setTag(viewBean.id);
         ((ItemView) item).setBean(viewBean);
-        updateItemView(item, viewBean);
+        try {
+            updateItemView(item, viewBean);
+        } catch (Exception e) {
+            Log.e("ViewPane", "Failed to update item view", e);
+        }
         return item;
     }
 
