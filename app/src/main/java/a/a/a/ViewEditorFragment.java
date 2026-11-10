@@ -4,6 +4,7 @@ import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -46,6 +47,7 @@ public class ViewEditorFragment extends qA {
 	private String sc_id;
 	
 	private WidgetsCreatorManager widgetsCreatorManager;
+	private boolean paletteBuilt = false;
 	
 	public ViewEditorFragment() {
 	}
@@ -134,14 +136,15 @@ public class ViewEditorFragment extends qA {
 	}
 	
 	public void initialize(ProjectFileBean projectFileBean) {
+		long start = System.nanoTime();
 		this.projectFileBean = projectFileBean;
 		isFabEnabled = projectFileBean.hasActivityOption(ProjectFileBean.OPTION_ACTIVITY_FAB);
 		viewEditor.initialize(sc_id, projectFileBean);
-		viewEditor.h();
 		viewProperty.a(sc_id, this.projectFileBean);
 		e();
 		i();
 		invalidateOptionsMenu();
+		Log.d("ViewEditorFragment", "initialize(ProjectFileBean) duration: " + (System.nanoTime() - start) + " ns");
 	}
 	
 	private void a(ViewBean viewBean) {
@@ -226,7 +229,15 @@ public class ViewEditorFragment extends qA {
 		return projectFileBean;
 	}
 	
+	public void invalidatePalette() {
+		paletteBuilt = false;
+	}
+	
 	public void e() {
+		if (paletteBuilt) {
+			return;
+		}
+		long start = System.nanoTime();
 		viewEditor.removeWidgetsAndLayouts();
 		viewEditor.setPaletteLayoutVisible(View.VISIBLE);
 		viewEditor.addWidgetLayout(PaletteWidget.a.a, "");
@@ -301,6 +312,9 @@ public class ViewEditorFragment extends qA {
 		viewEditor.addWidget(PaletteWidget.b.k, "", "CalendarView", "CalendarView");
 		widgetsCreatorManager.addWidgetsByTitle("Date & Time");
 		widgetsCreatorManager.addExtraClasses();
+		
+		paletteBuilt = true;
+		Log.d("ViewEditorFragment", "e() duration: " + (System.nanoTime() - start) + " ns");
 	}
 	
 	private void startAnimation() {
@@ -367,11 +381,13 @@ public class ViewEditorFragment extends qA {
 	}
 	
 	public void i() {
+		long start = System.nanoTime();
 		invalidateOptionsMenu();
 		if (projectFileBean != null) {
 			b(jC.a(sc_id).d(projectFileBean.getXmlName()));
 			a(jC.a(sc_id).h(projectFileBean.getXmlName()));
 		}
+		Log.d("ViewEditorFragment", "i() duration: " + (System.nanoTime() - start) + " ns");
 	}
 	
 	public void j() {
@@ -507,6 +523,12 @@ public class ViewEditorFragment extends qA {
 		}
 		
 		return viewGroup;
+	}
+	
+	@Override
+	public void onDestroyView() {
+		super.onDestroyView();
+		paletteBuilt = false;
 	}
 	
 	@Override

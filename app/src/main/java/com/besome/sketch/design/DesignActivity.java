@@ -175,6 +175,11 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     public static boolean needReloadProjectData = false;
     public static boolean isFirstLaunch = true;
     private Bundle mSavedInstanceState;
+
+    private boolean viewDirty = true;
+    private ProjectFileBean lastRefreshedProjectFile = null;
+    private final HashMap<String, Boolean> fullCodeCache = new HashMap<>();
+
     private final ActivityResultLauncher<Intent> openCollectionManager = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == RESULT_OK) {
             if (viewTabAdapter != null) {
@@ -185,7 +190,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     private final ActivityResultLauncher<Intent> openResourcesManager = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == RESULT_OK) {
             if (viewTabAdapter != null && activeTabs.size() > viewPager.getCurrentItem() && activeTabs.get(viewPager.getCurrentItem()).equals("view")) {
-                viewTabAdapter.i();
+                viewDirty = true;
                 refreshViewTabAdapter();
             }
         }
@@ -201,6 +206,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     private br componentTabAdapter;
     private final ActivityResultLauncher<Intent> openImageManager = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == RESULT_OK) {
+            viewDirty = true;
             refresh();
         }
     });
@@ -208,19 +214,23 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         if (result.getResultCode() == Activity.RESULT_OK) {
             assert result.getData() != null;
             projectFile = result.getData().getParcelableExtra("project_file");
+            viewDirty = true;
             refresh();
         }
     });
     private final ActivityResultLauncher<Intent> openLibraryManager = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == RESULT_OK) {
+            viewDirty = true;
             refresh();
             if (viewTabAdapter != null) {
+                viewTabAdapter.invalidatePalette();
                 viewTabAdapter.n();
             }
         }
     });
     private final ActivityResultLauncher<Intent> openViewManager = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == RESULT_OK) {
+            viewDirty = true;
             refresh();
         }
     });
@@ -266,19 +276,30 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         return jC.b(sc_id).b(ProjectFileBean.DEFAULT_XML_NAME);
     }
 
-    private boolean isActivityFullCode(String javaName, File dir) {
+    private boolean scanFullCode(String javaName, File dir) {
         if (dir == null || !dir.exists() || !dir.isDirectory() || javaName == null || javaName.isEmpty()) return false;
         File[] files = dir.listFiles();
         if (files != null) {
             for (File file : files) {
                 if (file.isDirectory()) {
-                    if (isActivityFullCode(javaName, file)) return true;
+                    if (scanFullCode(javaName, file)) return true;
                 } else if (file.getName().equals(javaName)) {
                     return true;
                 }
             }
         }
         return false;
+    }
+
+    private boolean isActivityFullCode(String javaName, File dir) {
+        if (javaName == null || javaName.isEmpty()) return false;
+        if (fullCodeCache.containsKey(javaName)) {
+            Boolean cached = fullCodeCache.get(javaName);
+            if (cached != null) return cached;
+        }
+        boolean result = scanFullCode(javaName, dir);
+        fullCodeCache.put(javaName, result);
+        return result;
     }
 
     private void computeActiveTabs() {
@@ -362,17 +383,22 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     }
 
     private void refreshViewTabAdapter() {
-        org.sketchware.daygreen.preview.PreviewClass.clearCache(sc_id);
         if (viewTabAdapter != null && projectFile != null) {
-            int orientation = projectFile.orientation;
-            if (orientation == ProjectFileBean.ORIENTATION_PORTRAIT) {
-                xmlLayoutOrientation.setImageResource(R.drawable.ic_screen_portrait_grey600_24dp);
-            } else if (orientation == ProjectFileBean.ORIENTATION_LANDSCAPE) {
-                xmlLayoutOrientation.setImageResource(R.drawable.ic_screen_landscape_grey600_24dp);
-            } else {
-                xmlLayoutOrientation.setImageResource(R.drawable.ic_screen_rotation_grey600_24dp);
+            boolean isViewEditorNull = (viewTabAdapter.viewEditor == null);
+            if (viewDirty || isViewEditorNull || lastRefreshedProjectFile != projectFile) {
+                org.sketchware.daygreen.preview.PreviewClass.clearCache(sc_id);
+                int orientation = projectFile.orientation;
+                if (orientation == ProjectFileBean.ORIENTATION_PORTRAIT) {
+                    xmlLayoutOrientation.setImageResource(R.drawable.ic_screen_portrait_grey600_24dp);
+                } else if (orientation == ProjectFileBean.ORIENTATION_LANDSCAPE) {
+                    xmlLayoutOrientation.setImageResource(R.drawable.ic_screen_landscape_grey600_24dp);
+                } else {
+                    xmlLayoutOrientation.setImageResource(R.drawable.ic_screen_rotation_grey600_24dp);
+                }
+                viewTabAdapter.initialize(projectFile);
+                lastRefreshedProjectFile = projectFile;
+                viewDirty = false;
             }
-            viewTabAdapter.initialize(projectFile);
         }
     }
 
@@ -499,7 +525,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             String command = "pm install -r -d -S " + length;
 
             try {
-                // In Shizuku 12.1.0, newProcess is still public
                 Process process = Shizuku.newProcess(new String[]{"sh", "-c", command}, null, null);
 
                 if (process == null) {
@@ -734,11 +759,10 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             }
         });
 
-
         xmlLayoutOrientation = findViewById(R.id.img_orientation);
         viewPager = findViewById(R.id.viewpager);
         viewPager.setAdapter(new ViewPagerAdapter(getSupportFragmentManager()));
-        viewPager.setOffscreenPageLimit(activeTabs.size() > 0 ? activeTabs.size() - 1 : 1);
+        viewPager.setOffscreenPageLimit(1);
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
 
             @Override
@@ -786,9 +810,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 invalidateOptionsMenu();
             }
         });
-        if (viewPager.getAdapter() != null) {
-            viewPager.getAdapter().notifyDataSetChanged();
-        }
         
         TabLayout tabLayout = findViewById(R.id.tab_layout);
         tabLayout.setupWithViewPager(viewPager);
@@ -887,6 +908,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     @Override
     public void onResume() {
         super.onResume();
+        fullCodeCache.clear();
         if (!isStoragePermissionGranted()) {
             finish();
         }
@@ -906,6 +928,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 loader = new ProjectLoader(this, mSavedInstanceState);
             }
             loader.execute();
+            needReloadProjectData = false;
         }
 
         isFirstLaunch = false;
@@ -1021,6 +1044,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 jC.a(sc_id).c(jC.d(sc_id));
                 jC.a(sc_id).a(jC.d(sc_id));
             }
+            viewDirty = true;
             refresh();
             needReloadProjectData = false;
             return;
@@ -1064,6 +1088,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                     jC.a(sc_id).c(jC.d(sc_id));
                     jC.a(sc_id).a(jC.d(sc_id));
                 }
+                viewDirty = true;
                 refresh();
                 B = false;
                 v.dismiss();
@@ -1194,31 +1219,31 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         }
     }
 
-private void generate(String pkg, File target, String javaName) {
-    k();
-    new Thread(() -> {
-        String rawCode = new yq(getApplicationContext(), sc_id).getFileSrc(javaName, jC.b(sc_id), jC.a(sc_id), jC.c(sc_id));
-        final String code = fixPackage(rawCode, pkg);
-        runOnUiThread(() -> {
-            if (isFinishing()) return;
-            h();
-            if (code == null || code.isEmpty()) {
-                SketchwareUtil.toast("Failed to generate source.");
-                return;
-            }
-            FileUtil.writeFile(target.getAbsolutePath(), code);
-            openEditor(target, javaName);
-        });
-    }).start();
-}
-
-private String fixPackage(String code, String pkg) {
-    if (code == null || code.isEmpty()) return code;
-    if (!code.matches("(?s).*(?m)^package [^;]+;.*")) {
-        return "package " + pkg + ";\n\n" + code;
+    private void generate(String pkg, File target, String javaName) {
+        k();
+        new Thread(() -> {
+            String rawCode = new yq(getApplicationContext(), sc_id).getFileSrc(javaName, jC.b(sc_id), jC.a(sc_id), jC.c(sc_id));
+            final String code = fixPackage(rawCode, pkg);
+            runOnUiThread(() -> {
+                if (isFinishing()) return;
+                h();
+                if (code == null || code.isEmpty()) {
+                    SketchwareUtil.toast("Failed to generate source.");
+                    return;
+                }
+                FileUtil.writeFile(target.getAbsolutePath(), code);
+                openEditor(target, javaName);
+            });
+        }).start();
     }
-    return code.replaceFirst("(?m)^package [^;]+;", "package " + pkg + ";");
-}
+
+    private String fixPackage(String code, String pkg) {
+        if (code == null || code.isEmpty()) return code;
+        if (!code.matches("(?s).*(?m)^package [^;]+;.*")) {
+            return "package " + pkg + ";\n\n" + code;
+        }
+        return code.replaceFirst("(?m)^package [^;]+;", "package " + pkg + ";");
+    }
 
     private void openEditor(File target, String javaName) {
         Intent intent = new Intent(this, SrcCodeEditor.class);
@@ -1463,6 +1488,7 @@ private String fixPackage(String code, String pkg) {
         public void execute() {
             onPreExecute();
             executorService.execute(this::doInBackground);
+            executorService.shutdown();
         }
 
         private void onPreExecute() {
@@ -1691,7 +1717,7 @@ private String fixPackage(String code, String pkg) {
                     .setProgress(0, 0, true)
                     .addAction(R.drawable.ic_cancel_white_96dp, "Cancel Build", getCancelPendingIntent());
 
-            notificationManager.notify(notificationId, builder.build());
+                notificationManager.notify(notificationId, builder.build());
         }
 
         private PendingIntent getCancelPendingIntent() {
@@ -1738,6 +1764,7 @@ private String fixPackage(String code, String pkg) {
         public void execute() {
             getActivity().k();
             executorService.execute(this::doInBackground);
+            executorService.shutdown();
         }
 
         private void doInBackground() {
@@ -1745,6 +1772,7 @@ private String fixPackage(String code, String pkg) {
             if (activity != null) {
                 activity.loadProject(savedInstanceState != null);
                 activity.runOnUiThread(() -> {
+                    activity.viewDirty = true;
                     activity.updateBottomMenu();
                     activity.refresh();
                     activity.h();
@@ -1766,6 +1794,7 @@ private String fixPackage(String code, String pkg) {
         public void execute() {
             getActivity().k();
             executorService.execute(this::doInBackground);
+            executorService.shutdown();
         }
 
         private void doInBackground() {
@@ -1793,6 +1822,7 @@ private String fixPackage(String code, String pkg) {
         public void execute() {
             getActivity().k();
             executorService.execute(this::doInBackground);
+            executorService.shutdown();
         }
 
         private void doInBackground() {
@@ -1826,6 +1856,7 @@ private String fixPackage(String code, String pkg) {
         public void execute() {
             getActivity().k();
             executorService.execute(this::doInBackground);
+            executorService.shutdown();
         }
 
         private void doInBackground() {
@@ -1857,6 +1888,7 @@ private String fixPackage(String code, String pkg) {
 
         public void execute() {
             executorService.execute(this::doInBackground);
+            executorService.shutdown();
         }
 
         private void doInBackground() {
