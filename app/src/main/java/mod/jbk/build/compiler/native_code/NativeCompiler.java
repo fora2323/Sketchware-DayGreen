@@ -1153,8 +1153,7 @@ public class NativeCompiler {
 
     private static boolean isNativeSource(File file) {
         String name = file.getName().toLowerCase(Locale.ROOT);
-        return file.isFile() && (name.endsWith(".c") || name.endsWith(".cc")
-                || name.endsWith(".cpp") || name.endsWith(".cxx"));
+        return file.isFile() && (name.endsWith(".c") || name.endsWith(".cc") || name.endsWith(".cpp") || name.endsWith(".cxx"));
     }
 
     private static void findSourceFiles(File dir, List<File> result) {
