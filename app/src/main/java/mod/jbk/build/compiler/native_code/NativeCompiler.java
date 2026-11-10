@@ -24,10 +24,12 @@ import pro.sketchware.SketchApplication;
 import pro.sketchware.utility.FileUtil;
 
 /**
- * Compiles a project's native (C/C++) code with the Android NDK and CMake (or direct Clang).
+ * Compiles a project's native (C/C++) code with the Android NDK.
  * <p>
- * If a custom CMakeLists.txt is provided and CMake is runnable on Android, CMake is used.
- * Otherwise, the compiler directly compiles the C/C++ sources using the NDK's native Clang toolchain.
+ * Priority:
+ * 1. A custom CMakeLists.txt (CMake is used when it is runnable on the device).
+ * 2. Android.mk (+ optional Application.mk), read and compiled directly with the NDK's Clang.
+ * 3. Plain C/C++ sources, compiled directly with the NDK's Clang.
  */
 public class NativeCompiler {
     private static final String TAG = "NativeCompiler";
@@ -36,6 +38,9 @@ public class NativeCompiler {
     private static final String[] AUTO_ABIS = {"arm64-v8a", "armeabi-v7a"};
     private static final int DEFAULT_PLATFORM_LEVEL = 21;
     private static final int MAX_LOG_CHARS_IN_ERROR = 4000;
+
+    private static final Pattern MK_ASSIGN =
+            Pattern.compile("^([A-Za-z0-9_]+)\\s*(:=|\\+=|\\?=|=)\\s*(.*)$");
 
     private final ProjectBuilder builder;
     private final BuildProgressReceiver progressReceiver;
@@ -76,8 +81,10 @@ public class NativeCompiler {
         }
 
         boolean hasCustomCMakeLists = cmakeLists != null && cmakeLists.isFile();
+        File androidMk = findAndroidMk(sourceDir);
+        File applicationMk = findApplicationMk(sourceDir);
 
-        if (nativeSourceFiles.isEmpty() && !hasCustomCMakeLists) {
+        if (nativeSourceFiles.isEmpty() && !hasCustomCMakeLists && androidMk == null) {
             LogUtil.d(TAG, "No native C/C++ source files or custom CMakeLists.txt found in " + nativeSourcePath + "; skipping native compilation.");
             return;
         }
@@ -101,23 +108,35 @@ public class NativeCompiler {
             }
         }
 
-        boolean cmakeSucceeded = false;
-        // Only run CMake if a custom CMakeLists.txt exists AND CMake binary is runnable on this Android device
-        if (hasCustomCMakeLists && toolchainFile != null && toolchainFile.isFile() && isRunnable(cmakeBinary)) {
-            try {
-                compileWithCmake(sourceDir, cmakeBinary, toolchainFile, toolsDir, nativeSourcePath, platformLevel);
-                cmakeSucceeded = true;
-            } catch (Throwable e) {
-                LogUtil.w(TAG, "CMake compilation failed (" + e.getMessage() + "). Falling back to direct Clang compilation...", e);
-            }
+        boolean cmakeUsable = hasCustomCMakeLists
+                && toolchainFile != null && toolchainFile.isFile()
+                && isRunnable(cmakeBinary);
+
+        if (cmakeUsable) {
+            // The user's CMakeLists.txt is the source of truth. If it fails, the real CMake
+            // error is shown instead of silently switching to a guessed build.
+            compileWithCmake(sourceDir, cmakeBinary, toolchainFile, toolsDir, nativeSourcePath, platformLevel);
+            return;
         }
 
-        if (!cmakeSucceeded) {
-            if (ndkDir == null || !ndkDir.isDirectory()) {
-                throw new zy("Android NDK not found. Please install Android NDK (r29) in App Settings > Build Tools.");
-            }
-            compileDirectWithClang(ndkDir, sourceDir, nativeSourceFiles, cmakeLists, platformLevel);
+        if (ndkDir == null || !ndkDir.isDirectory()) {
+            throw new zy("Android NDK not found. Please install Android NDK (r29) in App Settings > Build Tools.");
         }
+
+        if (hasCustomCMakeLists) {
+            LogUtil.w(TAG, "CMakeLists.txt found but CMake is not runnable on this device; using Clang with values parsed from CMakeLists.txt.");
+            compileDirectWithClang(ndkDir, sourceDir, nativeSourceFiles, parseCMakeLists(cmakeLists), platformLevel);
+            return;
+        }
+
+        if (androidMk != null) {
+            compileWithAndroidMk(ndkDir, sourceDir, androidMk, applicationMk, nativeSourceFiles, platformLevel);
+            return;
+        }
+
+        CMakeInfo defaultInfo = new CMakeInfo();
+        applyApplicationMk(defaultInfo, parseApplicationMk(applicationMk));
+        compileDirectWithClang(ndkDir, sourceDir, nativeSourceFiles, defaultInfo, platformLevel);
     }
 
     public static File findCMakeListsFile(File sourceDir) {
@@ -277,6 +296,13 @@ public class NativeCompiler {
         public String libraryName = "native-lib";
         public List<String> sources = new ArrayList<>();
         public List<String> linkedLibraries = new ArrayList<>();
+        public List<String> includeDirs = new ArrayList<>();
+        public List<String> cflags = new ArrayList<>();
+        public List<String> cppflags = new ArrayList<>();
+        public List<String> ldflags = new ArrayList<>();
+        public List<String> abis = new ArrayList<>();
+        public int platform = -1;
+        public String stl = null;
     }
 
     public static CMakeInfo parseCMakeLists(File cmakeLists) {
@@ -386,18 +412,251 @@ public class NativeCompiler {
         return info;
     }
 
-    private void compileDirectWithClang(File ndkDir, File sourceDir, List<File> sourceFiles, File cmakeLists, int platformLevel) throws zy {
-        CMakeInfo cmakeInfo = parseCMakeLists(cmakeLists);
-        String libName = cmakeInfo.libraryName;
-        List<String> extraLibs = cmakeInfo.linkedLibraries;
+    // ---------------------------------------------------------------------------------------
+    // Android.mk / Application.mk support
+    // ---------------------------------------------------------------------------------------
+
+    public static File findAndroidMk(File sourceDir) {
+        return findNamedFile(sourceDir, "Android.mk");
+    }
+
+    public static File findApplicationMk(File sourceDir) {
+        return findNamedFile(sourceDir, "Application.mk");
+    }
+
+    private static File findNamedFile(File sourceDir, String name) {
+        if (sourceDir == null || !sourceDir.isDirectory()) return null;
+        File[] dirs = {sourceDir, new File(sourceDir, "jni")};
+        for (File dir : dirs) {
+            File[] files = dir.listFiles();
+            if (files == null) continue;
+            for (File f : files) {
+                if (f.isFile() && f.getName().equalsIgnoreCase(name)) return f;
+            }
+        }
+        return null;
+    }
+
+    private static List<String> readMakeLines(File file) {
+        List<String> lines = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            StringBuilder pending = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                int comment = line.indexOf('#');
+                if (comment != -1) line = line.substring(0, comment);
+                line = line.trim();
+                if (line.endsWith("\\")) {
+                    pending.append(line, 0, line.length() - 1).append(' ');
+                    continue;
+                }
+                pending.append(line);
+                if (pending.length() > 0) lines.add(pending.toString().trim());
+                pending.setLength(0);
+            }
+            if (pending.length() > 0) lines.add(pending.toString().trim());
+        } catch (IOException e) {
+            LogUtil.w(TAG, "Failed to read " + file.getName() + ": " + e.getMessage());
+        }
+        return lines;
+    }
+
+    private static List<String> mkTokens(String value, File mkDir) {
+        String v = value.replace("$(LOCAL_PATH)", mkDir.getAbsolutePath())
+                .replace("${LOCAL_PATH}", mkDir.getAbsolutePath());
+        List<String> tokens = new ArrayList<>();
+        for (String t : v.trim().split("\\s+")) {
+            t = t.replaceAll("[\"']", "").trim();
+            if (!t.isEmpty()) tokens.add(t);
+        }
+        return tokens;
+    }
+
+    private static String resolveMkPath(String token, File baseDir) {
+        File f = new File(token);
+        if (!f.isAbsolute()) f = new File(baseDir, token);
+        return f.getAbsolutePath();
+    }
+
+    private static CMakeInfo newMkModule() {
+        CMakeInfo info = new CMakeInfo();
+        info.libraryName = "";
+        return info;
+    }
+
+    public static List<CMakeInfo> parseAndroidMk(File androidMk) {
+        List<CMakeInfo> modules = new ArrayList<>();
+        if (androidMk == null || !androidMk.isFile()) return modules;
+        File mkDir = androidMk.getParentFile();
+        CMakeInfo current = newMkModule();
+
+        for (String line : readMakeLines(androidMk)) {
+            if (line.startsWith("include")) {
+                if (line.contains("BUILD_SHARED_LIBRARY")) {
+                    if (!current.libraryName.isEmpty()) modules.add(current);
+                } else if (line.contains("BUILD_STATIC_LIBRARY") || line.contains("BUILD_EXECUTABLE")
+                        || line.contains("BUILD_PREBUILT")) {
+                    LogUtil.w(TAG, "Android.mk: only BUILD_SHARED_LIBRARY is supported, skipping: " + line);
+                } else if (!line.contains("CLEAR_VARS")) {
+                    continue;
+                }
+                current = newMkModule();
+                continue;
+            }
+
+            Matcher m = MK_ASSIGN.matcher(line);
+            if (!m.matches()) continue;
+            boolean append = m.group(2).equals("+=");
+            List<String> tokens = mkTokens(m.group(3), mkDir);
+
+            switch (m.group(1)) {
+                case "LOCAL_MODULE":
+                    if (!tokens.isEmpty()) {
+                        String name = tokens.get(0);
+                        current.libraryName = (name.startsWith("lib") && name.length() > 3) ? name.substring(3) : name;
+                    }
+                    break;
+                case "LOCAL_SRC_FILES":
+                    if (!append) current.sources.clear();
+                    for (String t : tokens) {
+                        String lower = t.toLowerCase(Locale.ROOT);
+                        if (lower.endsWith(".c") || lower.endsWith(".cpp")
+                                || lower.endsWith(".cc") || lower.endsWith(".cxx")) {
+                            current.sources.add(resolveMkPath(t, mkDir));
+                        }
+                    }
+                    break;
+                case "LOCAL_C_INCLUDES":
+                    if (!append) current.includeDirs.clear();
+                    for (String t : tokens) current.includeDirs.add(resolveMkPath(t, mkDir));
+                    break;
+                case "LOCAL_CFLAGS":
+                    if (!append) current.cflags.clear();
+                    current.cflags.addAll(tokens);
+                    break;
+                case "LOCAL_CPPFLAGS":
+                    if (!append) current.cppflags.clear();
+                    current.cppflags.addAll(tokens);
+                    break;
+                case "LOCAL_LDFLAGS":
+                    if (!append) current.ldflags.clear();
+                    current.ldflags.addAll(tokens);
+                    break;
+                case "LOCAL_LDLIBS":
+                    for (String t : tokens) {
+                        if (t.startsWith("-l") && t.length() > 2) {
+                            String lib = t.substring(2);
+                            if (!current.linkedLibraries.contains(lib)) current.linkedLibraries.add(lib);
+                        } else {
+                            current.ldflags.add(t);
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        return modules;
+    }
+
+    public static CMakeInfo parseApplicationMk(File applicationMk) {
+        CMakeInfo app = new CMakeInfo();
+        if (applicationMk == null || !applicationMk.isFile()) return app;
+        File mkDir = applicationMk.getParentFile();
+
+        for (String line : readMakeLines(applicationMk)) {
+            Matcher m = MK_ASSIGN.matcher(line);
+            if (!m.matches()) continue;
+            boolean append = m.group(2).equals("+=");
+            List<String> tokens = mkTokens(m.group(3), mkDir);
+
+            switch (m.group(1)) {
+                case "APP_ABI":
+                    for (String t : tokens) {
+                        List<String> expanded;
+                        if (t.equals("all")) {
+                            expanded = Arrays.asList("arm64-v8a", "armeabi-v7a", "x86_64", "x86");
+                        } else if (t.equals("all32")) {
+                            expanded = Arrays.asList("armeabi-v7a", "x86");
+                        } else if (t.equals("all64")) {
+                            expanded = Arrays.asList("arm64-v8a", "x86_64");
+                        } else {
+                            expanded = Arrays.asList(t);
+                        }
+                        for (String abi : expanded) {
+                            if (!app.abis.contains(abi)) app.abis.add(abi);
+                        }
+                    }
+                    break;
+                case "APP_PLATFORM":
+                    if (!tokens.isEmpty()) {
+                        Matcher pm = Pattern.compile("(\\d+)").matcher(tokens.get(0));
+                        if (pm.find()) {
+                            try {
+                                app.platform = Integer.parseInt(pm.group(1));
+                            } catch (NumberFormatException ignored) {}
+                        }
+                    }
+                    break;
+                case "APP_STL":
+                    if (!tokens.isEmpty()) app.stl = tokens.get(0);
+                    break;
+                case "APP_CFLAGS":
+                    if (!append) app.cflags.clear();
+                    app.cflags.addAll(tokens);
+                    break;
+                case "APP_CPPFLAGS":
+                    if (!append) app.cppflags.clear();
+                    app.cppflags.addAll(tokens);
+                    break;
+                case "APP_LDFLAGS":
+                    if (!append) app.ldflags.clear();
+                    app.ldflags.addAll(tokens);
+                    break;
+                default:
+                    break;
+            }
+        }
+        return app;
+    }
+
+    private static void applyApplicationMk(CMakeInfo target, CMakeInfo app) {
+        target.abis = new ArrayList<>(app.abis);
+        target.platform = app.platform;
+        target.stl = app.stl;
+        target.cflags.addAll(0, app.cflags);
+        target.cppflags.addAll(0, app.cppflags);
+        target.ldflags.addAll(app.ldflags);
+    }
+
+    private void compileWithAndroidMk(File ndkDir, File sourceDir, File androidMk, File applicationMk,
+                                      List<File> nativeSourceFiles, int platformLevel) throws zy {
+        List<CMakeInfo> modules = parseAndroidMk(androidMk);
+        if (modules.isEmpty()) {
+            throw new zy("Android.mk has no BUILD_SHARED_LIBRARY module to compile: " + androidMk.getAbsolutePath());
+        }
+        CMakeInfo app = parseApplicationMk(applicationMk);
+        for (CMakeInfo module : modules) {
+            applyApplicationMk(module, app);
+            compileDirectWithClang(ndkDir, sourceDir, nativeSourceFiles, module, platformLevel);
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Direct Clang compilation
+    // ---------------------------------------------------------------------------------------
+
+    private void compileDirectWithClang(File ndkDir, File sourceDir, List<File> sourceFiles, CMakeInfo cmakeInfo, int defaultPlatformLevel) throws zy {
+        int platformLevel = cmakeInfo.platform > 0 ? cmakeInfo.platform : defaultPlatformLevel;
 
         List<File> filesToCompile = new ArrayList<>();
-        if (!cmakeInfo.sources.isEmpty()) {
-            for (String srcName : cmakeInfo.sources) {
-                File srcFile = new File(sourceDir, srcName);
-                if (srcFile.isFile()) {
-                    filesToCompile.add(srcFile);
-                }
+        for (String srcName : cmakeInfo.sources) {
+            File srcFile = new File(srcName);
+            if (!srcFile.isAbsolute()) {
+                srcFile = new File(sourceDir, srcName);
+            }
+            if (srcFile.isFile()) {
+                filesToCompile.add(srcFile);
             }
         }
         if (filesToCompile.isEmpty()) {
@@ -409,11 +668,13 @@ public class NativeCompiler {
         }
 
         boolean hasCpp = false;
+        boolean hasC = false;
         for (File src : filesToCompile) {
             String name = src.getName().toLowerCase(Locale.ROOT);
             if (name.endsWith(".cpp") || name.endsWith(".cc") || name.endsWith(".cxx")) {
                 hasCpp = true;
-                break;
+            } else if (name.endsWith(".c")) {
+                hasC = true;
             }
         }
 
@@ -422,7 +683,7 @@ public class NativeCompiler {
             repairNdkBinaries(binDir);
         }
 
-        List<String> abis = getAbis(sourceDir);
+        List<String> abis = cmakeInfo.abis.isEmpty() ? getAbis(sourceDir) : cmakeInfo.abis;
         int successCount = 0;
         String lastError = null;
 
@@ -443,7 +704,7 @@ public class NativeCompiler {
             makeExecutable(clangBinary);
 
             try {
-                compileSingleAbiWithClang(clangBinary, ndkDir, sourceDir, filesToCompile, abi, libName, extraLibs, hasCpp, platformLevel);
+                compileSingleAbiWithClang(clangBinary, ndkDir, sourceDir, filesToCompile, abi, cmakeInfo, hasCpp, hasC, platformLevel);
                 successCount++;
             } catch (zy e) {
                 lastError = e.getMessage();
@@ -462,11 +723,12 @@ public class NativeCompiler {
             File sourceDir,
             List<File> sourceFiles,
             String abi,
-            String libName,
-            List<String> extraLibs,
+            CMakeInfo info,
             boolean hasCpp,
+            boolean hasC,
             int platformLevel
     ) throws zy {
+        String libName = info.libraryName;
         File buildDir = new File(SketchApplication.getContext().getCacheDir(), "native_build" + File.separator + abi);
         FileUtil.makeDir(buildDir.getAbsolutePath());
         File tempOutFile = new File(buildDir, "lib" + libName + ".so");
@@ -490,12 +752,29 @@ public class NativeCompiler {
 
         cmd.add("-shared");
         cmd.add("-fPIC");
-        cmd.add("-O2");
+        boolean customOptimization = false;
+        for (String flag : info.cflags) {
+            if (flag.startsWith("-O")) {
+                customOptimization = true;
+                break;
+            }
+        }
+        if (!customOptimization) {
+            cmd.add("-O2");
+        }
         cmd.add("-DANDROID");
         cmd.add("-D__ANDROID_API__=" + platformLevel);
 
         cmd.add("-I" + sourceDir.getAbsolutePath());
         addIncludeDirectories(sourceDir, cmd);
+        for (String inc : info.includeDirs) {
+            cmd.add("-I" + inc);
+        }
+
+        cmd.addAll(info.cflags);
+        if (hasCpp && !hasC) {
+            cmd.addAll(info.cppflags);
+        }
 
         cmd.add("-o");
         cmd.add(tempOutFile.getAbsolutePath());
@@ -508,13 +787,14 @@ public class NativeCompiler {
         cmd.add("-landroid");
         cmd.add("-lm");
 
-        for (String lib : extraLibs) {
+        for (String lib : info.linkedLibraries) {
             if (!lib.equals("log") && !lib.equals("android") && !lib.equals("m")) {
                 cmd.add("-l" + lib);
             }
         }
+        cmd.addAll(info.ldflags);
 
-        if (hasCpp) {
+        if (hasCpp && !"none".equals(info.stl) && !"system".equals(info.stl)) {
             cmd.add("-lc++_static");
         }
 
