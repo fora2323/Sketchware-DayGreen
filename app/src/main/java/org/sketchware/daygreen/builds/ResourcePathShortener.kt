@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.zip.CRC32
@@ -20,6 +21,29 @@ class ResourcePathShortener(private val context: Context, private val builder: P
     private val BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     private var idCounter = 0
 
+    private class CountingOutputStream(private val out: OutputStream) : OutputStream() {
+        var count: Long = 0
+            private set
+
+        override fun write(b: Int) {
+            out.write(b)
+            count++
+        }
+
+        override fun write(b: ByteArray) {
+            out.write(b)
+            count += b.size
+        }
+
+        override fun write(b: ByteArray, off: Int, len: Int) {
+            out.write(b, off, len)
+            count += len
+        }
+
+        override fun flush() = out.flush()
+        override fun close() = out.close()
+    }
+
     fun shorten() {
         val apkFile = File(builder.yq.resourcesApkPath)
         if (!apkFile.exists()) {
@@ -31,74 +55,131 @@ class ResourcePathShortener(private val context: Context, private val builder: P
         try {
             LogUtil.d(TAG, "Starting resource path shortening...")
             val pathMap = HashMap<String, String>()
+            var origArsc: ByteArray? = null
 
-            // First pass: Generate short names for applicable res/ entries
+            // Pass 1: Generate short names & extract original resources.arsc
             ZipInputStream(FileInputStream(apkFile)).use { zis ->
                 var entry = zis.nextEntry
                 while (entry != null) {
                     val name = entry.name
-                    if (name.startsWith("res/") && !name.startsWith("res/color")) {
+                    if (name.endsWith("/")) {
+                        entry = zis.nextEntry
+                        continue
+                    }
+                    if (name == "resources.arsc") {
+                        origArsc = zis.readBytes()
+                    } else if (name.startsWith("res/") && !name.startsWith("res/color/") && !name.startsWith("res/color-")) {
                         pathMap[name] = "res/" + generateShortName() + getExtension(name)
                     }
                     entry = zis.nextEntry
                 }
             }
 
+            if (origArsc == null) {
+                throw Exception("resources.arsc not found in APK.")
+            }
+
             LogUtil.d(TAG, "Generated short names for ${pathMap.size} resources.")
 
-            // Second pass: Rewrite APK and patch resources.arsc
-            ZipOutputStream(FileOutputStream(tempApk)).use { zos ->
+            // Patch ARSC
+            val patchedArsc = patchArsc(origArsc!!, pathMap)
+            val writtenEntries = mutableSetOf<String>()
+
+            // Pass 2: Rewrite APK (Writing ARSC First for alignment)
+            val cos = CountingOutputStream(FileOutputStream(tempApk))
+            ZipOutputStream(cos).use { zos ->
+                
+                // Write resources.arsc FIRST to easily calculate 4-byte alignment
+                zos.flush()
+                val arscName = "resources.arsc"
+                val offset = cos.count
+                val headerSize = 30 + arscName.length
+                val alignment = (offset + headerSize) % 4
+                val pad = if (alignment == 0L) 0 else (4 - alignment).toInt()
+                
+                val arscEntry = ZipEntry(arscName)
+                arscEntry.method = ZipEntry.STORED
+                arscEntry.size = patchedArsc.size.toLong()
+                arscEntry.compressedSize = patchedArsc.size.toLong()
+                arscEntry.crc = CRC32().apply { update(patchedArsc) }.value
+                
+                if (pad > 0) {
+                    // Inject Android Zipalign Extra Field to pad local file header
+                    val extra = ByteArray(4 + pad)
+                    val bbExtra = ByteBuffer.wrap(extra).order(ByteOrder.LITTLE_ENDIAN)
+                    bbExtra.putShort(0xD935.toShort()) // ID
+                    bbExtra.putShort(pad.toShort()) // Size of data
+                    arscEntry.extra = extra
+                } else {
+                    arscEntry.extra = ByteArray(0)
+                }
+
+                zos.putNextEntry(arscEntry)
+                zos.write(patchedArsc)
+                zos.closeEntry()
+                writtenEntries.add(arscName)
+
+                // Write the rest of the files
                 ZipInputStream(FileInputStream(apkFile)).use { zis ->
                     var entry = zis.nextEntry
                     while (entry != null) {
                         val name = entry.name
+                        if (name.endsWith("/") || name == "resources.arsc") {
+                            entry = zis.nextEntry
+                            continue
+                        }
+                        
+                        val newName = pathMap[name] ?: name
+                        val newEntry = ZipEntry(newName)
                         val bytes = zis.readBytes()
                         
-                        if (name == "resources.arsc") {
-                            val patchedArsc = patchArsc(bytes, pathMap)
-                            val newEntry = ZipEntry("resources.arsc")
+                        if (entry.method == ZipEntry.STORED) {
                             newEntry.method = ZipEntry.STORED
-                            newEntry.size = patchedArsc.size.toLong()
-                            newEntry.compressedSize = patchedArsc.size.toLong()
-                            newEntry.crc = CRC32().apply { update(patchedArsc) }.value
-                            zos.putNextEntry(newEntry)
-                            zos.write(patchedArsc)
+                            newEntry.size = bytes.size.toLong()
+                            newEntry.compressedSize = bytes.size.toLong()
+                            newEntry.crc = CRC32().apply { update(bytes) }.value
                         } else {
-                            val newName = pathMap[name] ?: name
-                            val newEntry = ZipEntry(newName)
-                            
-                            // Prevent ZipException by explicitly calculating CRC for STORED entries
-                            if (entry.method == ZipEntry.STORED) {
-                                newEntry.method = ZipEntry.STORED
-                                newEntry.size = bytes.size.toLong()
-                                newEntry.compressedSize = bytes.size.toLong()
-                                newEntry.crc = CRC32().apply { update(bytes) }.value
-                            } else {
-                                newEntry.method = ZipEntry.DEFLATED
-                            }
-                            
-                            zos.putNextEntry(newEntry)
-                            zos.write(bytes)
+                            newEntry.method = ZipEntry.DEFLATED
                         }
+                        
+                        zos.putNextEntry(newEntry)
+                        zos.write(bytes)
                         zos.closeEntry()
+                        writtenEntries.add(newName)
+                        
                         entry = zis.nextEntry
                     }
                 }
             }
 
-            // Verify and replace original APK
-            if (tempApk.exists() && tempApk.length() > 0) {
-                if (apkFile.delete()) {
-                    tempApk.renameTo(apkFile)
+            // Post-Patch Verification
+            val parsedStrings = parseArscStrings(patchedArsc)
+            val arscPaths = parsedStrings.filter { it.startsWith("res/") }
+            for (path in arscPaths) {
+                if (!writtenEntries.contains(path)) {
+                    throw IllegalStateException("Verification failed: '$path' is mapped in ARSC but missing from ZIP.")
+                }
+            }
+
+            // Safe Backup & Rename
+            val bakApk = File(apkFile.absolutePath + ".bak")
+            if (apkFile.renameTo(bakApk)) {
+                if (tempApk.renameTo(apkFile)) {
+                    bakApk.delete()
                     LogUtil.d(TAG, "Successfully shortened resource paths and rebuilt APK.")
                 } else {
-                    LogUtil.e(TAG, "Failed to delete original resources.apk.")
+                    bakApk.renameTo(apkFile)
+                    tempApk.delete()
+                    throw Exception("Failed to rename temp APK to original APK. Restored original.")
                 }
+            } else {
+                tempApk.delete()
+                throw Exception("Failed to create backup of original APK. Aborted.")
             }
 
         } catch (e: Exception) {
             LogUtil.e(TAG, "Failed to shorten resource paths", e)
-            if (tempApk.exists()) tempApk.delete() // Fallback to original
+            if (tempApk.exists()) tempApk.delete()
         }
     }
 
@@ -122,17 +203,45 @@ class ResourcePathShortener(private val context: Context, private val builder: P
         return if (dot != -1) name.substring(dot) else ""
     }
 
+    private fun parseArscStrings(arscBytes: ByteArray): List<String> {
+        val bb = ByteBuffer.wrap(arscBytes).order(ByteOrder.LITTLE_ENDIAN)
+        bb.short // tableType
+        val tableHeaderSize = bb.short
+        bb.int // tableSize
+        
+        bb.position(tableHeaderSize.toInt())
+        bb.short // poolType
+        bb.short // poolHeaderSize
+        bb.int // poolSize
+        val stringCount = bb.int
+        bb.int // styleCount
+        val flags = bb.int
+        val stringsStart = bb.int
+        
+        val isUtf8 = (flags and (1 shl 8)) != 0
+        val stringOffsets = IntArray(stringCount)
+        for (i in 0 until stringCount) stringOffsets[i] = bb.int
+        
+        val strings = ArrayList<String>(stringCount)
+        for (i in 0 until stringCount) {
+            val offset = tableHeaderSize.toInt() + stringsStart + stringOffsets[i]
+            bb.position(offset)
+            strings.add(readString(bb, isUtf8))
+        }
+        return strings
+    }
+
     private fun patchArsc(arscBytes: ByteArray, pathMap: Map<String, String>): ByteArray {
         val bb = ByteBuffer.wrap(arscBytes).order(ByteOrder.LITTLE_ENDIAN)
 
         // Read ResTable_header
-        val tableType = bb.short
+        bb.short // tableType
         val tableHeaderSize = bb.short
         val tableSize = bb.int
         
         // Read ResStringPool_header
         bb.position(tableHeaderSize.toInt())
-        val poolType = bb.short
+        bb.short // poolType
         val poolHeaderSize = bb.short
         val poolSize = bb.int
         val stringCount = bb.int
@@ -239,7 +348,7 @@ class ResourcePathShortener(private val context: Context, private val builder: P
 
     private fun readString(bb: ByteBuffer, isUtf8: Boolean): String {
         if (isUtf8) {
-            val charLen = decodeLengthUtf8(bb)
+            decodeLengthUtf8(bb) // charLen
             val byteLen = decodeLengthUtf8(bb)
             val bytes = ByteArray(byteLen)
             bb.get(bytes)
