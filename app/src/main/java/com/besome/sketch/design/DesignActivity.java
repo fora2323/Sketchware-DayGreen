@@ -1647,8 +1647,6 @@ private String fixPackage(String code, String pkg) {
             DesignActivity activity = getActivity();
             if (activity == null || activity.isDestroyed()) return;
 
-            org.sketchware.daygreen.preview.PreviewClass.clearCache(DesignActivity.sc_id);
-
             if (isShowingNotification) {
                 notificationManager.cancel(notificationId);
                 isShowingNotification = false;

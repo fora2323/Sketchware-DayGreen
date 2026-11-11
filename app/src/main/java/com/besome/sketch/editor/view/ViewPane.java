@@ -340,6 +340,16 @@ public class ViewPane extends RelativeLayout {
     }
 
     private View getUnknownItemView(ViewBean bean) {
+        if (bean.convert != null) {
+            String className = bean.convert.contains(".") ? bean.convert.substring(bean.convert.lastIndexOf(".") + 1) : bean.convert;
+            if (className.equals("include") || 
+                className.endsWith("LinearLayout") || 
+                className.endsWith("FrameLayout") || 
+                className.endsWith("ConstraintLayout")) {
+                bean.type = ViewBean.VIEW_TYPE_LAYOUT_LINEAR;
+                return new ItemLinearLayout(context);
+            }
+        }
         return new ItemCustomView(context, null, bean, null, sc_id, false);
     }
 
