@@ -84,7 +84,6 @@ import a.a.a.yB;
 import a.a.a.zB;
 import org.sketchware.daygreen.preview.ItemCustomView;
 import org.sketchware.daygreen.preview.PreviewClass;
-import org.sketchware.daygreen.preview.PreviewViewRegistry;
 import dev.aldi.sayuti.editor.view.item.ItemBadgeView;
 import dev.aldi.sayuti.editor.view.item.ItemCircleImageView;
 import dev.aldi.sayuti.editor.view.item.ItemCodeView;
@@ -143,7 +142,6 @@ public class ViewPane extends RelativeLayout {
     private int defaultTextColor = 0;
     private int defaultHintColor = 0;
     private Material3LibraryManager material3LibraryManager;
-    private boolean isPreviewMode;
     
     public static final boolean PREVIEW_CARD_ANDROID_BACKGROUND = false;
 
@@ -240,7 +238,6 @@ public class ViewPane extends RelativeLayout {
 
     public void initialize(String sc_id, boolean isPreviewMode) {
         this.sc_id = sc_id;
-        this.isPreviewMode = isPreviewMode;
         PreviewClass.setCurrentScId(sc_id);
         material3LibraryManager = new Material3LibraryManager(getContext(), sc_id);
         colorsEditorManager = new ColorsEditorManager(sc_id);
@@ -281,13 +278,7 @@ public class ViewPane extends RelativeLayout {
     }
 
     public View createItemView(ViewBean viewBean) {
-        boolean useBuiltInItem = viewBean.convert != null
-                && viewBean.type != ViewBean.VIEW_TYPE_LAYOUT_LINEAR
-                && PreviewViewRegistry.findHandler(viewBean.convert) != null;
-
-        if (viewBean.convert != null
-                && PreviewClass.isCustomClass(viewBean.convert)
-                && !useBuiltInItem) {
+        if (viewBean.convert != null && PreviewClass.isCustomClass(viewBean.convert)) {
             View customItem = PreviewClass.createItemView(context, viewBean, sc_id);
             if (customItem != null) {
                 customItem.setId(++b);
@@ -356,11 +347,7 @@ public class ViewPane extends RelativeLayout {
         item.setId(++b);
         item.setTag(viewBean.id);
         ((ItemView) item).setBean(viewBean);
-        try {
-            updateItemView(item, viewBean);
-        } catch (Exception e) {
-            Log.e("ViewPane", "Failed to update item view", e);
-        }
+        updateItemView(item, viewBean);
         return item;
     }
 
@@ -613,12 +600,6 @@ public class ViewPane extends RelativeLayout {
             updateEditText((EditText) view, viewBean);
         }
         if (classInfo.a("ImageView") && view instanceof ImageView) {
-            if (viewBean.image.resName == null || viewBean.image.resName.isEmpty()) {
-                viewBean.image.resName = "default_image";
-            }
-            if (viewBean.image.scaleType == null) {
-                viewBean.image.scaleType = ImageBean.SCALE_TYPE_CENTER;
-            }
             if (resourcesManager != null && resourcesManager.h(viewBean.image.resName) == ProjectResourceBean.PROJECT_RES_TYPE_RESOURCE) {
                 ((ImageView) view).setImageResource(getContext().getResources().getIdentifier(viewBean.image.resName, "drawable", getContext().getPackageName()));
             } else if (viewBean.image.resName.equals("default_image")) {

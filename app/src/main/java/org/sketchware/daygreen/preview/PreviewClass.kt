@@ -40,6 +40,7 @@ object PreviewClass {
 
     private val fqnMap = HashMap<String, String>()
     private var fqnMapScId: String? = null
+    private var fqnIndexScId: String? = null
 
     private const val CACHE_TTL_MS = 2000L
     private const val STALE_TTL_MS = 3000L
@@ -370,12 +371,14 @@ object PreviewClass {
     }
 
     private fun resolveClassFqnUncached(scId: String, simpleName: String): String? {
-        if (fqnMapScId == scId && fqnMap.containsKey(simpleName)) return fqnMap[simpleName]
-
         if (fqnMapScId != scId) {
             fqnMap.clear()
             fqnMapScId = scId
+            fqnIndexScId = null
         }
+
+        fqnMap[simpleName]?.let { return it }
+        if (fqnIndexScId == scId) return null
 
         try {
             val myscPath = wq.d(scId)
@@ -415,6 +418,7 @@ object PreviewClass {
             Log.w(TAG, "Error resolving class FQN for $simpleName in $scId: ${e.message}")
         }
 
+        fqnIndexScId = scId
         return fqnMap[simpleName]
     }
 
@@ -731,6 +735,7 @@ object PreviewClass {
             cachedDexTimestamp = 0L
             fqnMap.clear()
             fqnMapScId = null
+            fqnIndexScId = null
         }
     }
 }
