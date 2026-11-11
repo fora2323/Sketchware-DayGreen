@@ -83,7 +83,6 @@ import a.a.a.wq;
 import a.a.a.yB;
 import a.a.a.zB;
 import org.sketchware.daygreen.preview.ItemCustomView;
-import org.sketchware.daygreen.preview.PreviewClass;
 import dev.aldi.sayuti.editor.view.item.ItemBadgeView;
 import dev.aldi.sayuti.editor.view.item.ItemCircleImageView;
 import dev.aldi.sayuti.editor.view.item.ItemCodeView;
@@ -238,7 +237,6 @@ public class ViewPane extends RelativeLayout {
 
     public void initialize(String sc_id, boolean isPreviewMode) {
         this.sc_id = sc_id;
-        PreviewClass.setCurrentScId(sc_id);
         material3LibraryManager = new Material3LibraryManager(getContext(), sc_id);
         colorsEditorManager = new ColorsEditorManager(sc_id);
         int viewEditorThemeOverlay = material3LibraryManager.getViewEditorThemeOverlay();
@@ -278,16 +276,6 @@ public class ViewPane extends RelativeLayout {
     }
 
     public View createItemView(ViewBean viewBean) {
-        if (viewBean.convert != null && PreviewClass.isCustomClass(viewBean.convert)) {
-            View customItem = PreviewClass.createItemView(context, viewBean, sc_id);
-            if (customItem != null) {
-                customItem.setId(++b);
-                customItem.setTag(viewBean.id);
-                ((ItemView) customItem).setBean(viewBean);
-                updateItemView(customItem, viewBean);
-                return customItem;
-            }
-        }
         View item = switch (viewBean.type) {
             case ViewBean.VIEW_TYPE_LAYOUT_LINEAR,
                  ViewBeans.VIEW_TYPE_LAYOUT_COLLAPSINGTOOLBARLAYOUT,
@@ -352,14 +340,7 @@ public class ViewPane extends RelativeLayout {
     }
 
     private View getUnknownItemView(ViewBean bean) {
-        if (bean.convert != null && PreviewClass.isCustomClass(bean.convert)) {
-            View customItem = PreviewClass.createItemView(context, bean, sc_id);
-            if (customItem != null) {
-                return customItem;
-            }
-        }
-        bean.type = ViewBean.VIEW_TYPE_LAYOUT_LINEAR;
-        return new ItemLinearLayout(context);
+        return new ItemCustomView(context, null, bean, null, sc_id, false);
     }
 
     public void updateRootLayout(String sc_id, String fileName) {

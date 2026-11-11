@@ -11,7 +11,6 @@ class PreviewLayoutParser(
 ) {
     @Throws(XmlPullParserException::class, IOException::class)
     fun parse(): ArrayList<ViewBean> {
-        PreviewClass.currentScId = resolver?.scId
         val parser = ViewBeanParser(xml)
         parser.setSkipRoot(false)
         parser.setResourceResolver(resolver)

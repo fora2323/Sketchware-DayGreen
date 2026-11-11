@@ -31,10 +31,8 @@ import java.util.Set;
 import java.util.Stack;
 
 import a.a.a.wq;
-import org.sketchware.daygreen.preview.PreviewClass;
 import org.sketchware.daygreen.preview.PreviewResourceResolver;
 import org.sketchware.daygreen.preview.PreviewViewRegistry;
-import pro.sketchware.utility.InvokeUtil;
 
 public class ViewBeanParser {
 
@@ -151,24 +149,6 @@ public class ViewBeanParser {
         if (type == ViewBean.VIEW_TYPE_LAYOUT_LINEAR) {
             type = PreviewViewRegistry.typeOf(getNameFromTag(tag), type);
         }
-        if (type == ViewBean.VIEW_TYPE_LAYOUT_LINEAR) {
-            type = PreviewClass.resolveViewType(tag, activeScId, getContext());
-        }
-        if (type == ViewBean.VIEW_TYPE_LAYOUT_LINEAR) {
-            var view = InvokeUtil.createView(getContext(), tag);
-            if (view != null) {
-                Class<?> clazz = view.getClass();
-                Class<?> viewClazz = View.class.getSuperclass();
-                while (clazz != viewClazz) {
-                    var className = clazz.getSimpleName();
-                    if ("View".equals(className) || "LinearLayout".equals(className)) {
-                        break;
-                    }
-                    type = ViewBean.getViewTypeByTypeName(className);
-                    clazz = clazz.getSuperclass();
-                }
-            }
-        }
         return type;
     }
 
@@ -196,14 +176,6 @@ public class ViewBeanParser {
                 case XmlPullParser.START_TAG -> {
                     var name = parser.getName();
                     if (!isRootSkipped) {
-                        var view = PreviewClass.createView(getContext(), name, getScId());
-                        if (view == null) {
-                            view = InvokeUtil.createView(getContext(), name);
-                        }
-                        if (view == null || !(view instanceof ViewGroup)) {
-                            // Fallback to LinearLayout if not compiled yet or not a ViewGroup
-                            view = PreviewClass.fallbackView(getContext());
-                        }
                         Map<String, String> attributes = new LinkedHashMap<>();
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
                             if (!parser.getAttributeName(i).startsWith("xmlns")) {

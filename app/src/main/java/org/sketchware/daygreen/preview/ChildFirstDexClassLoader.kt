@@ -22,12 +22,21 @@ class ChildFirstDexClassLoader(
     parent: ClassLoader
 ) : DexClassLoader(dexPath, optDir, libPath, parent) {
     override fun loadClass(name: String, resolve: Boolean): Class<*> {
-        if (name.startsWith("android.") || name.startsWith("java.")) {
+        // Sudah pernah di-load lewat loader ini (di-define di sini, atau didelegasikan ke parent
+        // sebelumnya)? Pakai lagi. Tanpa ini, tiap lookup ulang selalu jalan ke findClass() yang
+        // melempar ClassNotFoundException untuk semua class milik parent.
+        findLoadedClass(name)?.let { return it }
+
+        // Class platform tidak mungkin ada di dex project, langsung ke parent.
+        // Urutan saja yang berubah: super.loadClass tetap jatuh ke dex project kalau parent tidak punya.
+        if (name.startsWith("android.") || name.startsWith("java.") ||
+            name.startsWith("javax.") || name.startsWith("dalvik.") ||
+            name.startsWith("libcore.")
+        ) {
             return super.loadClass(name, resolve)
         }
         try {
-            val c = findClass(name)
-            if (c != null) return c
+            return findClass(name)
         } catch (ignored: ClassNotFoundException) {
         }
         return super.loadClass(name, resolve)
