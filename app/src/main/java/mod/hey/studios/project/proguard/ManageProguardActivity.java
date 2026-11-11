@@ -24,6 +24,8 @@ public class ManageProguardActivity extends BaseAppCompatActivity
     private ProguardHandler pg;
 
     private ManageProguardBinding binding;
+    
+    private boolean isInitializing = true;
 
     @Override
     public void onClick(View v) {
@@ -44,7 +46,7 @@ public class ManageProguardActivity extends BaseAppCompatActivity
             binding.r8Enabled.setChecked(!binding.r8Enabled.isChecked());
         } else if (id == R.id.ln_sw_pg_debug) {
             binding.swPgDebug.setChecked(!binding.swPgDebug.isChecked());
-        } else if (id == R.id.ln_shrink_resources) { // PERUBAHAN B1
+        } else if (id == R.id.ln_shrink_resources) {
             binding.swShrinkResources.setChecked(!binding.swShrinkResources.isChecked());
         }
     }
@@ -101,10 +103,10 @@ public class ManageProguardActivity extends BaseAppCompatActivity
             pg.setR8Enabled(isChecked);
         } else if (id == binding.swPgDebug.getId()) {
             pg.setDebugEnabled(isChecked);
-        } else if (id == binding.swShrinkResources.getId()) { // PERUBAHAN B1 & B4
+        } else if (id == binding.swShrinkResources.getId()) {
             pg.setShrinkResourcesEnabled(isChecked);
-            if (isChecked) {
-                // Tampilkan info mengenai keep_resources.txt
+            if (!isInitializing && isChecked) {
+                // Tampilkan info mengenai keep_resources.txt HANYA dari interaksi manual user
                 SketchwareUtil.toast("Info: Buat keep_resources.txt di folder project untuk melestarikan resource yang dipanggil via getIdentifier.");
             }
         }
@@ -124,6 +126,8 @@ public class ManageProguardActivity extends BaseAppCompatActivity
             binding.lnPgEnabled.setAlpha(0.5f);
             binding.lnPgEnabled.setEnabled(false);
         }
+        
+        isInitializing = false;
     }
 
     private void initialize() {

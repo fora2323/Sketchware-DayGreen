@@ -300,6 +300,9 @@ class ResourceShrinker(private val context: Context, private val builder: Projec
         val aapt2 = File(context.filesDir, "bin/aapt2")
         val compiler = ResourceCompiler(builder, aapt2, false, null)
         compiler.compileAndRelinkShrunk(shrunkDir.absolutePath)
+        
+        // 11. Pendekkan dan ratakan (flatten) path resource di dalam APK
+        ResourcePathShortener(context, builder).shorten()
     }
 
     private fun getResourceNameFromFile(file: File): String {
