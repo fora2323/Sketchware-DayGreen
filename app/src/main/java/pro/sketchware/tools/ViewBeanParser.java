@@ -1,11 +1,8 @@
 package pro.sketchware.tools;
 
-import static pro.sketchware.SketchApplication.getContext;
 import static pro.sketchware.utility.PropertiesUtil.parseReferName;
 
 import android.util.Pair;
-import android.view.View;
-import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 

@@ -386,14 +386,15 @@ public class yq {
 
         String javaDir = FileUtil.getExternalStorageDir() + "/.sketchware/data/" + sc_id + "/files/java/";
 
-        File debugActivityFile = new File(javaDir, "DebugActivity.java");
-        if (!debugActivityFile.exists()) {
+        if (!isCustomJavaClassExist(javaDir, packageName, "DebugActivity")) {
             String debugActivityContent = fileUtil.b(
                     context,
                     "debug" + File.separator + "DebugActivity.java"
             );
             debugActivityContent = PACKAGE_PLACEHOLDER_PATTERN.matcher(debugActivityContent).replaceAll(packageName);
             fileUtil.b(javaFilesPath + File.separator + packageNameAsFolders + File.separator + "DebugActivity.java", debugActivityContent);
+        } else {
+            mod.jbk.util.LogUtil.d("yq", "Skipping generation of " + packageName + ".DebugActivity (custom file exists)");
         }
 
         String customApplicationClassName = new ProjectSettings(sc_id).getValue(
@@ -411,10 +412,7 @@ public class yq {
         String customClassPackage = fullCustomClassName.substring(0, lastDot);
         String customClassPackageAsFolders = customClassPackage.replace('.', File.separatorChar);
 
-        File targetApplicationFile = new File(javaDir + File.separator +
-                customApplicationClassName.substring(1).replace('.', '/') + ".java");
-
-        if (!targetApplicationFile.exists()) {
+        if (!isCustomJavaClassExist(javaDir, customClassPackage, customClassSimpleName)) {
             boolean applyMultiDex = projectSettings.getMinSdkVersion() < 21;
             String sketchApplicationFileContent = fileUtil.b(
                     context,
@@ -457,11 +455,12 @@ public class yq {
             fileUtil.b(javaFilesPath + File.separator
                     + customClassPackageAsFolders + File.separator
                     + customClassSimpleName + ".java", sketchApplicationFileContent);
+        } else {
+            mod.jbk.util.LogUtil.d("yq", "Skipping generation of " + customClassPackage + "." + customClassSimpleName + " (custom file exists)");
         }
 
         if (logcatEnabled) {
-            File sketchLoggerFile = new File(javaDir, "SketchLogger.java");
-            if (!sketchLoggerFile.exists()) {
+            if (!isCustomJavaClassExist(javaDir, packageName, "SketchLogger")) {
                 String sketchLoggerFileContent = fileUtil.b(
                         context,
                         "debug" + File.separator + "SketchLogger.java"
@@ -475,6 +474,8 @@ public class yq {
 
                 fileUtil.b(javaFilesPath + File.separator + packageNameAsFolders + File.separator + "SketchLogger.java",
                         sketchLoggerFileContent);
+            } else {
+                mod.jbk.util.LogUtil.d("yq", "Skipping generation of " + packageName + ".SketchLogger (custom file exists)");
             }
         }
     }
@@ -777,12 +778,6 @@ public class yq {
 
         String javaDir = FileUtil.getExternalStorageDir() + "/.sketchware/data/" + sc_id + "/files/java/";
         String layoutDir = FileUtil.getExternalStorageDir() + "/.sketchware/data/" + sc_id + "/files/resource/layout/";
-        List<File> javaFiles;
-        {
-            File[] files = new File(javaDir).listFiles();
-            if (files == null) files = new File[0];
-            javaFiles = Arrays.asList(files);
-        }
         List<File> layoutFiles;
         {
             File[] files = new File(layoutDir).listFiles();
@@ -794,9 +789,13 @@ public class yq {
         // at /Internal storage/.sketchware/data/<sc_id>/files/java/
         ArrayList<SrcCodeBean> srcCodeBeans = new ArrayList<>();
         for (ProjectFileBean activity : projectFileManager.b()) {
-            if (!javaFiles.contains(new File(javaDir + activity.getJavaName()))) {
+            String expectedPackage = activity.hasCustomPackage() ? activity.getCustomPackage() : packageName;
+            String expectedClassName = activity.getJavaName().replace(".java", "");
+            if (!isCustomJavaClassExist(javaDir, expectedPackage, expectedClassName)) {
                 srcCodeBeans.add(new SrcCodeBean(activity.getJavaName(),
                         new Jx(N, activity, projectDataManager).generateCode(isAndroidStudioExport, sc_id)));
+            } else {
+                mod.jbk.util.LogUtil.d("yq", "Skipping generation of " + expectedPackage + "." + expectedClassName + " (custom file exists)");
             }
         }
 
@@ -856,40 +855,54 @@ public class yq {
         ix.setYq(this);
 
         // Make generated classes viewable
-        if (!javaFiles.contains(new File(javaDir + "SketchwareUtil.java"))) {
+        if (!isCustomJavaClassExist(javaDir, packageName, "SketchwareUtil")) {
             srcCodeBeans.add(new SrcCodeBean("SketchwareUtil.java",
                     Lx.i(packageName, material3LibraryManager.isMaterial3Enabled())));
+        } else {
+            mod.jbk.util.LogUtil.d("yq", "Skipping generation of " + packageName + ".SketchwareUtil (custom file exists)");
         }
 
-        if (!javaFiles.contains(new File(javaDir + "FileUtil.java"))) {
+        if (!isCustomJavaClassExist(javaDir, packageName, "FileUtil")) {
             srcCodeBeans.add(new SrcCodeBean("FileUtil.java",
                     Lx.e(packageName)));
+        } else {
+            mod.jbk.util.LogUtil.d("yq", "Skipping generation of " + packageName + ".FileUtil (custom file exists)");
         }
 
-        if (!javaFiles.contains(new File(javaDir + "RequestNetwork.java")) && N.isHttp3Used) {
+        if (!isCustomJavaClassExist(javaDir, packageName, "RequestNetwork") && N.isHttp3Used) {
             srcCodeBeans.add(new SrcCodeBean("RequestNetwork.java",
                     Lx.j(Lx.h(packageName), false)));
+        } else if (N.isHttp3Used) {
+            mod.jbk.util.LogUtil.d("yq", "Skipping generation of " + packageName + ".RequestNetwork (custom file exists)");
         }
 
-        if (!FileUtil.isExistFile(javaDir + "RequestNetworkController.java") && N.isHttp3Used) {
+        if (!isCustomJavaClassExist(javaDir, packageName, "RequestNetworkController") && N.isHttp3Used) {
             srcCodeBeans.add(new SrcCodeBean("RequestNetworkController.java",
                     Lx.j(Lx.g(packageName), false)));
+        } else if (N.isHttp3Used) {
+            mod.jbk.util.LogUtil.d("yq", "Skipping generation of " + packageName + ".RequestNetworkController (custom file exists)");
         }
 
-        if (!javaFiles.contains(new File(javaDir + "BluetoothConnect.java")) && N.hasPermission(jq.PERMISSION_BLUETOOTH)) {
+        if (!isCustomJavaClassExist(javaDir, packageName, "BluetoothConnect") && N.hasPermission(jq.PERMISSION_BLUETOOTH)) {
             srcCodeBeans.add(new SrcCodeBean("BluetoothConnect.java",
                     Lx.j(Lx.b(packageName), false)));
+        } else if (N.hasPermission(jq.PERMISSION_BLUETOOTH)) {
+            mod.jbk.util.LogUtil.d("yq", "Skipping generation of " + packageName + ".BluetoothConnect (custom file exists)");
         }
 
-        if (!javaFiles.contains(new File(javaDir + "BluetoothController.java")) && N.hasPermission(jq.PERMISSION_BLUETOOTH)) {
+        if (!isCustomJavaClassExist(javaDir, packageName, "BluetoothController") && N.hasPermission(jq.PERMISSION_BLUETOOTH)) {
             srcCodeBeans.add(new SrcCodeBean("BluetoothController.java",
                     Lx.j(Lx.c(packageName), false)));
+        } else if (N.hasPermission(jq.PERMISSION_BLUETOOTH)) {
+            mod.jbk.util.LogUtil.d("yq", "Skipping generation of " + packageName + ".BluetoothController (custom file exists)");
         }
 
         if (N.isMapUsed) {
-            if (!javaFiles.contains(new File(javaDir + "GoogleMapController.java")) && N.isMapUsed) {
+            if (!isCustomJavaClassExist(javaDir, packageName, "GoogleMapController")) {
                 srcCodeBeans.add(new SrcCodeBean("GoogleMapController.java",
                         Lx.j(Lx.f(packageName), false)));
+            } else {
+                mod.jbk.util.LogUtil.d("yq", "Skipping generation of " + packageName + ".GoogleMapController (custom file exists)");
             }
         }
 
@@ -1139,5 +1152,42 @@ public class yq {
         DEBUG_APP,
         ANDROID_STUDIO,
         SOURCE_CODE_VIEWING
+    }
+
+    private boolean isCustomJavaClassExist(String javaDirPath, String expectedPackage, String expectedClassName) {
+        File javaDir = new File(javaDirPath);
+        if (!javaDir.exists() || !javaDir.isDirectory()) return false;
+        return checkCustomClassExistsRecursive(javaDir, expectedPackage, expectedClassName);
+    }
+
+    private boolean checkCustomClassExistsRecursive(File dir, String expectedPackage, String expectedClassName) {
+        File[] files = dir.listFiles();
+        if (files == null) return false;
+        
+        Pattern pkgPattern = Pattern.compile("^\\s*package\\s+" + Pattern.quote(expectedPackage) + "\\s*;", Pattern.MULTILINE);
+        Pattern clsPattern = Pattern.compile("\\b(?:class|interface|enum)\\s+" + Pattern.quote(expectedClassName) + "\\b");
+
+        for (File f : files) {
+            if (f.isDirectory()) {
+                if (checkCustomClassExistsRecursive(f, expectedPackage, expectedClassName)) {
+                    return true;
+                }
+            } else if (f.isFile() && f.getName().equals(expectedClassName + ".java")) {
+                try {
+                    String content = pro.sketchware.utility.FileUtil.readFile(f.getAbsolutePath());
+                    boolean pkgMatch = expectedPackage.isEmpty() ? 
+                            !Pattern.compile("^\\s*package\\s+", Pattern.MULTILINE).matcher(content).find() :
+                            pkgPattern.matcher(content).find();
+                    boolean clsMatch = clsPattern.matcher(content).find();
+                    
+                    if (pkgMatch && clsMatch) {
+                        return true;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return false;
     }
 }

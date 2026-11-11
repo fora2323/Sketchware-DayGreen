@@ -276,6 +276,15 @@ public class ViewPane extends RelativeLayout {
     }
 
     public View createItemView(ViewBean viewBean) {
+        if (viewBean.type == ViewBean.VIEW_TYPE_LAYOUT_LINEAR && !isBuiltInLinearLayout(viewBean.convert)) {
+            View customItem = new ItemCustomView(context, null, viewBean, null, sc_id, false);
+            customItem.setId(++b);
+            customItem.setTag(viewBean.id);
+            ((ItemView) customItem).setBean(viewBean);
+            updateItemView(customItem, viewBean);
+            return customItem;
+        }
+
         View item = switch (viewBean.type) {
             case ViewBean.VIEW_TYPE_LAYOUT_LINEAR,
                  ViewBeans.VIEW_TYPE_LAYOUT_COLLAPSINGTOOLBARLAYOUT,
@@ -339,17 +348,17 @@ public class ViewPane extends RelativeLayout {
         return item;
     }
 
+    private boolean isBuiltInLinearLayout(String convert) {
+        if (convert == null || convert.isEmpty()) return true;
+        String name = convert.substring(convert.lastIndexOf('.') + 1);
+        return name.equals("include")
+                || name.equals("LinearLayout")
+                || name.endsWith("LinearLayout")
+                || name.endsWith("FrameLayout")
+                || name.endsWith("ConstraintLayout");
+    }
+
     private View getUnknownItemView(ViewBean bean) {
-        if (bean.convert != null) {
-            String className = bean.convert.contains(".") ? bean.convert.substring(bean.convert.lastIndexOf(".") + 1) : bean.convert;
-            if (className.equals("include") || 
-                className.endsWith("LinearLayout") || 
-                className.endsWith("FrameLayout") || 
-                className.endsWith("ConstraintLayout")) {
-                bean.type = ViewBean.VIEW_TYPE_LAYOUT_LINEAR;
-                return new ItemLinearLayout(context);
-            }
-        }
         return new ItemCustomView(context, null, bean, null, sc_id, false);
     }
 
