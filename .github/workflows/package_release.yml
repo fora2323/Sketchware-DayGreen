@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version name (harus sama dengan versionName di app/build.gradle)'
+        description: 'Version name (contoh: v8.0.7-daygreen, tanpa suffix flavor)'
         required: true
       message:
         description: 'What is new (pakai \n untuk baris baru)'
@@ -30,6 +30,8 @@ jobs:
         run: |
           FILE="app/build.gradle"
           [ -f "app/build.gradle.kts" ] && FILE="app/build.gradle.kts"
+
+          # versionName pertama = defaultConfig
           VERSION_NAME=$(grep -m1 'versionName' "$FILE" | sed -E 's/.*versionName[[:space:]=]*"([^"]+)".*/\1/')
           PACKAGE=$(grep -m1 'applicationId' "$FILE" | sed -E 's/.*applicationId[[:space:]=]*"([^"]+)".*/\1/')
 
@@ -43,13 +45,21 @@ jobs:
             exit 1
           fi
 
+          # Pastikan kedua flavor juga punya versionName yang sesuai
+          for FLAVOR in android26 android33; do
+            if ! grep -q "versionName \"${INPUT_VERSION}-${FLAVOR}\"" "$FILE"; then
+              echo "Error: versionName flavor $FLAVOR tidak sesuai (harus ${INPUT_VERSION}-${FLAVOR})"
+              exit 1
+            fi
+          done
+
           echo "version=$VERSION_NAME" >> "$GITHUB_OUTPUT"
           echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
 
       - name: Check if tag already exists
         id: check_tag
         run: |
-          TAG="v${{ steps.version.outputs.version }}"
+          TAG="${{ steps.version.outputs.version }}"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
             echo "Tag $TAG sudah ada. Workflow dihentikan agar tidak duplicate."
@@ -68,8 +78,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v${{ steps.version.outputs.version }}"
-          git push origin "v${{ steps.version.outputs.version }}"
+          git tag "${{ steps.version.outputs.version }}"
+          git push origin "${{ steps.version.outputs.version }}"
 
       - name: Set up JDK 17
         if: steps.check_tag.outputs.exists == 'false'
@@ -78,19 +88,24 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      # Cache dependency Gradle dan build cache
+      - name: Setup Gradle
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Grant execute permission for gradlew
         if: steps.check_tag.outputs.exists == 'false'
         run: chmod +x gradlew
 
       - name: Build release APKs
         if: steps.check_tag.outputs.exists == 'false'
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease --build-cache --stacktrace
 
       - name: Create GitHub Release
         if: steps.check_tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version.outputs.version }}
+          tag_name: ${{ steps.version.outputs.version }}
           body_path: notes.md
           files: |
             app/build/outputs/apk/android26/release/*.apk
@@ -115,7 +130,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
           VERSION: ${{ steps.version.outputs.version }}
-          TAG: v${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.version }}
           APP_NAME: Sketchware DayGreen
           APP_PACKAGE: ${{ steps.version.outputs.package }}
           REPO: ${{ github.repository }}
