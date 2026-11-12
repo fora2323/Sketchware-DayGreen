@@ -336,6 +336,14 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
             }
         }
     }
+    
+    private List<String> buildActiveTabs(List<String> visibleTabs) {
+        List<String> tabs = new ArrayList<>(visibleTabs);
+        if (mod.hilal.saif.activities.tools.GitManager.hasGitRepo(sc_id) && !tabs.contains("git")) {
+            tabs.add("git");
+        }
+        return tabs;
+    }
 
     private void refreshVisibleTabs() {
         refresh();
@@ -618,8 +626,6 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         mSavedInstanceState = savedInstanceState;
         setContentView(R.layout.design);
         
-        activeTabs = ConfigActivity.getVisibleDesignTabs();
-        
         if (!isStoragePermissionGranted()) {
             finish();
         }
@@ -629,6 +635,8 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         } else {
             sc_id = savedInstanceState.getString("sc_id");
         }
+
+        activeTabs = buildActiveTabs(ConfigActivity.getVisibleDesignTabs());
 
         DRProjectTracker.startNow(sc_id);
 
@@ -908,6 +916,10 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         }
 
         DRProjectTracker.startNow(sc_id);
+        
+        if (activeTabs != null && viewPager != null) {
+            computeActiveTabs();
+        }
 
         long freeMegabytes = GB.c();
         if (freeMegabytes < 100L && freeMegabytes > 0L) {

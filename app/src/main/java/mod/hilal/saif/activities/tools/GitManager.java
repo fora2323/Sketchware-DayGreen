@@ -7,6 +7,7 @@ import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.lib.ProgressMonitor;
+import org.eclipse.jgit.transport.RefSpec;
 
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 
@@ -33,14 +34,36 @@ public class GitManager {
         return new File(FileUtils.getInternalStorageDir(), Configs.gitFolderDir + sc_id);
     }
 
-    public static void initGitRepo(String sc_id) throws Exception {
+    public static void initGitRepo(String sc_id, String branch) throws Exception {
         File gitDir = getGitDir(sc_id);
         if (!gitDir.exists()) {
             gitDir.mkdirs();
         }
         File dotGit = new File(gitDir, ".git");
         if (!dotGit.exists()) {
-            Git.init().setDirectory(gitDir).call();
+            String initialBranch = (branch == null || branch.trim().isEmpty()) ? "main" : branch.trim();
+            Git.init().setDirectory(gitDir).setInitialBranch(initialBranch).call();
+        }
+    }
+
+    public static void forcePush(Context context, String sc_id, String branch, ProgressMonitor progressMonitor) throws Exception {
+        File gitDir = getGitDir(sc_id);
+        String target = (branch == null || branch.trim().isEmpty()) ? "main" : branch.trim();
+
+        try (Git git = Git.open(gitDir)) {
+            var pushCmd = git.push().setForce(true).setRefSpecs(new RefSpec("+HEAD:refs/heads/" + target));
+
+            if (progressMonitor != null) {
+                pushCmd.setProgressMonitor(progressMonitor);
+            }
+
+            String username = GitConfiguration.getUsername(context);
+            String password = GitConfiguration.getPassword(context);
+            if (!username.isEmpty() && !password.isEmpty()) {
+                pushCmd.setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password));
+            }
+
+            pushCmd.call();
         }
     }
 

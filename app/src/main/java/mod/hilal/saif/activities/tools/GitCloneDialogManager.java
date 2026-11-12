@@ -253,7 +253,7 @@ public class GitCloneDialogManager {
 
         new Thread(() -> {
             try {
-                GitManager.initGitRepo(sc_id);
+                GitManager.initGitRepo(sc_id, branch);
                 GitManager.syncProjectToGitDir(sc_id);
                 GitManager.addRemoteOrigin(sc_id, repoUrl);
 
@@ -278,7 +278,7 @@ public class GitCloneDialogManager {
                     }
                 };
 
-                GitManager.push(activity, sc_id, monitor);
+                GitManager.forcePush(activity, sc_id, branch, monitor);
 
                 activity.runOnUiThread(() -> {
                     progressDialog.dismiss();

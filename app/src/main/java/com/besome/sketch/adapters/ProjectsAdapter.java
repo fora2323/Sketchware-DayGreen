@@ -286,7 +286,12 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
         });
 
         binding.projectGit.setOnClickListener(v -> {
-            mod.hilal.saif.activities.tools.GitCloneDialogManager.showInitGitDialog(activity, yB.c(projectMap, "sc_id"));
+            String scId = yB.c(projectMap, "sc_id");
+            if (mod.hilal.saif.activities.tools.GitManager.hasGitRepo(scId)) {
+                projectsFragment.toDesignActivity(scId);
+            } else {
+                mod.hilal.saif.activities.tools.GitCloneDialogManager.showInitGitDialog(activity, scId);
+            }
             projectOptionsBSD.dismiss();
         });
 
