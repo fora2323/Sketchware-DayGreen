@@ -8,7 +8,8 @@ api_hash = os.environ["API_HASH"]
 session_string = os.environ["SESSION_STRING"]
 
 chat_id = int(os.environ["TELEGRAM_CHAT_ID"])
-topic_id2 = int(os.environ["TELEGRAM_THREAD_ID2"])
+_topic = os.environ.get("TELEGRAM_THREAD_ID2", "").strip()
+topic_id2 = int(_topic) if _topic else None   # None = group biasa, tanpa topik
 
 version = os.environ["VERSION"]
 author = os.environ.get("COMMIT_AUTHOR", "Unknown")
@@ -65,7 +66,8 @@ sent = False
 for attempt in range(1, MAX_TRIES + 1):
     try:
         with make_client() as app:
-            print(f"[{attempt}/{MAX_TRIES}] Mengirim APK debug android33 ke topic {topic_id2}: {apk_v33}")
+            tujuan = f"topik {topic_id2}" if topic_id2 else "group"
+            print(f"[{attempt}/{MAX_TRIES}] Mengirim APK debug android33 ke {tujuan}: {apk_v33}")
             app.send_document(
                 chat_id=chat_id,
                 document=apk_v33,
@@ -96,7 +98,7 @@ if not sent:
     print("Gagal mengirim APK setelah semua percobaan.")
     exit(1)
 
-print("APK debug android33 berhasil diunggah ke topik Telegram!")
+print("APK debug android33 berhasil diunggah!")
 
 # Hapus pesan log live setelah APK terkirim
 if log_msg_id:

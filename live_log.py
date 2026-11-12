@@ -6,7 +6,8 @@ app = Client("userbot_session", api_id=int(os.environ["API_ID"]),
              session_string=os.environ["SESSION_STRING"], in_memory=True)
 
 chat_id   = int(os.environ["TELEGRAM_CHAT_ID"])
-thread    = int(os.environ["LOG_THREAD_ID"])
+_thread   = os.environ.get("LOG_THREAD_ID", "").strip()
+thread    = int(_thread) if _thread else None   # None = group biasa, tanpa topik
 title     = os.environ.get("LOG_TITLE", "Build")
 cmd       = sys.argv[1:]
 LOG       = "build.log"

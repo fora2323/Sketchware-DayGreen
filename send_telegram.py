@@ -1,79 +1,103 @@
 import os
 import glob
+import time
+import html
+from urllib.parse import quote
 from pyrogram import Client
+from pyrogram.enums import ParseMode
+from pyrogram.types import InputMediaDocument
 
 api_id = int(os.environ["API_ID"])
 api_hash = os.environ["API_HASH"]
 session_string = os.environ["SESSION_STRING"]
 
 chat_id = int(os.environ["TELEGRAM_CHAT_ID"])
-topic_id = int(os.environ["TELEGRAM_THREAD_ID"])
+_topic = os.environ.get("TELEGRAM_THREAD_ID", "").strip()
+topic_id = int(_topic) if _topic else None
 
 version = os.environ["VERSION"]
-repo = os.environ.get("REPO", "")
-author = os.environ.get("COMMIT_AUTHOR", "Unknown")
-commit_msg = os.environ.get("COMMIT_MESSAGE", "-").strip()
-full_sha = os.environ.get("COMMIT_SHA", "")
+tag = os.environ["TAG"]
+app_name = os.environ.get("APP_NAME", "Sketchware DayGreen")
+package = os.environ.get("APP_PACKAGE", "-")
+repo = os.environ["REPO"]
+notes_path = os.environ.get("NOTES_FILE", "notes.md")
 
-short_sha = f"#{full_sha[:7]}" if full_sha else "#unknown"
-release_url = f"https://github.com/{repo}/releases/tag/{version}"
+notes = ""
+if os.path.exists(notes_path):
+    notes = open(notes_path, encoding="utf-8").read().strip()
 
-all_apks = glob.glob("app/build/outputs/apk/**/release/*.apk", recursive=True)
+def find_apk(flavor):
+    files = sorted(glob.glob(f"app/build/outputs/apk/{flavor}/release/*.apk"))
+    return files[0] if files else None
 
-apk_v33 = None
-apk_v26 = None
+apk26 = find_apk("android26")
+apk33 = find_apk("android33")
 
-for apk in all_apks:
-    file_name = os.path.basename(apk)
-    if "33" in file_name:
-        apk_v33 = apk
-    elif "26" in file_name:
-        apk_v26 = apk
+if not apk26 or not apk33:
+    print("APK android26 atau android33 tidak ditemukan.")
+    exit(1)
 
-caption_main = (
-    f"🚀 **New Release APK ({version})**\n\n"
-    f"**Commit by:** {author}\n"
-    f"**Commit message:** {commit_msg}\n"
-    f"**Commit hash:** {short_sha}\n\n"
-    f"🔗 **Release Link:**\n{release_url}"
-)
+def download_url(path):
+    name = quote(os.path.basename(path))
+    return f"https://github.com/{repo}/releases/download/{quote(tag, safe='')}/{name}"
 
-app = Client(
-    "userbot_session",
-    api_id=api_id,
-    api_hash=api_hash,
-    session_string=session_string,
-    in_memory=True
-)
+def build_caption(body):
+    head = (
+        f"📢 <b>New update available for {html.escape(app_name)}</b>\n\n"
+        f"• <b>App name:</b> {html.escape(app_name)}\n"
+        f"• <b>Package:</b> <code>{html.escape(package)}</code>\n"
+        f"• <b>Version:</b> <code>{html.escape(version)}</code>\n"
+        f"• <b>Minimum SDK:</b> 26 / 33\n\n"
+        f"• <b>Download (SDK 26):</b> <a href=\"{download_url(apk26)}\">{html.escape(os.path.basename(apk26))}</a>\n"
+        f"• <b>Download (SDK 33):</b> <a href=\"{download_url(apk33)}\">{html.escape(os.path.basename(apk33))}</a>\n"
+        f"• <b>Repository:</b> <a href=\"https://github.com/{repo}\">{html.escape(repo)}</a>\n\n"
+        f"• <b>What's new?</b>\n<blockquote>"
+    )
+    tail = "</blockquote>"
+    limit = 1024
+    room = limit - len(head) - len(tail)
+    escaped = html.escape(body)
+    if len(escaped) > room:
+        escaped = escaped[:max(0, room - 3)] + "..."
+    return head + escaped + tail
 
-with app:
-    if apk_v33:
-        print(f"Mengirim APK v33: {apk_v33}")
-        app.send_document(
-            chat_id=chat_id,
-            document=apk_v33,
-            caption=f"📱 **Build APK (API 33)**\n\n{caption_main}",
-            message_thread_id=topic_id
-        )
+caption = build_caption(notes)
 
-    if apk_v26:
-        print(f"Mengirim APK v26: {apk_v26}")
-        app.send_document(
-            chat_id=chat_id,
-            document=apk_v26,
-            caption=f"📱 **Build APK (API 26)**\n\n{caption_main}",
-            message_thread_id=topic_id
-        )
+def make_client():
+    return Client(
+        "userbot_session",
+        api_id=api_id,
+        api_hash=api_hash,
+        session_string=session_string,
+        in_memory=True,
+        max_concurrent_transmissions=1,
+    )
 
-    if not apk_v33 and not apk_v26:
-        for index, apk in enumerate(all_apks):
-            print(f"Mengirim APK: {apk}")
-            cap = f"📱 **Build APK**\n\n{caption_main}" if index == 0 else "📱 **Build APK**"
-            app.send_document(
+MAX_TRIES = 5
+sent = False
+for attempt in range(1, MAX_TRIES + 1):
+    try:
+        with make_client() as app:
+            tujuan = f"topik {topic_id}" if topic_id else "group"
+            print(f"[{attempt}/{MAX_TRIES}] Mengirim APK SDK 26 & 33 ke {tujuan}")
+            app.send_media_group(
                 chat_id=chat_id,
-                document=apk,
-                caption=cap,
-                message_thread_id=topic_id
+                media=[
+                    InputMediaDocument(apk26, caption=caption, parse_mode=ParseMode.HTML),
+                    InputMediaDocument(apk33),
+                ],
+                message_thread_id=topic_id,
             )
+        sent = True
+        break
+    except BaseException as e:
+        if isinstance(e, KeyboardInterrupt):
+            raise
+        print(f"Percobaan {attempt} gagal: {type(e).__name__}: {e}")
+        time.sleep(10 * attempt)
 
-print("Semua file APK berhasil diunggah ke topik Telegram!")
+if not sent:
+    print("Gagal mengirim APK setelah semua percobaan.")
+    exit(1)
+
+print("Rilis berhasil dikirim ke Telegram!")

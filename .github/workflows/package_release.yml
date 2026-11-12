@@ -1,9 +1,14 @@
 name: Android Release
 
 on:
-  push:
-    branches: [ "main", "master" ]
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version name (harus sama dengan versionName di app/build.gradle)'
+        required: true
+      message:
+        description: 'What is new (pakai \n untuk baris baru)'
+        required: true
 
 permissions:
   contents: write
@@ -18,19 +23,28 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read version from build.gradle (.kts)
+      - name: Read and validate version
         id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           FILE="app/build.gradle"
           [ -f "app/build.gradle.kts" ] && FILE="app/build.gradle.kts"
-          VERSION=$(grep -m1 'versionCode' "$FILE" | grep -oE '[0-9]+')
-          
-          if [ -z "$VERSION" ]; then
-            echo "Error: versionCode tidak ditemukan!"
+          VERSION_NAME=$(grep -m1 'versionName' "$FILE" | sed -E 's/.*versionName[[:space:]=]*"([^"]+)".*/\1/')
+          PACKAGE=$(grep -m1 'applicationId' "$FILE" | sed -E 's/.*applicationId[[:space:]=]*"([^"]+)".*/\1/')
+
+          if [ -z "$VERSION_NAME" ]; then
+            echo "Error: versionName tidak ditemukan!"
             exit 1
           fi
-          
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          if [ "$VERSION_NAME" != "$INPUT_VERSION" ]; then
+            echo "Error: versionName di gradle ($VERSION_NAME) beda dengan input ($INPUT_VERSION)"
+            exit 1
+          fi
+
+          echo "version=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
 
       - name: Check if tag already exists
         id: check_tag
@@ -38,17 +52,16 @@ jobs:
           TAG="v${{ steps.version.outputs.version }}"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Tag $TAG sudah ada di repository. Menghentikan workflow agar tidak duplicate."
+            echo "Tag $TAG sudah ada. Workflow dihentikan agar tidak duplicate."
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Get commit message
-        id: commit
-        run: |
-          echo "message<<EOF" >> $GITHUB_OUTPUT
-          git log -1 --pretty=%B >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+      - name: Write release notes
+        if: steps.check_tag.outputs.exists == 'false'
+        env:
+          INPUT_MESSAGE: ${{ inputs.message }}
+        run: printf '%b\n' "$INPUT_MESSAGE" > notes.md
 
       - name: Create and push tag
         if: steps.check_tag.outputs.exists == 'false'
@@ -78,9 +91,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          body: ${{ steps.commit.outputs.message }}
+          body_path: notes.md
           files: |
-            app/build/outputs/apk/**/release/*.apk
+            app/build/outputs/apk/android26/release/*.apk
+            app/build/outputs/apk/android33/release/*.apk
 
       - name: Set up Python
         if: steps.check_tag.outputs.exists == 'false'
@@ -100,9 +114,10 @@ jobs:
           SESSION_STRING: ${{ secrets.SESSION_STRING }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
-          VERSION: "v${{ steps.version.outputs.version }}"
-          REPO: "${{ github.repository }}"
-          COMMIT_AUTHOR: ${{ github.actor }}
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-          COMMIT_SHA: ${{ github.sha }}
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: v${{ steps.version.outputs.version }}
+          APP_NAME: Sketchware DayGreen
+          APP_PACKAGE: ${{ steps.version.outputs.package }}
+          REPO: ${{ github.repository }}
+          NOTES_FILE: notes.md
         run: python send_telegram.py
