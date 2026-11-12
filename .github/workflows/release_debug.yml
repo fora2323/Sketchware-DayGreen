@@ -4,10 +4,10 @@ on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
-      
-  concurrency:
-    group: telegram-userbot
-    cancel-in-progress: false
+
+concurrency:
+  group: telegram-userbot
+  cancel-in-progress: false
 
 jobs:
   build:
