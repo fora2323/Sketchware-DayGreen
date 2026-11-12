@@ -180,6 +180,121 @@ public class GitCloneDialogManager {
         }).start();
     }
 
+    public static void showInitGitDialog(Activity activity, String sc_id) {
+        String username = GitConfiguration.getUsername(activity);
+        String password = GitConfiguration.getPassword(activity);
+        String name = GitConfiguration.getUserName(activity);
+        String email = GitConfiguration.getUserEmail(activity);
+
+        if (username.isEmpty() || password.isEmpty() || name.isEmpty() || email.isEmpty()) {
+            new MaterialAlertDialogBuilder(activity)
+                    .setTitle("Git Configuration Missing")
+                    .setMessage("Please enter your GitHub Username, Personal Access Token (PAT), User Name, and User Email in Git Settings before initializing a Git repository.")
+                    .setPositiveButton("Open Git Settings", (d, w) -> {
+                        android.content.Intent intent = new android.content.Intent(activity, GitSettingsActivity.class);
+                        activity.startActivity(intent);
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            return;
+        }
+
+        DialogGitCloneBinding binding = DialogGitCloneBinding.inflate(activity.getLayoutInflater());
+        binding.tvDialogTitle.setText("Initialize Git Repository");
+        binding.btnOk.setText("Init & Push");
+
+        AlertDialog inputDialog = new MaterialAlertDialogBuilder(activity)
+                .setView(binding.getRoot())
+                .setCancelable(true)
+                .create();
+
+        binding.btnCancel.setOnClickListener(v -> inputDialog.dismiss());
+
+        binding.btnOk.setOnClickListener(v -> {
+            String repoUrl = Objects.requireNonNull(binding.etRepoUrl.getText()).toString().trim();
+            String branch = Objects.requireNonNull(binding.etBranch.getText()).toString().trim();
+
+            if (repoUrl.isEmpty()) {
+                SketchwareUtil.toast("Please enter a repository URL");
+                return;
+            }
+
+            if (branch.isEmpty()) {
+                branch = "main";
+            }
+
+            inputDialog.dismiss();
+            startInitAndPush(activity, sc_id, repoUrl, branch);
+        });
+
+        inputDialog.show();
+        setupDialogWindow(activity, inputDialog);
+    }
+
+    private static void startInitAndPush(Activity activity, String sc_id, String repoUrl, String branch) {
+        DialogGitProgressBinding progressBinding = DialogGitProgressBinding.inflate(activity.getLayoutInflater());
+        progressBinding.tvProgressTitle.setText("Publishing to GitHub...");
+        progressBinding.tvProgressStatus.setText("Initializing local git repository...");
+
+        AlertDialog progressDialog = new MaterialAlertDialogBuilder(activity)
+                .setView(progressBinding.getRoot())
+                .setCancelable(false)
+                .create();
+
+        final boolean[] isCancelled = {false};
+
+        progressBinding.btnCancelProgress.setOnClickListener(v -> {
+            isCancelled[0] = true;
+            progressBinding.tvProgressStatus.setText("Cancelling...");
+        });
+
+        progressDialog.show();
+        setupDialogWindow(activity, progressDialog);
+
+        new Thread(() -> {
+            try {
+                GitManager.initGitRepo(sc_id);
+                GitManager.syncProjectToGitDir(sc_id);
+                GitManager.addRemoteOrigin(sc_id, repoUrl);
+
+                activity.runOnUiThread(() -> progressBinding.tvProgressStatus.setText("Creating initial commit..."));
+                GitManager.commit(activity, sc_id, "Initial commit");
+
+                activity.runOnUiThread(() -> progressBinding.tvProgressStatus.setText("Pushing to GitHub..."));
+                ProgressMonitor monitor = new ProgressMonitor() {
+                    @Override
+                    public void start(int totalTasks) {}
+                    @Override
+                    public void beginTask(String title, int totalWork) {
+                        activity.runOnUiThread(() -> progressBinding.tvProgressStatus.setText(title));
+                    }
+                    @Override
+                    public void update(int completed) {}
+                    @Override
+                    public void endTask() {}
+                    @Override
+                    public boolean isCancelled() {
+                        return isCancelled[0];
+                    }
+                };
+
+                GitManager.push(activity, sc_id, monitor);
+
+                activity.runOnUiThread(() -> {
+                    progressDialog.dismiss();
+                    SketchwareUtil.toast("Successfully published project to GitHub!");
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "Init & push failed: ", e);
+                activity.runOnUiThread(() -> {
+                    progressDialog.dismiss();
+                    SketchwareUtil.toastError("Failed: " + e.getMessage());
+                });
+            }
+        }).start();
+    }
+
     private static void setupDialogWindow(Activity activity, AlertDialog dialog) {
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));

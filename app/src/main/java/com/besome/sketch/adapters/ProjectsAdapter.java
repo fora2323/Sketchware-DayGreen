@@ -285,6 +285,11 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
             projectOptionsBSD.dismiss();
         });
 
+        binding.projectGit.setOnClickListener(v -> {
+            mod.hilal.saif.activities.tools.GitCloneDialogManager.showInitGitDialog(activity, yB.c(projectMap, "sc_id"));
+            projectOptionsBSD.dismiss();
+        });
+
         binding.projectBackup.setOnClickListener(v -> {
             DRSettings.getUseBackupTool(activity, isUse -> {
                 if (isUse) {

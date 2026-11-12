@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Cloning repository..."
-        android:textColor="#FFFFFF"
+        android:textColor="?attr/colorOnSurface"
         android:textSize="22sp"
         android:textStyle="bold" />
 
@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="Initializing..."
-        android:textColor="#B0B0B0"
+        android:textColor="?attr/colorOnSurfaceVariant"
         android:textSize="14sp" />
 
     <RelativeLayout
@@ -38,8 +38,8 @@
             android:layout_marginEnd="12dp"
             android:layout_toStartOf="@id/progress_dot"
             android:indeterminate="true"
-            app:indicatorColor="#FF8A00"
-            app:trackColor="#3D3D3D"
+            app:indicatorColor="?attr/colorPrimary"
+            app:trackColor="?attr/colorSurfaceContainerHighest"
             app:trackCornerRadius="4dp" />
 
         <View
@@ -64,7 +64,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Cancel"
-            android:textColor="#FF8A00"
+            android:textColor="?attr/colorPrimary"
             android:textSize="15sp" />
     </LinearLayout>
 </LinearLayout>

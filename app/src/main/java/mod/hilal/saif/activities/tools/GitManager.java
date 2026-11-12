@@ -253,4 +253,14 @@ public class GitManager {
             Log.i(TAG, "Cloned successfully to " + targetDir.getAbsolutePath());
         }
     }
+
+    public static void addRemoteOrigin(String sc_id, String repoUrl) throws Exception {
+        File gitDir = getGitDir(sc_id);
+        try (Git git = Git.open(gitDir)) {
+            try {
+                git.remoteRemove().setRemoteName("origin").call();
+            } catch (Exception ignored) {}
+            git.remoteAdd().setName("origin").setUri(new org.eclipse.jgit.transport.URIish(repoUrl)).call();
+        }
+    }
 }
