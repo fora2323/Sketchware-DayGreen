@@ -278,11 +278,14 @@ object DownloadUtility {
                 // Determine final target directory
                 val isNdk = name.contains("ndk")
                 val isCmake = name.contains("cmake")
-                val targetName = if (isCmake) "cmake" else if (isNdk) "ndk" else null
+                val isSdkTools = name.contains("sdk-tools") || name.contains("tools.zip")
+                val targetDir = if (isCmake) File(parentPath, "cmake")
+                                else if (isNdk) File(parentPath, "ndk")
+                                else if (isSdkTools) parentPath
+                                else null
 
-                if (targetName != null) {
-                    val targetDir = File(parentPath, targetName)
-                    if (targetDir.exists()) targetDir.deleteRecursively()
+                if (targetDir != null) {
+                    if (targetDir.exists() && !isSdkTools) targetDir.deleteRecursively()
                     targetDir.mkdirs()
 
                     normalizeExtractedDirectory(tempExtractDir, targetDir)

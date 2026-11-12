@@ -10,8 +10,26 @@ object FileCheckUtils {
     private const val TAG = "FileCheckUtils"
 
     @JvmStatic
+    fun getLatestSdkToolsDir(): File? {
+        val context = pro.sketchware.SketchApplication.getContext()
+        val binDir = File(context.filesDir, "bin")
+        if (!binDir.exists() || !binDir.isDirectory) return null
+        
+        val versions = binDir.listFiles { file -> file.isDirectory && file.name.matches(Regex("\\d+\\.\\d+\\.\\d+")) }
+        if (versions == null || versions.isEmpty()) return null
+        
+        return versions.maxByOrNull { 
+            val parts = it.name.split(".")
+            (parts.getOrElse(0) { "0" }.toLong() * 1000000) + 
+            (parts.getOrElse(1) { "0" }.toLong() * 1000) + 
+            parts.getOrElse(2) { "0" }.toLong()
+        }
+    }
+
+    @JvmStatic
     fun isAaptDownloaded(context: Context): Boolean {
-        val aapt2Binary = File(context.filesDir, "bin/aapt2")
+        val sdkToolsDir = getLatestSdkToolsDir()
+        val aapt2Binary = File(sdkToolsDir ?: File(context.filesDir, "bin"), "aapt2")
         return aapt2Binary.exists() && aapt2Binary.length() > 0
     }
 

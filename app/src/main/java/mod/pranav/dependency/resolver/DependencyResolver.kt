@@ -1,10 +1,7 @@
 package mod.pranav.dependency.resolver
 
 import android.os.Environment
-import com.android.tools.r8.CompilationMode
-import com.android.tools.r8.D8
-import com.android.tools.r8.D8Command
-import com.android.tools.r8.OutputMode
+
 import com.google.gson.Gson
 import kotlinx.coroutines.runBlocking
 import mod.hey.studios.build.BuildSettings
@@ -19,6 +16,10 @@ import org.cosmic.ide.dependency.resolver.repositories
 import org.sketchware.daygreen.FileCheckUtils
 import pro.sketchware.SketchApplication
 import pro.sketchware.utility.FileUtil
+import com.android.tools.r8.CompilationMode
+import com.android.tools.r8.D8
+import com.android.tools.r8.D8Command
+import com.android.tools.r8.OutputMode
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -293,7 +294,7 @@ class DependencyResolver(
             .setIntermediate(true)
             .setMode(CompilationMode.RELEASE)
             .addProgramFiles(jarFile)
-            .setMinApiLevel(minAPILevel)
+            .setMinApiLevel(26)
             .setOutput(jarFile.parent, OutputMode.DexIndexed)
 
         if (validLibraryJars.isNotEmpty()) {

@@ -166,7 +166,6 @@ dependencies {
     }
     android26Implementation "com.android.tools:r8:8.11.18"
     android33Implementation "com.android.tools:r8:8.13.17"
-    implementation "com.github.Iyxan23:zipalign-java:1.2.2"
 
     implementation "com.google.code.gson:gson:2.14.0"
     implementation "com.madgag:scpkix-jdk15on:1.47.0.3"

@@ -23,8 +23,7 @@ import com.android.sdklib.build.DuplicateFileException;
 import com.android.sdklib.build.SealedApkException;
 import com.github.megatronking.stringfog.plugin.StringFogClassInjector;
 import com.github.megatronking.stringfog.plugin.StringFogMappingPrinter;
-import com.iyxan23.zipalignjava.InvalidZipException;
-import com.iyxan23.zipalignjava.ZipAlign;
+
 
 import org.xml.sax.SAXException;
 
@@ -149,7 +148,12 @@ public class ProjectBuilder {
             LogUtil.e(TAG, "Somehow failed to get package info about us!", e);
         }
 
-        aapt2Binary = new File(context.getFilesDir(), "bin/aapt2");
+        File sdkToolsDir = org.sketchware.daygreen.FileCheckUtils.getLatestSdkToolsDir();
+        if (sdkToolsDir != null) {
+            aapt2Binary = new File(sdkToolsDir, "aapt2");
+        } else {
+            aapt2Binary = new File(context.getFilesDir(), "bin/aapt2");
+        }
         build_settings = new BuildSettings(yqVar.sc_id);
         this.context = context;
         yq = yqVar;
@@ -600,7 +604,8 @@ public class ProjectBuilder {
         collectAidlFiles(aidlRoot, aidlFiles);
         if (aidlFiles.isEmpty()) return;
 
-        File aidlBinary = new File(context.getFilesDir(), "bin/aidl");
+        File sdkToolsDir = org.sketchware.daygreen.FileCheckUtils.getLatestSdkToolsDir();
+        File aidlBinary = new File(sdkToolsDir != null ? sdkToolsDir : new File(context.getFilesDir(), "bin"), "aidl");
         if (!aidlBinary.exists()) {
             throw new IOException("AIDL binary not found.\nPlease go to 'Build Tools' and download it first.");
         }
@@ -1344,13 +1349,48 @@ public class ProjectBuilder {
         LogUtil.d(TAG, "About to zipalign " + inPath + " to " + outPath);
         long savedTimeMillis = System.currentTimeMillis();
 
-        try (RandomAccessFile in = new RandomAccessFile(inPath, "r");
-             FileOutputStream out = new FileOutputStream(outPath)) {
-            ZipAlign.alignZip(in, out);
-        } catch (IOException e) {
+        File sdkToolsDir = org.sketchware.daygreen.FileCheckUtils.getLatestSdkToolsDir();
+        File zipalignBinary = new File(sdkToolsDir != null ? sdkToolsDir : new File(context.getFilesDir(), "bin"), "zipalign");
+        
+        if (!zipalignBinary.exists()) {
+            throw new By("Zipalign binary not found at " + zipalignBinary.getAbsolutePath());
+        }
+
+        try {
+            android.system.Os.chmod(zipalignBinary.getAbsolutePath(), android.system.OsConstants.S_IRUSR | android.system.OsConstants.S_IWUSR | android.system.OsConstants.S_IXUSR);
+        } catch (Exception e) {
+            LogUtil.e(TAG, "Failed to chmod zipalign", e);
+        }
+
+        ArrayList<String> commands = new ArrayList<>();
+        commands.add(zipalignBinary.getAbsolutePath());
+        commands.add("-f");
+        commands.add("-p");
+        commands.add("4");
+        commands.add(inPath);
+        commands.add(outPath);
+
+        try {
+            Process process = new ProcessBuilder(commands).start();
+            
+            // Read output
+            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                LogUtil.d("Zipalign", line);
+            }
+            
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                java.io.BufferedReader errorReader = new java.io.BufferedReader(new java.io.InputStreamReader(process.getErrorStream()));
+                StringBuilder errorMsg = new StringBuilder();
+                while ((line = errorReader.readLine()) != null) {
+                    errorMsg.append(line).append("\n");
+                }
+                throw new By("Zipalign failed with exit code " + exitCode + ": " + errorMsg.toString());
+            }
+        } catch (Exception e) {
             throw new By("Couldn't run zipalign on " + inPath + " with output path " + outPath + ": " + Log.getStackTraceString(e));
-        } catch (InvalidZipException e) {
-            throw new By("Failed to zipalign due to the given zip being invalid: " + Log.getStackTraceString(e));
         }
 
         LogUtil.d(TAG, "zipalign took " + (System.currentTimeMillis() - savedTimeMillis) + " ms");
