@@ -356,6 +356,11 @@
             android:configChanges="orientation|screenSize" />
 
         <activity
+            android:name="mod.hilal.saif.activities.tools.GitSettingsActivity"
+            android:configChanges="orientation|screenSize"
+            android:label="Git" />
+
+        <activity
             android:name="mod.hilal.saif.activities.tools.BuildToolsActivity"
             android:configChanges="orientation|screenSize"
             android:label="Build Tools"

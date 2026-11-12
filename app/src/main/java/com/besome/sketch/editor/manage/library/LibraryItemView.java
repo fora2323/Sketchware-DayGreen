@@ -16,6 +16,7 @@ import pro.sketchware.utility.ThemeUtils;
 
 public class LibraryItemView extends FrameLayout {
     public final ViewGroup container;
+    public final View iconContainer;
     public final ImageView icon;
     public final TextView title;
     public final TextView description;
@@ -30,6 +31,7 @@ public class LibraryItemView extends FrameLayout {
 
         wB.a(context, this, R.layout.manage_library_base_item);
         container = findViewById(R.id.container);
+        iconContainer = findViewById(R.id.icon_container);
         icon = findViewById(R.id.lib_icon);
         title = findViewById(R.id.lib_title);
         description = findViewById(R.id.lib_desc);
@@ -56,6 +58,12 @@ public class LibraryItemView extends FrameLayout {
 
     public void setHideEnabled() {
         enabled.setVisibility(View.GONE);
+    }
+
+    public void setHideIcon(boolean hide) {
+        if (iconContainer != null) {
+            iconContainer.setVisibility(hide ? View.GONE : View.VISIBLE);
+        }
     }
 
     public void showDivider(boolean showDivider) {
