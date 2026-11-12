@@ -174,6 +174,57 @@
 
 
             <!-- ========================= -->
+            <!-- CLONE FAB                  -->
+            <!-- ========================= -->
+
+            <LinearLayout
+                android:id="@+id/layout_fab_clone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_fab_clone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="2dp"
+                    app:strokeWidth="0dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="14dp"
+                        android:paddingTop="8dp"
+                        android:paddingEnd="14dp"
+                        android:paddingBottom="8dp"
+                        android:text="Clone"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="16sp" />
+
+                </com.google.android.material.card.MaterialCardView>
+
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/fab_clone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:srcCompat="@drawable/ic_mtrl_version_control"
+                    tools:ignore="ContentDescription" />
+
+            </LinearLayout>
+
+
+            <!-- ========================= -->
             <!-- RESTORE FAB                -->
             <!-- ========================= -->
 

@@ -1080,7 +1080,10 @@ public class yq {
 
         if (material3LibraryManager.isMaterial3Enabled()) {
             XmlBuilderHelper stylesFileBuilder = new XmlBuilderHelper();
-            stylesFileBuilder.addStyle("AppTheme", String.format("Theme.Material3.%s.NoActionBar", material3LibraryManager.getTheme()));
+            String baseTheme = (DayDreamProjectSettings.getTheme(sc_id) == Configs.material3ExpressiveTheme)
+                    ? "Theme.Material3Expressive"
+                    : "Theme.Material3";
+            stylesFileBuilder.addStyle("AppTheme", String.format("%s.%s.NoActionBar", baseTheme, material3LibraryManager.getTheme()));
             stylesFileBuilder.addItemToStyle("AppTheme", "android:statusBarColor", "@android:color/transparent");
             stylesFileBuilder.addItemToStyle("AppTheme", "android:navigationBarColor", "@android:color/transparent");
             stylesFileBuilder.addItemToStyle("AppTheme", "android:windowLightStatusBar", "?attr/isLightTheme");

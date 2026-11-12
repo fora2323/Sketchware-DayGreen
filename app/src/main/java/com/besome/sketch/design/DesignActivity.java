@@ -111,6 +111,7 @@ import mod.agus.jcoderz.editor.manage.resource.ManageResourceFragment;
 import mod.hey.studios.activity.managers.assets.ManageAssetsActivity;
 import mod.hey.studios.activity.managers.java.ManageJavaCreateDialog;
 import mod.hey.studios.activity.managers.java.ManageJavaFragment;
+import mod.hey.studios.activity.managers.git.ManageGitFragment;
 import mod.hey.studios.code.SrcCodeEditor;
 import mod.hey.studios.compiler.kotlin.KotlinCompilerBridge;
 import mod.hey.studios.project.custom_blocks.CustomBlocksDialog;
@@ -305,6 +306,10 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 continue;
             }
             newActiveTabs.add(tab);
+        }
+
+        if (mod.hilal.saif.activities.tools.GitManager.hasGitRepo(sc_id)) {
+            newActiveTabs.add("git");
         }
 
         if (this.activeTabs == null || !newActiveTabs.equals(this.activeTabs)) {
@@ -1919,6 +1924,8 @@ private String fixPackage(String code, String pkg) {
                     return Helper.getResString(R.string.design_tab_title_java);
                 case "resource":
                     return Helper.getResString(R.string.design_tab_title_resource);
+                case "git":
+                    return "Git";
                 default:
                     return "";
             }
@@ -1965,6 +1972,8 @@ private String fixPackage(String code, String pkg) {
                     return ManageJavaFragment.newInstance(sc_id, pkgName);
                 case "resource":
                     return ManageResourceFragment.newInstance(sc_id);
+                case "git":
+                    return ManageGitFragment.newInstance(sc_id);
                 default:
                     return new Fragment();
             }

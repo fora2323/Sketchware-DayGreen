@@ -62,19 +62,19 @@ class BuildToolsActivity : BaseAppCompatActivity() {
         sdkCategory.setTitle("Sdk Manager")
         content.addView(sdkCategory)
 
-        sdkCategory.addLibraryItem(createPreference(
-            "37.0.0",
-            "sdk manager version 37.0.0",
-            isSdkToolsDownloaded("37.0.0"),
-            "android-sdk-tools-v37.0.0"
-        ), true)
-
-        sdkCategory.addLibraryItem(createPreference(
-            "36.0.0",
-            "sdk manager version 36.0.0",
-            isSdkToolsDownloaded("36.0.0"),
-            "android-sdk-tools-v36.0.0"
-        ), false)
+        val sdkVersions = listOf("37.0.0", "36.0.0", "35.0.0", "34.0.0", "33.0.0")
+        sdkVersions.forEachIndexed { index, version ->
+            val isLast = index == sdkVersions.lastIndex
+            sdkCategory.addLibraryItem(
+                createPreference(
+                    version,
+                    "sdk manager version $version",
+                    isSdkToolsDownloaded(version),
+                    "android-sdk-tools-v$version"
+                ),
+                !isLast
+            )
+        }
 
         // Ndk Manager
         val ndkCategory = LibraryCategoryView(this)

@@ -10,7 +10,7 @@ import androidx.activity.EdgeToEdge;
 import java.util.Objects;
 
 import extensions.anbui.daydream.activity.project.DayDreamBackupTool;
-import extensions.anbui.daydream.library.LibraryUtils;
+
 import extensions.anbui.daydream.project.DRProjectTracker;
 import extensions.anbui.daydream.settings.DayDreamProjectSettings;
 import pro.sketchware.databinding.ActivityDaydreamGeneralSettingsBinding;
@@ -66,23 +66,13 @@ public class DayDreamGeneralSettings extends AppCompatActivity {
         binding.lnLayoutperformance.setOnClickListener(v -> goToSettings(PerformanceSettingsActivity.class));
         binding.lnLayoutsettings.setOnClickListener(v -> goToSettings(LayoutSettings.class));
 
-        if (LibraryUtils.isAllowUseTheme(projectID)) {
-            binding.lnThemesettings.setOnClickListener(v -> goToSettings(ThemeSettings.class));
-        } else {
-            binding.tvThemenote.setText("To use, enable AppCompat. " + binding.tvThemenote.getText().toString());
-            binding.lnThemesettings.setAlpha(0.5f);
-            binding.lnThemesettings.setEnabled(false);
-        }
+        binding.lnThemesettings.setVisibility(android.view.View.GONE);
 
         universalUIController(binding.swEnabled.isChecked());
     }
 
     private void universalUIController(boolean isEnable) {
         binding.lnAllOptions.setAlpha(isEnable ? 1 : 0.5f);
-
-        if (LibraryUtils.isAllowUseTheme(projectID)) {
-            binding.lnThemesettings.setEnabled(isEnable);
-        }
         binding.lnUisettings.setEnabled(isEnable);
         binding.lnLibrarysettings.setEnabled(isEnable);
         binding.lnGooglesettings.setEnabled(isEnable);

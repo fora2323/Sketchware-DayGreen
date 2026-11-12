@@ -450,6 +450,17 @@ binding.drawerToggleBtn.setBackground(drawerCircle);
         };
         binding.fabRestore.setOnClickListener(restoreClick);
         binding.cardFabRestore.setOnClickListener(restoreClick);
+
+        View.OnClickListener cloneClick = v -> {
+            closeFabMenu();
+            mod.hilal.saif.activities.tools.GitCloneDialogManager.showCloneDialog(MainActivity.this, () -> {
+                if (projectsFragment != null) {
+                    projectsFragment.refreshProjectsList();
+                }
+            });
+        };
+        binding.fabClone.setOnClickListener(cloneClick);
+        binding.cardFabClone.setOnClickListener(cloneClick);
     }
 
     private void openFabMenu() {
@@ -459,6 +470,7 @@ binding.drawerToggleBtn.setBackground(drawerCircle);
 
         binding.layoutFabCreate.setVisibility(View.VISIBLE);
         binding.layoutFabRestore.setVisibility(View.VISIBLE);
+        binding.layoutFabClone.setVisibility(View.VISIBLE);
 
         binding.layoutFabCreate.setAlpha(0f);
         binding.layoutFabCreate.setTranslationY(20f);
@@ -466,8 +478,12 @@ binding.drawerToggleBtn.setBackground(drawerCircle);
         binding.layoutFabRestore.setAlpha(0f);
         binding.layoutFabRestore.setTranslationY(20f);
 
+        binding.layoutFabClone.setAlpha(0f);
+        binding.layoutFabClone.setTranslationY(20f);
+
         binding.layoutFabCreate.animate().alpha(1f).translationY(0f).setDuration(180).start();
-        binding.layoutFabRestore.animate().alpha(1f).translationY(0f).setStartDelay(50).setDuration(180).start();
+        binding.layoutFabRestore.animate().alpha(1f).translationY(0f).setStartDelay(40).setDuration(180).start();
+        binding.layoutFabClone.animate().alpha(1f).translationY(0f).setStartDelay(80).setDuration(180).start();
 
         binding.fabOverlay.setVisibility(View.VISIBLE);
         binding.fabOverlay.setAlpha(0f);
@@ -483,6 +499,8 @@ binding.drawerToggleBtn.setBackground(drawerCircle);
                 .withEndAction(() -> binding.layoutFabCreate.setVisibility(View.GONE)).start();
         binding.layoutFabRestore.animate().alpha(0f).translationY(20f).setDuration(150)
                 .withEndAction(() -> binding.layoutFabRestore.setVisibility(View.GONE)).start();
+        binding.layoutFabClone.animate().alpha(0f).translationY(20f).setDuration(150)
+                .withEndAction(() -> binding.layoutFabClone.setVisibility(View.GONE)).start();
 
         binding.fabOverlay.animate().alpha(0f).setDuration(150)
                 .withEndAction(() -> binding.fabOverlay.setVisibility(View.GONE)).start();
