@@ -194,9 +194,16 @@ public class GitManager {
     }
 
     public static void push(Context context, String sc_id, ProgressMonitor progressMonitor) throws Exception {
+        push(context, sc_id, null, progressMonitor);
+    }
+
+    public static void push(Context context, String sc_id, String branch, ProgressMonitor progressMonitor) throws Exception {
         File gitDir = getGitDir(sc_id);
         try (Git git = Git.open(gitDir)) {
             var pushCmd = git.push();
+            if (branch != null && !branch.trim().isEmpty()) {
+                pushCmd.setRefSpecs(new org.eclipse.jgit.transport.RefSpec("HEAD:refs/heads/" + branch.trim()));
+            }
             if (progressMonitor != null) {
                 pushCmd.setProgressMonitor(progressMonitor);
             }
