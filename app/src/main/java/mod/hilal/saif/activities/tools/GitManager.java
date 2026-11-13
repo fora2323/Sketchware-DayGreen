@@ -11,6 +11,10 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.api.LogCommand;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -304,6 +308,22 @@ public class GitManager {
             }
         }
         return names;
+    }
+
+    public static int countUnpushedCommits(String sc_id, String branch) throws Exception {
+        try (Git git = Git.open(getGitDir(sc_id))) {
+            Repository repo = git.getRepository();
+            ObjectId local = repo.resolve("refs/heads/" + branch);
+            if (local == null) return 0;
+            ObjectId remote = repo.resolve("refs/remotes/origin/" + branch);
+
+            LogCommand log = git.log().add(local);
+            if (remote != null) log.not(remote);
+
+            int count = 0;
+            for (RevCommit ignored : log.call()) count++;
+            return count;
+        }
     }
 
     public static void checkoutBranch(String sc_id, String name, boolean create) throws Exception {

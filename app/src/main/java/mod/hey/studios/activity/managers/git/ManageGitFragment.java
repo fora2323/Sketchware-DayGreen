@@ -77,63 +77,73 @@ public class ManageGitFragment extends Fragment {
         binding.rvChangedFiles.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.rvChangedFiles.setAdapter(adapter);
 
-        binding.btnRefreshGit.setOnClickListener(v -> refreshGitStatus());
+        binding.swipeRefresh.setOnRefreshListener(() -> loadStatus(true));
+        binding.btnRefreshGit.setOnClickListener(v -> loadStatus(true));
         binding.tvGitBranch.setOnClickListener(v -> showBranchDialog());
         binding.btnCommit.setOnClickListener(v -> handleCommit());
         binding.btnPush.setOnClickListener(v -> handlePush());
         binding.btnPull.setOnClickListener(v -> handlePull());
-
-        refreshGitStatus();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        if (sc_id != null) refreshGitStatus();
+        if (sc_id != null) loadStatus(true);
     }
     
-    private void refreshGitStatus() {
+    private void loadStatus(boolean syncFirst) {
         if (sc_id == null || sc_id.isEmpty()) return;
 
         new Thread(() -> {
-            if (getActivity() instanceof com.besome.sketch.design.DesignActivity) {
-                ((com.besome.sketch.design.DesignActivity) getActivity()).saveForGit();
-            }
-            GitManager.syncProjectToGitDir(sc_id);
-
             try {
+                if (syncFirst) {
+                    if (getActivity() instanceof DesignActivity) {
+                        ((DesignActivity) getActivity()).saveForGit();
+                    }
+                    GitManager.syncProjectToGitDir(sc_id);
+                }
+
                 branchName = GitManager.currentBranch(sc_id);
                 Status status = GitManager.getStatus(sc_id);
 
-                List<ChangedFileItem> changedFiles = new ArrayList<>();
+                List<ChangedFileItem> changed = new ArrayList<>();
                 if (status != null) {
-                    for (String s : status.getModified()) changedFiles.add(new ChangedFileItem(s, "M"));
-                    for (String s : status.getChanged()) changedFiles.add(new ChangedFileItem(s, "M"));
-                    for (String s : status.getAdded()) changedFiles.add(new ChangedFileItem(s, "A"));
-                    for (String s : status.getUntracked()) changedFiles.add(new ChangedFileItem(s, "A"));
-                    for (String s : status.getMissing()) changedFiles.add(new ChangedFileItem(s, "D"));
-                    for (String s : status.getRemoved()) changedFiles.add(new ChangedFileItem(s, "D"));
+                    for (String s : status.getModified()) changed.add(new ChangedFileItem(s, "M"));
+                    for (String s : status.getChanged()) changed.add(new ChangedFileItem(s, "M"));
+                    for (String s : status.getAdded()) changed.add(new ChangedFileItem(s, "A"));
+                    for (String s : status.getUntracked()) changed.add(new ChangedFileItem(s, "A"));
+                    for (String s : status.getMissing()) changed.add(new ChangedFileItem(s, "D"));
+                    for (String s : status.getRemoved()) changed.add(new ChangedFileItem(s, "D"));
                 }
+                // File project itu file internal Sketchware, disembunyikan dari daftar saja
+                changed.removeIf(i -> i.path.equals("project"));
+
+                int unpushed = GitManager.countUnpushedCommits(sc_id, branchName);
 
                 String authorName = GitConfiguration.getUserName(requireContext());
                 String authorEmail = GitConfiguration.getUserEmail(requireContext());
-                String authorText = (authorName.isEmpty() ? "Unknown User" : authorName) + " <" + (authorEmail.isEmpty() ? "no-email" : authorEmail) + ">";
+                String author = (authorName.isEmpty() ? "Unknown User" : authorName)
+                        + " <" + (authorEmail.isEmpty() ? "no-email" : authorEmail) + ">";
 
                 if (isAdded() && getActivity() != null) {
                     requireActivity().runOnUiThread(() -> {
-                        binding.tvGitUser.setText("Author: " + authorText);
+                        binding.swipeRefresh.setRefreshing(false);
+                        binding.tvGitUser.setText("Author: " + author);
                         binding.tvGitBranch.setText("Branch: " + branchName);
 
-                        adapter.setItems(changedFiles);
-                        boolean empty = changedFiles.isEmpty();
+                        adapter.setItems(changed);
+                        boolean empty = changed.isEmpty();
                         binding.tvNoChanges.setVisibility(empty ? View.VISIBLE : View.GONE);
-                        binding.rvChangedFiles.setVisibility(empty ? View.GONE : View.VISIBLE);
+                        binding.rvChangedFiles.setVisibility(View.GONE);
+
+                        updateBadge(changed.size(), unpushed);
                     });
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error refreshing status: ", e);
+                Log.e(TAG, "Error loading git status: ", e);
                 if (isAdded() && getActivity() != null) {
                     requireActivity().runOnUiThread(() -> {
+                        binding.swipeRefresh.setRefreshing(false);
                         binding.tvNoChanges.setText("Error reading Git status: " + e.getMessage());
                         binding.tvNoChanges.setVisibility(View.VISIBLE);
                         binding.rvChangedFiles.setVisibility(View.GONE);
@@ -141,6 +151,16 @@ public class ManageGitFragment extends Fragment {
                 }
             }
         }).start();
+    }
+
+    private void updateBadge(int changedCount, int unpushedCount) {
+        int count = changedCount > 0 ? changedCount : unpushedCount;
+        if (count <= 0) {
+            binding.tvGitBadge.setVisibility(View.GONE);
+        } else {
+            binding.tvGitBadge.setText(count > 99 ? "99+" : String.valueOf(count));
+            binding.tvGitBadge.setVisibility(View.VISIBLE);
+        }
     }
 
     private void handleCommit() {
@@ -169,7 +189,7 @@ public class ManageGitFragment extends Fragment {
                     busy.dismiss();
                     binding.etCommitMessage.setText("");
                     SketchwareUtil.toast("Committed successfully!");
-                    refreshGitStatus();
+                    loadStatus(false);
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Commit failed: ", e);
@@ -211,7 +231,7 @@ public class ManageGitFragment extends Fragment {
                 requireActivity().runOnUiThread(() -> {
                     busy.dismiss();
                     SketchwareUtil.toast("Pushed to GitHub successfully!");
-                    refreshGitStatus();
+                    loadStatus(false);
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Push failed: ", e);
@@ -238,7 +258,7 @@ public class ManageGitFragment extends Fragment {
                 requireActivity().runOnUiThread(() -> {
                     busy.dismiss();
                     SketchwareUtil.toast("Pulled from GitHub successfully!");
-                    refreshGitStatus();
+                    loadStatus(false);
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Pull failed: ", e);
@@ -314,7 +334,7 @@ public class ManageGitFragment extends Fragment {
                     busy.dismiss();
                     DesignActivity.needReloadProjectData = true;
                     SketchwareUtil.toast("Pindah ke branch " + name);
-                    refreshGitStatus();
+                    loadStatus(false);
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Checkout failed: ", e);
