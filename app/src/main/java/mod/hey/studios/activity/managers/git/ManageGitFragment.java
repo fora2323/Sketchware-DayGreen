@@ -5,6 +5,13 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.app.AlertDialog;
+import android.text.InputType;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ProgressBar;
+import android.widget.RadioGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -14,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.besome.sketch.design.DesignActivity;
 
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.lib.ProgressMonitor;
@@ -37,7 +45,8 @@ public class ManageGitFragment extends Fragment {
     private String sc_id;
     private FragmentManageGitBinding binding;
     private ChangedFilesAdapter adapter;
-
+    private String branchName = "main";
+    
     public static ManageGitFragment newInstance(String scId) {
         ManageGitFragment fragment = new ManageGitFragment();
         Bundle args = new Bundle();
@@ -70,7 +79,7 @@ public class ManageGitFragment extends Fragment {
         binding.rvChangedFiles.setAdapter(adapter);
 
         binding.btnRefreshGit.setOnClickListener(v -> refreshGitStatus());
-
+        binding.tvGitBranch.setOnClickListener(v -> showBranchDialog());
         binding.btnCommit.setOnClickListener(v -> handleCommit());
         binding.btnPush.setOnClickListener(v -> handlePush());
         binding.btnPull.setOnClickListener(v -> handlePull());
@@ -78,35 +87,33 @@ public class ManageGitFragment extends Fragment {
         refreshGitStatus();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (sc_id != null) refreshGitStatus();
+    }
+    
     private void refreshGitStatus() {
         if (sc_id == null || sc_id.isEmpty()) return;
 
         new Thread(() -> {
+            if (getActivity() instanceof com.besome.sketch.design.DesignActivity) {
+                ((com.besome.sketch.design.DesignActivity) getActivity()).saveForGit();
+            }
             GitManager.syncProjectToGitDir(sc_id);
 
             try {
+                branchName = GitManager.currentBranch(sc_id);
                 Status status = GitManager.getStatus(sc_id);
 
                 List<ChangedFileItem> changedFiles = new ArrayList<>();
                 if (status != null) {
-                    for (String s : status.getModified()) {
-                        changedFiles.add(new ChangedFileItem(s, "M"));
-                    }
-                    for (String s : status.getChanged()) {
-                        changedFiles.add(new ChangedFileItem(s, "M"));
-                    }
-                    for (String s : status.getAdded()) {
-                        changedFiles.add(new ChangedFileItem(s, "A"));
-                    }
-                    for (String s : status.getUntracked()) {
-                        changedFiles.add(new ChangedFileItem(s, "A"));
-                    }
-                    for (String s : status.getMissing()) {
-                        changedFiles.add(new ChangedFileItem(s, "D"));
-                    }
-                    for (String s : status.getRemoved()) {
-                        changedFiles.add(new ChangedFileItem(s, "D"));
-                    }
+                    for (String s : status.getModified()) changedFiles.add(new ChangedFileItem(s, "M"));
+                    for (String s : status.getChanged()) changedFiles.add(new ChangedFileItem(s, "M"));
+                    for (String s : status.getAdded()) changedFiles.add(new ChangedFileItem(s, "A"));
+                    for (String s : status.getUntracked()) changedFiles.add(new ChangedFileItem(s, "A"));
+                    for (String s : status.getMissing()) changedFiles.add(new ChangedFileItem(s, "D"));
+                    for (String s : status.getRemoved()) changedFiles.add(new ChangedFileItem(s, "D"));
                 }
 
                 String authorName = GitConfiguration.getUserName(requireContext());
@@ -116,16 +123,12 @@ public class ManageGitFragment extends Fragment {
                 if (isAdded() && getActivity() != null) {
                     requireActivity().runOnUiThread(() -> {
                         binding.tvGitUser.setText("Author: " + authorText);
-                        binding.tvGitBranch.setText("Branch: main");
+                        binding.tvGitBranch.setText("Branch: " + branchName);
 
                         adapter.setItems(changedFiles);
-                        if (changedFiles.isEmpty()) {
-                            binding.tvNoChanges.setVisibility(View.VISIBLE);
-                            binding.rvChangedFiles.setVisibility(View.GONE);
-                        } else {
-                            binding.tvNoChanges.setVisibility(View.GONE);
-                            binding.rvChangedFiles.setVisibility(View.VISIBLE);
-                        }
+                        boolean empty = changedFiles.isEmpty();
+                        binding.tvNoChanges.setVisibility(empty ? View.VISIBLE : View.GONE);
+                        binding.rvChangedFiles.setVisibility(empty ? View.GONE : View.VISIBLE);
                     });
                 }
             } catch (Exception e) {
@@ -148,21 +151,33 @@ public class ManageGitFragment extends Fragment {
             return;
         }
 
+        CheckBox cbAmend = buildCheckBox("Amend (timpa commit terakhir)");
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Commit")
+                .setView(wrapCheckBox(cbAmend))
+                .setPositiveButton("Commit", (d, w) -> doCommit(message, cbAmend.isChecked()))
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    private void doCommit(String message, boolean amend) {
+        AlertDialog busy = showBusy("Committing...");
         new Thread(() -> {
             try {
-                GitManager.commit(requireContext(), sc_id, message);
-                if (isAdded() && getActivity() != null) {
-                    requireActivity().runOnUiThread(() -> {
-                        binding.etCommitMessage.setText("");
-                        SketchwareUtil.toast("Committed successfully!");
-                        refreshGitStatus();
-                    });
-                }
+                GitManager.commit(requireContext(), sc_id, message, amend);
+                requireActivity().runOnUiThread(() -> {
+                    busy.dismiss();
+                    binding.etCommitMessage.setText("");
+                    SketchwareUtil.toast("Committed successfully!");
+                    refreshGitStatus();
+                });
             } catch (Exception e) {
                 Log.e(TAG, "Commit failed: ", e);
-                if (isAdded() && getActivity() != null) {
-                    requireActivity().runOnUiThread(() -> SketchwareUtil.toastError("Commit failed: " + e.getMessage()));
-                }
+                requireActivity().runOnUiThread(() -> {
+                    busy.dismiss();
+                    SketchwareUtil.toastError("Commit failed: " + e.getMessage());
+                });
             }
         }).start();
     }
@@ -175,31 +190,36 @@ public class ManageGitFragment extends Fragment {
             return;
         }
 
-        AlertDialog progressDialog = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Pushing to GitHub...")
-                .setMessage("Uploading commits...")
-                .setCancelable(false)
-                .create();
-        progressDialog.show();
+        CheckBox cbForce = buildCheckBox("Force push (timpa isi remote)");
 
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Push ke GitHub")
+                .setView(wrapCheckBox(cbForce))
+                .setPositiveButton("Push", (d, w) -> doPush(cbForce.isChecked()))
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    private void doPush(boolean force) {
+        AlertDialog busy = showBusy(force ? "Force pushing..." : "Pushing...");
         new Thread(() -> {
             try {
-                GitManager.push(requireContext(), sc_id, null);
-                if (isAdded() && getActivity() != null) {
-                    requireActivity().runOnUiThread(() -> {
-                        progressDialog.dismiss();
-                        SketchwareUtil.toast("Pushed to GitHub successfully!");
-                        refreshGitStatus();
-                    });
+                if (force) {
+                    GitManager.forcePush(requireContext(), sc_id, branchName, null);
+                } else {
+                    GitManager.push(requireContext(), sc_id, branchName, null);
                 }
+                requireActivity().runOnUiThread(() -> {
+                    busy.dismiss();
+                    SketchwareUtil.toast("Pushed to GitHub successfully!");
+                    refreshGitStatus();
+                });
             } catch (Exception e) {
                 Log.e(TAG, "Push failed: ", e);
-                if (isAdded() && getActivity() != null) {
-                    requireActivity().runOnUiThread(() -> {
-                        progressDialog.dismiss();
-                        SketchwareUtil.toastError("Push failed: " + e.getMessage());
-                    });
-                }
+                requireActivity().runOnUiThread(() -> {
+                    busy.dismiss();
+                    SketchwareUtil.toastError("Push failed: " + e.getMessage());
+                });
             }
         }).start();
     }
@@ -212,33 +232,127 @@ public class ManageGitFragment extends Fragment {
             return;
         }
 
-        AlertDialog progressDialog = new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Pulling from GitHub...")
-                .setMessage("Downloading commits...")
-                .setCancelable(false)
-                .create();
-        progressDialog.show();
-
+        AlertDialog busy = showBusy("Pulling...");
         new Thread(() -> {
             try {
                 GitManager.pull(requireContext(), sc_id, null);
-                if (isAdded() && getActivity() != null) {
-                    requireActivity().runOnUiThread(() -> {
-                        progressDialog.dismiss();
-                        SketchwareUtil.toast("Pulled from GitHub successfully!");
-                        refreshGitStatus();
-                    });
-                }
+                requireActivity().runOnUiThread(() -> {
+                    busy.dismiss();
+                    SketchwareUtil.toast("Pulled from GitHub successfully!");
+                    refreshGitStatus();
+                });
             } catch (Exception e) {
                 Log.e(TAG, "Pull failed: ", e);
-                if (isAdded() && getActivity() != null) {
-                    requireActivity().runOnUiThread(() -> {
-                        progressDialog.dismiss();
-                        SketchwareUtil.toastError("Pull failed: " + e.getMessage());
-                    });
-                }
+                requireActivity().runOnUiThread(() -> {
+                    busy.dismiss();
+                    SketchwareUtil.toastError("Pull failed: " + e.getMessage());
+                });
             }
         }).start();
+    }
+
+    private void showBranchDialog() {
+        new Thread(() -> {
+            try {
+                List<String> branches = GitManager.listLocalBranches(sc_id);
+                requireActivity().runOnUiThread(() -> {
+                    String[] items = branches.toArray(new String[0]);
+                    int checked = branches.indexOf(branchName);
+                    final int[] selected = {checked};
+
+                    new MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Pilih branch")
+                            .setSingleChoiceItems(items, checked, (d, which) -> selected[0] = which)
+                            .setPositiveButton("Pindah", (d, w) -> {
+                                if (selected[0] >= 0 && !items[selected[0]].equals(branchName)) {
+                                    confirmCheckout(items[selected[0]], false);
+                                }
+                            })
+                            .setNeutralButton("Branch baru", (d, w) -> askNewBranchName())
+                            .setNegativeButton("Batal", null)
+                            .show();
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "List branch failed: ", e);
+                requireActivity().runOnUiThread(() -> SketchwareUtil.toastError("Gagal membaca branch: " + e.getMessage()));
+            }
+        }).start();
+    }
+
+    private void askNewBranchName() {
+        EditText input = new EditText(requireContext());
+        input.setHint("nama-branch");
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        input.setPadding(pad, pad, pad, pad);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Branch baru")
+                .setView(input)
+                .setPositiveButton("Buat", (d, w) -> {
+                    String name = input.getText().toString().trim();
+                    if (!name.isEmpty()) confirmCheckout(name, true);
+                })
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    private void confirmCheckout(String name, boolean create) {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Pindah branch?")
+                .setMessage("Isi project akan diganti dengan isi branch \"" + name + "\". Perubahan yang belum di-commit akan hilang.")
+                .setPositiveButton("Lanjut", (d, w) -> doCheckout(name, create))
+                .setNegativeButton("Batal", null)
+                .show();
+    }
+
+    private void doCheckout(String name, boolean create) {
+        AlertDialog busy = showBusy("Pindah branch...");
+        new Thread(() -> {
+            try {
+                GitManager.checkoutBranch(sc_id, name, create);
+                GitManager.restoreProjectFromGitDir(sc_id);
+                requireActivity().runOnUiThread(() -> {
+                    busy.dismiss();
+                    DesignActivity.needReloadProjectData = true;
+                    SketchwareUtil.toast("Pindah ke branch " + name);
+                    refreshGitStatus();
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Checkout failed: ", e);
+                requireActivity().runOnUiThread(() -> {
+                    busy.dismiss();
+                    SketchwareUtil.toastError("Gagal pindah branch: " + e.getMessage());
+                });
+            }
+        }).start();
+    }
+
+    private AlertDialog showBusy(String title) {
+        ProgressBar bar = new ProgressBar(requireContext());
+        int pad = (int) (24 * getResources().getDisplayMetrics().density);
+        bar.setPadding(pad, pad, pad, pad);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(title)
+                .setView(bar)
+                .setCancelable(false)
+                .create();
+        dialog.show();
+        return dialog;
+    }
+
+    private CheckBox buildCheckBox(String text) {
+        CheckBox cb = new CheckBox(requireContext());
+        cb.setText(text);
+        return cb;
+    }
+
+    private ViewGroup wrapCheckBox(CheckBox cb) {
+        android.widget.LinearLayout wrap = new android.widget.LinearLayout(requireContext());
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        wrap.setPadding(pad, pad, pad, 0);
+        wrap.addView(cb);
+        return wrap;
     }
 
     private static class ChangedFileItem {

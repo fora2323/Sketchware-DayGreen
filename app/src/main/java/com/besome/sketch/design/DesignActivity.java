@@ -613,6 +613,14 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         saveChangesProjectCloser.execute();
     }
 
+    public void saveForGit() {
+        jC.d(sc_id).a();
+        jC.b(sc_id).m();
+        jC.a(sc_id).j();
+        jC.d(sc_id).x();
+        jC.c(sc_id).l();
+    }
+
     private void saveProject() {
         k();
         ProjectSaver projectSaver = new ProjectSaver(this);

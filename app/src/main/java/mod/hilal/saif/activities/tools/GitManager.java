@@ -8,9 +8,12 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.transport.RefSpec;
-
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.io.File;
 import java.util.HashMap;
 
@@ -201,6 +204,10 @@ public class GitManager {
     }
 
     public static void commit(Context context, String sc_id, String message) throws Exception {
+        commit(context, sc_id, message, false);
+    }
+
+    public static void commit(Context context, String sc_id, String message, boolean amend) throws Exception {
         File gitDir = getGitDir(sc_id);
         syncProjectToGitDir(sc_id);
 
@@ -213,7 +220,7 @@ public class GitManager {
             if (name.isEmpty()) name = "Sketchware User";
             if (email.isEmpty()) email = "user@sketchware.app";
 
-            git.commit().setMessage(message).setAuthor(name, email).setCommitter(name, email).call();
+            git.commit().setMessage(message).setAmend(amend).setAuthor(name, email).setCommitter(name, email).call();
         }
     }
 
@@ -282,7 +289,29 @@ public class GitManager {
             Log.i(TAG, "Cloned successfully to " + targetDir.getAbsolutePath());
         }
     }
+    
+    public static String currentBranch(String sc_id) throws Exception {
+        try (Git git = Git.open(getGitDir(sc_id))) {
+            return git.getRepository().getBranch();
+        }
+    }
 
+    public static List<String> listLocalBranches(String sc_id) throws Exception {
+        List<String> names = new ArrayList<>();
+        try (Git git = Git.open(getGitDir(sc_id))) {
+            for (Ref ref : git.branchList().call()) {
+                names.add(Repository.shortenRefName(ref.getName()));
+            }
+        }
+        return names;
+    }
+
+    public static void checkoutBranch(String sc_id, String name, boolean create) throws Exception {
+        try (Git git = Git.open(getGitDir(sc_id))) {
+            git.checkout().setName(name).setCreateBranch(create).call();
+        }
+    }
+    
     public static void addRemoteOrigin(String sc_id, String repoUrl) throws Exception {
         File gitDir = getGitDir(sc_id);
         try (Git git = Git.open(gitDir)) {

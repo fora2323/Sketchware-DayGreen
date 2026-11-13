@@ -42,12 +42,17 @@
                             android:src="@drawable/ic_mtrl_version_control"
                             app:tint="?attr/colorPrimary" />
 
+                        <!-- Klik untuk ganti branch -->
                         <TextView
                             android:id="@+id/tv_git_branch"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="12dp"
                             android:layout_weight="1"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:padding="6dp"
                             android:text="Branch: main"
                             android:textColor="?attr/colorOnSurface"
                             android:textSize="16sp"
@@ -94,7 +99,11 @@
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Commit message">
+                        android:hint="Commit message"
+                        app:boxCornerRadiusTopStart="16dp"
+                        app:boxCornerRadiusTopEnd="16dp"
+                        app:boxCornerRadiusBottomStart="16dp"
+                        app:boxCornerRadiusBottomEnd="16dp">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/et_commit_message"
@@ -105,6 +114,7 @@
                             android:textColor="?attr/colorOnSurface" />
                     </com.google.android.material.textfield.TextInputLayout>
 
+                    <!-- Tombol aksi: tinggi sama, teks tidak wrap -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -114,30 +124,55 @@
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_commit"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="48dp"
                             android:layout_weight="1"
+                            android:maxLines="1"
+                            android:minWidth="0dp"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
                             android:text="Commit"
-                            app:icon="@drawable/ic_mtrl_check" />
+                            app:icon="@drawable/ic_mtrl_check"
+                            app:iconGravity="textStart"
+                            app:iconPadding="4dp" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_push"
                             style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="48dp"
                             android:layout_marginStart="8dp"
                             android:layout_weight="1"
+                            android:maxLines="1"
+                            android:minWidth="0dp"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
                             android:text="Push"
-                            app:icon="@drawable/ic_open_in_new_24" />
+                            app:icon="@drawable/ic_open_in_new_24"
+                            app:iconGravity="textStart"
+                            app:iconPadding="4dp" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_pull"
                             style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="48dp"
                             android:layout_marginStart="8dp"
                             android:layout_weight="1"
+                            android:maxLines="1"
+                            android:minWidth="0dp"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp"
                             android:text="Pull" />
                     </LinearLayout>
+
+                    <!-- Loading untuk commit, push, pull, dan ganti branch -->
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/progress_git"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:indeterminate="true"
+                        android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
