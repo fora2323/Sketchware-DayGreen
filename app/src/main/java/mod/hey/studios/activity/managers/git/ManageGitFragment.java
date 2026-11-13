@@ -176,7 +176,7 @@ public class ManageGitFragment extends Fragment {
                 .setTitle("Commit")
                 .setView(wrapCheckBox(cbAmend))
                 .setPositiveButton("Commit", (d, w) -> doCommit(message, cbAmend.isChecked()))
-                .setNegativeButton("Batal", null)
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 
@@ -215,7 +215,7 @@ public class ManageGitFragment extends Fragment {
                 .setTitle("Push ke GitHub")
                 .setView(wrapCheckBox(cbForce))
                 .setPositiveButton("Push", (d, w) -> doPush(cbForce.isChecked()))
-                .setNegativeButton("Batal", null)
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 
@@ -288,7 +288,7 @@ public class ManageGitFragment extends Fragment {
                                 }
                             })
                             .setNeutralButton("Branch baru", (d, w) -> askNewBranchName())
-                            .setNegativeButton("Batal", null)
+                            .setNegativeButton("Cancel", null)
                             .show();
                 });
             } catch (Exception e) {
@@ -311,7 +311,7 @@ public class ManageGitFragment extends Fragment {
                     String name = input.getText().toString().trim();
                     if (!name.isEmpty()) confirmCheckout(name, true);
                 })
-                .setNegativeButton("Batal", null)
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 
@@ -320,7 +320,7 @@ public class ManageGitFragment extends Fragment {
                 .setTitle("Pindah branch?")
                 .setMessage("Isi project akan diganti dengan isi branch \"" + name + "\". Perubahan yang belum di-commit akan hilang.")
                 .setPositiveButton("Lanjut", (d, w) -> doCheckout(name, create))
-                .setNegativeButton("Batal", null)
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 
