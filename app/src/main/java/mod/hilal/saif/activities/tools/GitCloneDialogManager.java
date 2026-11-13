@@ -8,6 +8,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.content.Intent;
+
+import com.besome.sketch.design.DesignActivity;
+
+import a.a.a.lC;
 
 import androidx.appcompat.app.AlertDialog;
 
@@ -22,7 +27,10 @@ import java.util.Objects;
 
 import extensions.anbui.daydream.file.FileUtils;
 import extensions.anbui.daydream.file.FilesTools;
+
 import mod.hey.studios.project.backup.BackupFactory;
+import mod.hey.studios.project.ProjectTracker;
+
 import pro.sketchware.R;
 import pro.sketchware.databinding.DialogGitCloneBinding;
 import pro.sketchware.databinding.DialogGitProgressBinding;
@@ -155,15 +163,28 @@ public class GitCloneDialogManager {
 
                 boolean restored = GitManager.restoreProjectFromGitDir(sc_id);
 
+                // Tampilkan status pemeriksaan
+                activity.runOnUiThread(() -> {
+                    progressBinding.tvProgressTitle.setText("Memeriksa project...");
+                    progressBinding.tvProgressStatus.setText("Memastikan project sudah terdaftar...");
+                    progressBinding.progressIndicator.setIndeterminate(true);
+                });
+
+                // Beri waktu dialog terlihat sebentar
+                Thread.sleep(800);
+
+                boolean exists = restored && lC.b(sc_id) != null;
+
                 activity.runOnUiThread(() -> {
                     progressDialog.dismiss();
-                    if (restored) {
+                    if (exists) {
                         SketchwareUtil.toast("Project cloned successfully! ID: " + sc_id);
                         if (onCompleteRunnable != null) {
                             onCompleteRunnable.run();
                         }
+                        openProject(activity, sc_id);
                     } else {
-                        SketchwareUtil.toastError("Failed to import cloned project files");
+                        SketchwareUtil.toastError("Project tidak terdaftar setelah clone (ID: " + sc_id + ")");
                     }
                 });
 
@@ -178,6 +199,14 @@ public class GitCloneDialogManager {
                 });
             }
         }).start();
+    }
+
+    private static void openProject(Activity activity, String sc_id) {
+        ProjectTracker.setScId(sc_id);
+        Intent intent = new Intent(activity, DesignActivity.class);
+        intent.putExtra("sc_id", sc_id);
+        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        activity.startActivity(intent);
     }
 
     public static void showInitGitDialog(Activity activity, String sc_id) {

@@ -15,6 +15,8 @@ import java.io.File;
 import java.util.HashMap;
 
 import a.a.a.lC;
+import a.a.a.oB;
+import a.a.a.vB;
 import extensions.anbui.daydream.configs.Configs;
 import extensions.anbui.daydream.file.FileUtils;
 import mod.hey.studios.project.backup.BackupFactory;
@@ -132,14 +134,17 @@ public class GitManager {
 
             if (gitProject.exists()) {
                 BackupFactory.copy(gitProject, destProject);
-                // Update sc_id in encrypted project file if needed
+                // Ganti sc_id di dalam file project ke sc_id baru, sama seperti restore .swb
                 try {
-                    HashMap<String, Object> map = lC.b(sc_id);
+                    oB fileUtil = new oB();
+                    HashMap<String, Object> map = vB.a(fileUtil.a(fileUtil.h(destProject.getAbsolutePath())));
                     if (map != null) {
                         map.put("sc_id", sc_id);
                         lC.a(sc_id, map);
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    Log.e(TAG, "Gagal mengganti sc_id di file project: ", e);
+                }
             } else {
                 // If project metadata doesn't exist in repo, create a basic default project file
                 HashMap<String, Object> map = new HashMap<>();
@@ -208,11 +213,7 @@ public class GitManager {
             if (name.isEmpty()) name = "Sketchware User";
             if (email.isEmpty()) email = "user@sketchware.app";
 
-            git.commit()
-                    .setMessage(message)
-                    .setAuthor(name, email)
-                    .setCommitter(name, email)
-                    .call();
+            git.commit().setMessage(message).setAuthor(name, email).setCommitter(name, email).call();
         }
     }
 
@@ -261,9 +262,7 @@ public class GitManager {
     }
 
     public static void cloneRepo(Context context, String repoUrl, String branch, File targetDir, ProgressMonitor progressMonitor) throws Exception {
-        CloneCommand cloneCmd = Git.cloneRepository()
-                .setURI(repoUrl)
-                .setDirectory(targetDir);
+        CloneCommand cloneCmd = Git.cloneRepository().setURI(repoUrl).setDirectory(targetDir);
 
         if (branch != null && !branch.trim().isEmpty()) {
             cloneCmd.setBranch(branch.trim());
