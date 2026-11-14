@@ -145,7 +145,7 @@
 
         <Button
             android:id="@+id/select_colour"
-            style="@style/Widget.Material3Expressive.Button"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="20dp"
