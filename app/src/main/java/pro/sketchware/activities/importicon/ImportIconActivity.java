@@ -168,7 +168,7 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         mainHandler.removeCallbacksAndMessages(null);
         if (iconCatalog != null) {
             iconCatalog.shutdown();
