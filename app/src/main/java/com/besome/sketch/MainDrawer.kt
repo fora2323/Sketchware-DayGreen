@@ -31,8 +31,6 @@ import extensions.anbui.daydream.activity.project.settings.DayDreamUniversalSett
 
 import mod.hilal.saif.activities.tools.AppSettings
 
-import pro.sketchware.dialogs.DonationDialog
-
 import pro.sketchware.R
 import pro.sketchware.utility.UI
 
