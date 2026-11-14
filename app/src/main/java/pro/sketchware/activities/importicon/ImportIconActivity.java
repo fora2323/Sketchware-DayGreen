@@ -1,4 +1,3 @@
-// ImportIconActivity.java
 package pro.sketchware.activities.importicon;
 
 import android.app.Activity;
@@ -7,16 +6,18 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
-import android.util.Pair;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -31,84 +32,74 @@ import com.besome.sketch.lib.ui.ColorPickerDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.File;
-import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
-import java.util.stream.Stream;
 
-import a.a.a.KB;
-import a.a.a.MA;
 import a.a.a.WB;
 import a.a.a.mB;
-import a.a.a.oB;
 import a.a.a.uq;
-import a.a.a.wq;
 import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 import pro.sketchware.activities.importicon.adapters.IconAdapter;
+import pro.sketchware.activities.importicon.data.IconCatalog;
+import pro.sketchware.activities.importicon.data.IconDownloader;
 import pro.sketchware.activities.resourceseditor.components.utils.ColorsEditorManager;
-import pro.sketchware.databinding.DialogFilterIconsLayoutBinding;
 import pro.sketchware.databinding.DialogSaveIconBinding;
 import pro.sketchware.databinding.ImportIconBinding;
 import pro.sketchware.utility.PropertiesUtil;
+import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.SvgUtils;
 
 public class ImportIconActivity extends BaseAppCompatActivity implements IconAdapter.OnIconSelectedListener {
 
-    private static final String ICON_TYPE_OUTLINE = "outline";
-    private static final String ICON_TYPE_SHARP = "sharp";
-    private static final String ICON_TYPE_TWO_TONE = "twotone";
-    private static final String ICON_TYPE_ROUND = "round";
-    private static final String ICON_TYPE_BASELINE = "baseline";
-    private String iconName;
+    private static final int ITEMS_PER_PAGE = 40;
+    private static final int DEFAULT_ICON_SIZE_PX = 24;
+    private static final int DEFAULT_ICON_COLOR = Color.parseColor("#9E9E9E");
+    private static final String DEFAULT_ICON_COLOR_HEX = "#9E9E9E";
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final List<IconCatalog.IconItem> allCatalogItems = new ArrayList<>();
+    private final List<IconCatalog.IconItem> filteredSourceItems = new ArrayList<>();
+    private final List<IconCatalog.IconItem> displayedItems = new ArrayList<>();
+
+    private ImportIconBinding binding;
+    private IconCatalog iconCatalog;
+    private IconDownloader iconDownloader;
+    private SvgUtils svgUtils;
+    private IconAdapter adapter;
+
+    private String sc_id;
+    private ArrayList<String> alreadyAddedImageNames;
     private WB iconNameValidator;
-    private MenuItem search;
+    private MenuItem searchMenuItem;
     private SearchView searchView;
-    private final OnBackPressedCallback searchViewCloser = new OnBackPressedCallback(true) {
+
+    private String currentQuery = "";
+    private int currentPage = 0;
+    private boolean isLoadingMore = false;
+    private boolean isLastPage = false;
+
+    private int selectedColor = DEFAULT_ICON_COLOR;
+    private String selectedColorHex = DEFAULT_ICON_COLOR_HEX;
+    private int selectedSizePx = DEFAULT_ICON_SIZE_PX;
+
+    private final OnBackPressedCallback searchViewCloser = new OnBackPressedCallback(false) {
         @Override
         public void handleOnBackPressed() {
-            setEnabled(false);
-            if (search.isActionViewExpanded()) {
-                search.collapseActionView();
-                searchView.setQuery("", true);
+            if (searchMenuItem != null && searchMenuItem.isActionViewExpanded()) {
+                searchMenuItem.collapseActionView();
             } else {
+                setEnabled(false);
                 getOnBackPressedDispatcher().onBackPressed();
             }
         }
     };
 
-    private ImportIconBinding binding;
-
-    private String sc_id;
-    private IconAdapter adapter = null;
-    private ArrayList<String> alreadyAddedImageNames;
-    private SvgUtils svgUtils;
-    private String selected_icon_type = ICON_TYPE_ROUND;
-    private int selected_color = Color.parseColor("#9E9E9E");
-    private String selected_color_hex = "#9E9E9E";
-    private int selectedIconPosition = -1;
-    private List<Pair<String, String>> allIconPaths;
-    private List<Pair<String, String>> icons;
-    private int currentPage = 0;
-
-    private boolean isLoading = false;
-    private boolean isLastPage = false;
-
     private int getGridLayoutColumnCount() {
-        return (int) (getResources().getDisplayMetrics().widthPixels / getResources().getDisplayMetrics().density) / 80;
-    }
-
-    private boolean doExtractedIconsExist() {
-        return new oB().e(wq.getExtractedIconPackStoreLocation());
-    }
-
-    private void extractIcons() {
-        KB.a(this, "icons" + File.separator + "icon_pack.zip", wq.getExtractedIconPackStoreLocation());
+        int columns = (int) (getResources().getDisplayMetrics().widthPixels / getResources().getDisplayMetrics().density) / 80;
+        return Math.max(1, columns);
     }
 
     @Override
@@ -126,8 +117,6 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
         binding = ImportIconBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        ColorPickerDialog colorpicker = new ColorPickerDialog(this, 0xFF9E9E9E, false, false);
-        svgUtils = new SvgUtils(this);
         Toolbar toolbar = binding.toolbar.toolbar;
         binding.toolbar.layoutMainLogo.setVisibility(View.GONE);
         setSupportActionBar(toolbar);
@@ -140,58 +129,187 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
             }
         });
 
+        getOnBackPressedDispatcher().addCallback(this, searchViewCloser);
+
         sc_id = getIntent().getStringExtra("sc_id");
         alreadyAddedImageNames = getIntent().getStringArrayListExtra("imageNames");
+        if (alreadyAddedImageNames == null) {
+            alreadyAddedImageNames = new ArrayList<>();
+        }
+
+        iconCatalog = new IconCatalog(this);
+        iconDownloader = new IconDownloader(this);
+        svgUtils = new SvgUtils(this);
 
         binding.imageList.setLayoutManager(new GridLayoutManager(getBaseContext(), getGridLayoutColumnCount()));
-        adapter = new IconAdapter(this, selected_icon_type, selected_color, this);
+        adapter = new IconAdapter(this, iconDownloader, this);
         binding.imageList.setAdapter(adapter);
-        k();
-
-        binding.filterIconsButton.setOnClickListener(v -> showFilterDialog());
 
         binding.imageList.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
+                if (dy <= 0 || isLoadingMore || isLastPage) return;
 
-                if (isLoading || isLastPage) return;
-
-                GridLayoutManager layoutManager = (GridLayoutManager) recyclerView.getLayoutManager();
-                if (layoutManager != null) {
+                if (recyclerView.getLayoutManager() instanceof GridLayoutManager layoutManager) {
                     int visibleItemCount = layoutManager.getChildCount();
                     int totalItemCount = layoutManager.getItemCount();
                     int firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition();
 
                     if ((visibleItemCount + firstVisibleItemPosition) >= totalItemCount
                             && firstVisibleItemPosition >= 0) {
-                        // Reached the end, load more items
-                        isLoading = true;
-                        loadMoreItems();
+                        loadNextPageWithIndicator();
                     }
                 }
             }
         });
 
+        loadIconCatalog();
+    }
 
-        new Handler().postDelayed(() -> new InitialIconLoader(this).execute(), 300L);
+    @Override
+    protected void onDestroy() {
+        mainHandler.removeCallbacksAndMessages(null);
+        if (iconCatalog != null) {
+            iconCatalog.shutdown();
+        }
+        if (iconDownloader != null) {
+            iconDownloader.shutdown();
+        }
+        super.onDestroy();
+    }
+
+    private void loadIconCatalog() {
+        boolean hasCache = iconCatalog.hasCache();
+        binding.progressInitial.setVisibility(hasCache ? View.GONE : View.VISIBLE);
+        binding.tvEmptyState.setVisibility(View.GONE);
+
+        iconCatalog.loadCatalog(new IconCatalog.CatalogCallback() {
+            @Override
+            public void onCatalogLoaded(@NonNull List<IconCatalog.IconItem> items, boolean fromNetwork) {
+                if (isDestroyed() || isFinishing()) return;
+
+                binding.progressInitial.setVisibility(View.GONE);
+                allCatalogItems.clear();
+                allCatalogItems.addAll(items);
+                applyFilterAndResetPaging(currentQuery);
+            }
+
+            @Override
+            public void onCatalogError(@NonNull String errorMessage) {
+                if (isDestroyed() || isFinishing()) return;
+
+                binding.progressInitial.setVisibility(View.GONE);
+                SketchwareUtil.toastError(errorMessage);
+                if (allCatalogItems.isEmpty()) {
+                    binding.tvEmptyState.setText(errorMessage);
+                    binding.tvEmptyState.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+    }
+
+    private void applyFilterAndResetPaging(@NonNull String query) {
+        currentQuery = query.trim();
+        filteredSourceItems.clear();
+
+        if (currentQuery.isEmpty()) {
+            filteredSourceItems.addAll(allCatalogItems);
+        } else {
+            String lowerQuery = currentQuery.toLowerCase(Locale.ROOT);
+            for (IconCatalog.IconItem item : allCatalogItems) {
+                if (item.matches(lowerQuery)) {
+                    filteredSourceItems.add(item);
+                }
+            }
+        }
+
+        displayedItems.clear();
+        currentPage = 0;
+        isLastPage = false;
+        isLoadingMore = false;
+        binding.progressLoadMore.setVisibility(View.GONE);
+
+        appendNextPage();
+        updateEmptyState();
+    }
+
+    private void loadNextPageWithIndicator() {
+        isLoadingMore = true;
+        binding.progressLoadMore.setVisibility(View.VISIBLE);
+        mainHandler.postDelayed(() -> {
+            if (isDestroyed() || isFinishing()) return;
+            appendNextPage();
+            binding.progressLoadMore.setVisibility(View.GONE);
+            isLoadingMore = false;
+        }, 120L);
+    }
+
+    private void appendNextPage() {
+        int start = currentPage * ITEMS_PER_PAGE;
+        int end = Math.min(start + ITEMS_PER_PAGE, filteredSourceItems.size());
+
+        if (start < end) {
+            displayedItems.addAll(filteredSourceItems.subList(start, end));
+            adapter.submitList(new ArrayList<>(displayedItems));
+            currentPage++;
+            if (end >= filteredSourceItems.size()) {
+                isLastPage = true;
+            }
+        } else {
+            if (currentPage == 0) {
+                adapter.submitList(new ArrayList<>());
+            }
+            isLastPage = true;
+        }
+    }
+
+    private void updateEmptyState() {
+        if (filteredSourceItems.isEmpty()) {
+            if (currentQuery.isEmpty()) {
+                binding.tvEmptyState.setText("No icons available. Connect to the internet and try again.");
+            } else {
+                binding.tvEmptyState.setText("No icons found matching \"" + currentQuery + "\"");
+            }
+            binding.tvEmptyState.setVisibility(View.VISIBLE);
+        } else {
+            binding.tvEmptyState.setVisibility(View.GONE);
+        }
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_import_icon, menu);
-        search = menu.findItem(R.id.menu_find);
-        searchView = (SearchView) search.getActionView();
-        searchView.setQueryHint("Search");
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+        searchMenuItem = menu.findItem(R.id.menu_find);
+        searchView = (SearchView) searchMenuItem.getActionView();
+        if (searchView != null) {
+            searchView.setQueryHint("Search icons or tags");
+            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    applyFilterAndResetPaging(query != null ? query : "");
+                    return true;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    applyFilterAndResetPaging(newText != null ? newText : "");
+                    return true;
+                }
+            });
+        }
+
+        searchMenuItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
             @Override
-            public boolean onQueryTextSubmit(String query) {
-                return false;
+            public boolean onMenuItemActionExpand(@NonNull MenuItem item) {
+                searchViewCloser.setEnabled(true);
+                return true;
             }
 
             @Override
-            public boolean onQueryTextChange(String newText) {
-                filterIcons(newText);
+            public boolean onMenuItemActionCollapse(@NonNull MenuItem item) {
+                searchViewCloser.setEnabled(false);
+                applyFilterAndResetPaging("");
                 return true;
             }
         });
@@ -199,232 +317,107 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.menu_find) {
-            searchViewCloser.setEnabled(true);
-            getOnBackPressedDispatcher().addCallback(this, searchViewCloser);
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
+    public void onIconSelected(int position) {
+        if (mB.a()) return;
+        List<IconCatalog.IconItem> currentList = adapter.getCurrentList();
+        if (position < 0 || position >= currentList.size()) return;
+
+        showSaveDialog(currentList.get(position));
     }
 
-    private void setIconName(int iconPosition) {
-        iconName = ("icon_" + adapter.getCurrentList().get(iconPosition).first + "_" + selected_icon_type);
-    }
+    private void showSaveDialog(@NonNull IconCatalog.IconItem iconItem) {
+        selectedColor = DEFAULT_ICON_COLOR;
+        selectedColorHex = DEFAULT_ICON_COLOR_HEX;
+        selectedSizePx = DEFAULT_ICON_SIZE_PX;
 
-    private void setIconColor() {
-        new IconColorChangedIconLoader(this).execute();
-    }
-
-    private void listIcons() {
-        allIconPaths = new ArrayList<>();
-
-        String iconPackStoreLocation = wq.getExtractedIconPackStoreLocation() + File.separator + "svg/";
-        try (Stream<Path> iconFiles = Files.list(Paths.get(iconPackStoreLocation))) {
-            iconFiles.map(Path::getFileName)
-                    .map(Path::toString)
-                    .forEach(folderName -> allIconPaths.add(new Pair<>(
-                            folderName,
-                            Paths.get(iconPackStoreLocation, folderName).toString()
-                    )));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        icons = new ArrayList<>();
-        currentPage = 0; // Reset currentPage to zero
-        Log.d("icons", allIconPaths.toString());
-        runOnUiThread(this::loadMoreItems);
-    }
-
-    private void loadMoreItems() {
-        int ITEMS_PER_PAGE = 40;
-        int start = currentPage * ITEMS_PER_PAGE;
-        int end = Math.min(start + ITEMS_PER_PAGE, allIconPaths.size());
-
-        if (start < end) {
-            List<Pair<String, String>> newItems = allIconPaths.subList(start, end);
-            icons.addAll(newItems);
-            adapter.submitList(new ArrayList<>(icons));
-            currentPage++;
-        } else {
-            // No more items to load
-            isLastPage = true;
-        }
-        isLoading = false;
-    }
-
-
-    private void filterIcons(String query) {
-        if (query.isEmpty()) {
-            icons.clear();
-            currentPage = 0;
-            loadMoreItems();
-            return;
-        }
-
-        var filteredIcons = new ArrayList<Pair<String, String>>(allIconPaths.size());
-        for (Pair<String, String> icon : allIconPaths) {
-            if (icon.first.toLowerCase().contains(query.toLowerCase())) {
-                filteredIcons.add(icon);
-            }
-        }
-        icons.clear();
-        icons.addAll(filteredIcons);
-        adapter.submitList(new ArrayList<>(icons));
-    }
-
-    private void showFilterDialog() {
-        DialogFilterIconsLayoutBinding dialogBinding = DialogFilterIconsLayoutBinding.inflate(getLayoutInflater());
-
-        var dialog = new MaterialAlertDialogBuilder(this)
-                .setView(dialogBinding.getRoot())
-                .setTitle("Filter icons")
-                .setNegativeButton("Cancel", (dialogInterface, i) -> dialogInterface.dismiss())
-                .setPositiveButton("Apply", null)
-                .create();
-        dialog.setView(dialogBinding.getRoot());
-
-        dialogBinding.selectColour.setText(selected_color_hex);
-        dialogBinding.selectColour.setBackgroundColor(selected_color);
-
-        if (Color.red(selected_color) * 0.299 + Color.green(selected_color) * 0.587 + Color.blue(selected_color) * 0.114 > 186) {
-            dialogBinding.selectColour.setTextColor(Color.BLACK);
-        } else {
-            dialogBinding.selectColour.setTextColor(Color.WHITE);
-        }
-        dialogBinding.selectColour.setOnClickListener(view -> {
-            ColorPickerDialog colorPicker = new ColorPickerDialog(this, selected_color_hex, false, false, sc_id);
-            colorPicker.a(new ColorPickerDialog.b() {
-                @Override
-                public void a(int var1) {
-                    selected_color = var1;
-                    selected_color_hex = "#" + String.format("%06X", var1 & (0x00FFFFFF));
-                    dialogBinding.selectColour.setText(selected_color_hex);
-                    adapter.setSelectedColor(selected_color);
-                    adapter.notifyDataSetChanged();
-
-                    dialogBinding.selectColour.setBackgroundColor(selected_color);
-
-                    if (Color.red(selected_color) * 0.299 + Color.green(selected_color) * 0.587 + Color.blue(selected_color) * 0.114 > 186) {
-                        dialogBinding.selectColour.setTextColor(Color.BLACK);
-                    } else {
-                        dialogBinding.selectColour.setTextColor(Color.WHITE);
-                    }
-                }
-
-                @Override
-                public void a(String var1, int var2) {
-                    selected_color = var2;
-                    selected_color_hex = "@color/" + var1;
-                    dialogBinding.selectColour.setText(selected_color_hex);
-                    adapter.setSelectedColor(selected_color);
-                    adapter.notifyDataSetChanged();
-
-                    dialogBinding.selectColour.setBackgroundColor(selected_color);
-
-                    if (Color.red(selected_color) * 0.299 + Color.green(selected_color) * 0.587 + Color.blue(selected_color) * 0.114 > 186) {
-                        dialogBinding.selectColour.setTextColor(Color.BLACK);
-                    } else {
-                        dialogBinding.selectColour.setTextColor(Color.WHITE);
-                    }
-                }
-            });
-            colorPicker.materialColorAttr((attr, attrColor) -> {
-                attr = "?attr/" + attr;
-                selected_color = PropertiesUtil.parseColor(new ColorsEditorManager().getColorValue(getApplicationContext(), attr, 3));
-                selected_color_hex = attr;
-                dialogBinding.selectColour.setText(selected_color_hex);
-                adapter.setSelectedColor(selected_color);
-                adapter.notifyDataSetChanged();
-
-                dialogBinding.selectColour.setBackgroundColor(selected_color);
-
-                if (Color.red(selected_color) * 0.299 + Color.green(selected_color) * 0.587 + Color.blue(selected_color) * 0.114 > 186) {
-                    dialogBinding.selectColour.setTextColor(Color.BLACK);
-                } else {
-                    dialogBinding.selectColour.setTextColor(Color.WHITE);
-                }
-            });
-            colorPicker.showAtLocation(view, Gravity.CENTER, 0, 0);
-        });
-
-        switch (selected_icon_type) {
-            case ICON_TYPE_OUTLINE -> dialogBinding.chipGroupStyle.check(R.id.chip_outline);
-            case ICON_TYPE_BASELINE -> dialogBinding.chipGroupStyle.check(R.id.chip_baseline);
-            case ICON_TYPE_SHARP -> dialogBinding.chipGroupStyle.check(R.id.chip_sharp);
-            case ICON_TYPE_TWO_TONE -> dialogBinding.chipGroupStyle.check(R.id.chip_twotone);
-            case ICON_TYPE_ROUND -> dialogBinding.chipGroupStyle.check(R.id.chip_round);
-        }
-
-        dialog.setOnShowListener(dialogInterface -> {
-
-            Button positiveButton = ((AlertDialog) dialogInterface).getButton(DialogInterface.BUTTON_POSITIVE);
-            positiveButton.setOnClickListener(view -> {
-                int checkedChipId = dialogBinding.chipGroupStyle.getCheckedChipId();
-                if (checkedChipId == R.id.chip_outline && !selected_icon_type.equals(ICON_TYPE_OUTLINE)) {
-                    updateIcons(ICON_TYPE_OUTLINE);
-                }
-                if (checkedChipId == R.id.chip_twotone && !selected_icon_type.equals(ICON_TYPE_TWO_TONE)) {
-                    updateIcons(ICON_TYPE_TWO_TONE);
-                }
-                if (checkedChipId == R.id.chip_baseline && !selected_icon_type.equals(ICON_TYPE_BASELINE)) {
-                    updateIcons(ICON_TYPE_BASELINE);
-                }
-                if (checkedChipId == R.id.chip_sharp && !selected_icon_type.equals(ICON_TYPE_SHARP)) {
-                    updateIcons(ICON_TYPE_SHARP);
-                }
-                if (checkedChipId == R.id.chip_round && !selected_icon_type.equals(ICON_TYPE_ROUND)) {
-                    updateIcons(ICON_TYPE_ROUND);
-                }
-                dialogInterface.dismiss();
-
-            });
-        });
-
-        dialog.show();
-
-    }
-
-    private void updateIcons(String type) {
-        selected_icon_type = type;
-        adapter.setSelectedIconType(selected_icon_type);
-        adapter.notifyDataSetChanged();
-    }
-
-    private void showSaveDialog(int iconPosition) {
         DialogSaveIconBinding dialogBinding = DialogSaveIconBinding.inflate(getLayoutInflater());
 
-        var dialog = new MaterialAlertDialogBuilder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(dialogBinding.getRoot())
                 .setTitle("Save")
                 .setNegativeButton("Cancel", (dialogInterface, i) -> dialogInterface.dismiss())
                 .setPositiveButton("Save", null)
                 .create();
 
-        dialog.setOnShowListener(dialogInterface -> {
-            Button positiveButton = ((AlertDialog) dialogInterface).getButton(DialogInterface.BUTTON_POSITIVE);
-            positiveButton.setOnClickListener(view -> {
-                if (iconNameValidator.b() && selectedIconPosition >= 0) {
-                    String resFullname = adapter.getCurrentList().get(selectedIconPosition).second + File.separator + selected_icon_type + ".svg";
-                    Intent intent = new Intent();
-                    intent.putExtra("iconName", Helper.getText(dialogBinding.inputText));
-                    intent.putExtra("iconPath", resFullname);
+        String defaultResourceName = "icon_" + iconItem.name + "_outlined";
+        dialogBinding.inputText.setText(defaultResourceName);
+        iconNameValidator = new WB(getApplicationContext(), dialogBinding.textInputLayout, uq.b, alreadyAddedImageNames);
 
-                    intent.putExtra("iconColor", selected_color);
-                    intent.putExtra("iconColorHex", selected_color_hex);
-                    setResult(Activity.RESULT_OK, intent);
-                    finish();
-                } else {
-                    return;
+        updatePreviewSize(dialogBinding.icon, selectedSizePx);
+        updateColorButtonAndPreview(dialogBinding);
+
+        if (iconDownloader.isCached(iconItem.name)) {
+            File cachedFile = iconDownloader.getCachedSvgFile(iconItem.name);
+            svgUtils.loadImage(dialogBinding.icon, cachedFile.getAbsolutePath());
+        } else {
+            GradientDrawable placeholder = new GradientDrawable();
+            placeholder.setShape(GradientDrawable.RECTANGLE);
+            placeholder.setCornerRadius(8f * getResources().getDisplayMetrics().density);
+            placeholder.setColor(0x1F9E9E9E);
+            dialogBinding.icon.setImageDrawable(placeholder);
+
+            iconDownloader.downloadSvgAsync(iconItem.name, new IconDownloader.DownloadCallback() {
+                @Override
+                public void onSuccess(@NonNull File svgFile) {
+                    if (isDestroyed() || isFinishing() || !dialog.isShowing()) return;
+                    svgUtils.loadImage(dialogBinding.icon, svgFile.getAbsolutePath());
                 }
-                dialogInterface.dismiss();
+
+                @Override
+                public void onError(@NonNull String errorMessage) {
+                    if (isDestroyed() || isFinishing() || !dialog.isShowing()) return;
+                    dialogBinding.icon.setImageResource(R.drawable.ic_remove_grey600_24dp);
+                }
             });
+        }
+
+        dialogBinding.chipGroupSize.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.isEmpty()) return;
+            int checkedId = checkedIds.get(0);
+            if (checkedId == R.id.chip_size_16) {
+                selectedSizePx = 16;
+            } else if (checkedId == R.id.chip_size_24) {
+                selectedSizePx = 24;
+            } else if (checkedId == R.id.chip_size_32) {
+                selectedSizePx = 32;
+            } else if (checkedId == R.id.chip_size_48) {
+                selectedSizePx = 48;
+            } else if (checkedId == R.id.chip_size_64) {
+                selectedSizePx = 64;
+            } else if (checkedId == R.id.chip_size_96) {
+                selectedSizePx = 96;
+            }
+            updatePreviewSize(dialogBinding.icon, selectedSizePx);
         });
 
-        svgUtils.loadImage(dialogBinding.icon, adapter.getCurrentList().get(iconPosition).second + File.separator + selected_icon_type + ".svg");
-        dialogBinding.icon.setColorFilter(selected_color, PorterDuff.Mode.SRC_IN);
-        iconNameValidator = new WB(getApplicationContext(), dialogBinding.textInputLayout, uq.b, alreadyAddedImageNames);
+        dialogBinding.selectColour.setOnClickListener(view -> {
+            ColorPickerDialog colorPicker = new ColorPickerDialog(this, selectedColorHex, false, false, sc_id);
+            colorPicker.a(new ColorPickerDialog.b() {
+                @Override
+                public void a(int color) {
+                    selectedColor = color;
+                    selectedColorHex = "#" + String.format("%06X", color & 0x00FFFFFF);
+                    updateColorButtonAndPreview(dialogBinding);
+                }
+
+                @Override
+                public void a(String colorName, int color) {
+                    selectedColor = color;
+                    selectedColorHex = "@color/" + colorName;
+                    updateColorButtonAndPreview(dialogBinding);
+                }
+            });
+            colorPicker.materialColorAttr((attr, attrColor) -> {
+                String attrRef = "?attr/" + attr;
+                selectedColor = PropertiesUtil.parseColor(
+                        new ColorsEditorManager().getColorValue(getApplicationContext(), attrRef, 3)
+                );
+                selectedColorHex = attrRef;
+                updateColorButtonAndPreview(dialogBinding);
+            });
+            colorPicker.showAtLocation(view, Gravity.CENTER, 0, 0);
+        });
+
         dialogBinding.licenceInfo.setOnClickListener(v -> {
             Uri webpage = Uri.parse("https://www.apache.org/licenses/LICENSE-2.0.txt");
             Intent intent = new Intent(Intent.ACTION_VIEW, webpage);
@@ -432,82 +425,68 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
                 startActivity(intent);
             }
         });
-        dialogBinding.inputText.setText(iconName);
-        dialog.setView(dialogBinding.getRoot());
+
+        dialog.setOnShowListener(dialogInterface -> {
+            Button positiveButton = ((AlertDialog) dialogInterface).getButton(DialogInterface.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(view -> {
+                if (!iconNameValidator.b()) {
+                    return;
+                }
+
+                String outputResourceName = Helper.getText(dialogBinding.inputText).trim();
+                positiveButton.setEnabled(false);
+
+                iconDownloader.saveResizedSvgToProjectAsync(
+                        iconItem.name,
+                        sc_id,
+                        outputResourceName,
+                        selectedSizePx,
+                        new IconDownloader.DownloadCallback() {
+                            @Override
+                            public void onSuccess(@NonNull File savedSvgFile) {
+                                if (isDestroyed() || isFinishing()) return;
+                                dialogInterface.dismiss();
+
+                                Intent intent = new Intent();
+                                intent.putExtra("iconName", outputResourceName);
+                                intent.putExtra("iconPath", savedSvgFile.getAbsolutePath());
+                                intent.putExtra("iconColor", selectedColor);
+                                intent.putExtra("iconColorHex", selectedColorHex);
+                                intent.putExtra("iconSize", selectedSizePx);
+                                setResult(Activity.RESULT_OK, intent);
+                                finish();
+                            }
+
+                            @Override
+                            public void onError(@NonNull String errorMessage) {
+                                if (isDestroyed() || isFinishing()) return;
+                                positiveButton.setEnabled(true);
+                                SketchwareUtil.toastError(errorMessage);
+                            }
+                        }
+                );
+            });
+        });
+
         dialog.show();
     }
 
-    @Override
-    public void onIconSelected(int position) {
-        if (!mB.a()) {
-            selectedIconPosition = position;
-            setIconName(position);
-            showSaveDialog(position);
+    private void updatePreviewSize(@NonNull ImageView previewView, int sizePx) {
+        ViewGroup.LayoutParams params = previewView.getLayoutParams();
+        if (params != null) {
+            params.width = sizePx;
+            params.height = sizePx;
+            previewView.setLayoutParams(params);
         }
     }
 
-    private static class InitialIconLoader extends MA {
-        private final WeakReference<ImportIconActivity> activity;
+    private void updateColorButtonAndPreview(@NonNull DialogSaveIconBinding dialogBinding) {
+        dialogBinding.selectColour.setText(selectedColorHex);
+        dialogBinding.selectColour.setBackgroundColor(selectedColor);
 
-        public InitialIconLoader(ImportIconActivity activity) {
-            super(activity);
-            this.activity = new WeakReference<>(activity);
-            activity.addTask(this);
-        }
+        double luminance = Color.red(selectedColor) * 0.299 + Color.green(selectedColor) * 0.587 + Color.blue(selectedColor) * 0.114;
+        dialogBinding.selectColour.setTextColor(luminance > 186 ? Color.BLACK : Color.WHITE);
 
-        @Override
-        public void a() {
-            var activity = this.activity.get();
-            activity.h();
-            activity.setIconColor();
-        }
-
-        @Override
-        public void b() {
-            var activity = this.activity.get();
-            if (!activity.doExtractedIconsExist()) {
-                activity.extractIcons();
-            }
-        }
-
-        @Override
-        public void a(String str) {
-            activity.get().h();
-        }
-
-    }
-
-    private static class IconColorChangedIconLoader extends MA {
-        private final WeakReference<ImportIconActivity> activity;
-
-        public IconColorChangedIconLoader(ImportIconActivity activity) {
-            super(activity);
-            this.activity = new WeakReference<>(activity);
-            activity.addTask(this);
-            activity.k();
-        }
-
-        @Override
-        public void a() {
-            var activity = this.activity.get();
-            activity.h();
-            activity.selectedIconPosition = -1;
-        }
-
-        @Override
-        public void b() {
-            var activity = this.activity.get();
-            activity.listIcons();
-            activity.runOnUiThread(() -> {
-                if (activity.searchView != null) {
-                    activity.searchView.setQuery("", false);
-                }
-            });
-        }
-
-        @Override
-        public void a(String str) {
-            activity.get().h();
-        }
+        dialogBinding.icon.setColorFilter(selectedColor, PorterDuff.Mode.SRC_IN);
     }
 }

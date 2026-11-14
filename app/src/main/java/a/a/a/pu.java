@@ -70,8 +70,6 @@ public class pu extends qA {
     private final ActivityResultLauncher<Intent> openImportIconActivity = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == Activity.RESULT_OK) {
             var data = result.getData();
-            //fix bug
-            //assert data != null;
             if (data == null) {
                 Log.e("pu.java", "data is null in openImportIconActivity");
                 return;
@@ -82,7 +80,8 @@ public class pu extends qA {
 
             int selectedColor = data.getIntExtra("iconColor", -1);
             String selectedColorHex = data.getStringExtra("iconColorHex");
-            addNewColorFilterInfo(selectedColorHex, selectedColor, images.size());
+            int selectedSize = data.getIntExtra("iconSize", 24);
+            addNewColorFilterInfo(selectedColorHex, selectedColor, selectedSize, images.size());
 
             addImage(icon);
             bB.a(requireActivity(), getString(R.string.design_manager_message_add_complete), bB.TOAST_NORMAL).show();
@@ -90,8 +89,6 @@ public class pu extends qA {
     });
     private final ActivityResultLauncher<Intent> showAddImageDialog = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == Activity.RESULT_OK) {
-            //fix bug
-            //assert result.getData() != null;
             if (result.getData() == null) {
                 Log.e("pu.java", "result data is null");
                 return;
@@ -112,8 +109,6 @@ public class pu extends qA {
     });
     private final ActivityResultLauncher<Intent> showImageDetailsDialog = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == Activity.RESULT_OK) {
-            //fix bug
-            //assert result.getData() != null;
             if (result.getData() == null) {
                 Log.e("pu.java", "result data is null");
                 return;
@@ -142,6 +137,9 @@ public class pu extends qA {
     public static void copyFile(String srcPath, String destPath) throws IOException {
         File srcFile = new File(srcPath);
         File destFile = new File(destPath);
+        if (srcFile.getAbsolutePath().equals(destFile.getAbsolutePath())) {
+            return;
+        }
 
         try (FileInputStream fis = new FileInputStream(srcFile);
              FileOutputStream fos = new FileOutputStream(destFile)) {
@@ -193,8 +191,6 @@ public class pu extends qA {
     }
 
     public void saveImages() {
-
-
         Path svgDir = Paths.get(fpu.getPathSvg(sc_id));
         try {
             if (!Files.exists(svgDir)) {
@@ -214,14 +210,13 @@ public class pu extends qA {
                         path = image.resFullName;
                     }
 
-
                     String str = projectImagesDirectory + File.separator + image.resName;
                     Log.d("svg", "full name : " + image.resFullName);
                     if (image.resFullName.endsWith(".svg")) {
-                        // convert the svg to vectors
                         String svgPath = fpu.getSvgFullPath(sc_id, image.resName);
                         copyFile(path, svgPath);
-                        String colorHex = (String) colorMap.get(index).get("colorHex");
+                        Map<String, Object> colorInfo = colorMap.get(index);
+                        String colorHex = colorInfo != null ? (String) colorInfo.get("colorHex") : null;
                         colorHex = (colorHex != null) ? colorHex : "#FFFFFF";
                         svgUtils.convert(svgPath, projectImagesDirectory, colorHex);
                     } else {
@@ -236,8 +231,6 @@ public class pu extends qA {
         for (int i = 0; i < images.size(); i++) {
             ProjectResourceBean image = images.get(i);
             if (image.isNew || image.isEdited) {
-
-                // Determine the correct file extension based on image type
                 String fileExtension;
                 if (image.isNinePatch()) {
                     fileExtension = ".9.png";
@@ -247,7 +240,6 @@ public class pu extends qA {
                     fileExtension = ".png";
                 }
 
-                // Set the new ProjectResourceBean with the correct file extension
                 images.set(i, new ProjectResourceBean(
                         ProjectResourceBean.PROJECT_RES_TYPE_FILE,
                         image.resName,
@@ -257,9 +249,6 @@ public class pu extends qA {
         }
         jC.d(sc_id).b(images);
         jC.d(sc_id).y();
-
-        // This method is replaces not exist images to default_image, I removed it because it changes vector images to default_images
-        // jC.a(sc_id).b(jC.d(sc_id));
 
         jC.a(sc_id).k();
     }
@@ -300,7 +289,6 @@ public class pu extends qA {
             projectImagesDirectory = savedInstanceState.getString("dir_path");
             images = savedInstanceState.getParcelableArrayList("images");
         }
-        // mkdirs
         new oB().f(projectImagesDirectory);
         adapter.notifyDataSetChanged();
         updateGuideVisibility();
@@ -453,12 +441,17 @@ public class pu extends qA {
     }
 
     private void addNewColorFilterInfo(String colorHex, int color, int forPosition) {
+        addNewColorFilterInfo(colorHex, color, 24, forPosition);
+    }
+
+    private void addNewColorFilterInfo(String colorHex, int color, int iconSize, int forPosition) {
         Map<String, Object> colorItem1 = new HashMap<>();
         colorItem1.put("colorHex", colorHex);
         colorItem1.put("color", color);
+        colorItem1.put("iconSize", iconSize);
 
         colorMap.put(forPosition, colorItem1);
-        Log.d("color filter", "new color filter item at " + forPosition + ": " + colorHex + " " + color);
+        Log.d("color filter", "new color filter item at " + forPosition + ": " + colorHex + " " + color + " (" + iconSize + "px)");
     }
 
     private void addImages(ArrayList<ProjectResourceBean> arrayList) {

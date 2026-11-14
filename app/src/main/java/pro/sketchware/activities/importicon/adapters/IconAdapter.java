@@ -1,9 +1,10 @@
 package pro.sketchware.activities.importicon.adapters;
 
-
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.util.Pair;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
@@ -14,53 +15,86 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.File;
 
+import pro.sketchware.R;
+import pro.sketchware.activities.importicon.data.IconCatalog;
+import pro.sketchware.activities.importicon.data.IconDownloader;
 import pro.sketchware.databinding.ImportIconListItemBinding;
 import pro.sketchware.utility.SvgUtils;
 
-public class IconAdapter extends ListAdapter<Pair<String, String>, IconAdapter.ViewHolder> {
-    private static final DiffUtil.ItemCallback<Pair<String, String>> DIFF_CALLBACK = new DiffUtil.ItemCallback<>() {
-        @Override
-        public boolean areItemsTheSame(@NonNull Pair<String, String> oldItem, @NonNull Pair<String, String> newItem) {
-            return oldItem.first.equals(newItem.first);
-        }
+public class IconAdapter extends ListAdapter<IconCatalog.IconItem, IconAdapter.ViewHolder> {
 
-        @Override
-        public boolean areContentsTheSame(@NonNull Pair<String, String> oldItem, @NonNull Pair<String, String> newItem) {
-            return true;
-        }
-    };
+    private static final int DEFAULT_ICON_COLOR = Color.parseColor("#9E9E9E");
+
+    private static final DiffUtil.ItemCallback<IconCatalog.IconItem> DIFF_CALLBACK =
+            new DiffUtil.ItemCallback<>() {
+                @Override
+                public boolean areItemsTheSame(@NonNull IconCatalog.IconItem oldItem, @NonNull IconCatalog.IconItem newItem) {
+                    return oldItem.name.equals(newItem.name);
+                }
+
+                @Override
+                public boolean areContentsTheSame(@NonNull IconCatalog.IconItem oldItem, @NonNull IconCatalog.IconItem newItem) {
+                    return oldItem.name.equals(newItem.name);
+                }
+            };
 
     private final SvgUtils svgUtils;
+    private final IconDownloader iconDownloader;
     private final OnIconSelectedListener listener;
-    private String selected_icon_type;
-    private int selected_color;
+    private final Drawable placeholderDrawable;
 
-    public IconAdapter(Context context, String selected_icon_type, int selected_color, OnIconSelectedListener listener) {
+    public IconAdapter(@NonNull Context context, @NonNull IconDownloader iconDownloader, @NonNull OnIconSelectedListener listener) {
         super(DIFF_CALLBACK);
-        svgUtils = new SvgUtils(context);
-        this.selected_icon_type = selected_icon_type;
-        this.selected_color = selected_color;
+        this.svgUtils = new SvgUtils(context);
+        this.iconDownloader = iconDownloader;
         this.listener = listener;
+        this.placeholderDrawable = createPlaceholderDrawable(context);
     }
 
-    public void setSelectedIconType(String selected_icon_type) {
-        this.selected_icon_type = selected_icon_type;
-    }
-
-    public void setSelectedColor(int selected_color) {
-        this.selected_color = selected_color;
+    @NonNull
+    private Drawable createPlaceholderDrawable(@NonNull Context context) {
+        float density = context.getResources().getDisplayMetrics().density;
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setShape(GradientDrawable.RECTANGLE);
+        drawable.setCornerRadius(12f * density);
+        drawable.setColor(0x1F9E9E9E);
+        return drawable;
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        String filePath = getItem(position).second + File.separator + selected_icon_type + ".svg";
-        svgUtils.loadImage(holder.itemBinding.img, filePath);
-        holder.itemBinding.img.setColorFilter(selected_color, PorterDuff.Mode.SRC_IN);
-        holder.itemBinding.title.setText(getItem(position).first);
+        IconCatalog.IconItem item = getItem(position);
+        String iconName = item.name;
+        holder.boundIconName = iconName;
+
+        holder.itemBinding.title.setText(iconName);
+        holder.itemBinding.img.setColorFilter(DEFAULT_ICON_COLOR, PorterDuff.Mode.SRC_IN);
+
+        if (iconDownloader.isCached(iconName)) {
+            File cachedFile = iconDownloader.getCachedSvgFile(iconName);
+            svgUtils.loadImage(holder.itemBinding.img, cachedFile.getAbsolutePath());
+        } else {
+            holder.itemBinding.img.setImageDrawable(placeholderDrawable);
+            iconDownloader.downloadSvgAsync(iconName, new IconDownloader.DownloadCallback() {
+                @Override
+                public void onSuccess(@NonNull File svgFile) {
+                    if (iconName.equals(holder.boundIconName)) {
+                        svgUtils.loadImage(holder.itemBinding.img, svgFile.getAbsolutePath());
+                    }
+                }
+
+                @Override
+                public void onError(@NonNull String errorMessage) {
+                    if (iconName.equals(holder.boundIconName)) {
+                        holder.itemBinding.img.setImageResource(R.drawable.ic_remove_grey600_24dp);
+                    }
+                }
+            });
+        }
     }
 
-    @Override
     @NonNull
+    @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         ImportIconListItemBinding binding = ImportIconListItemBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
         return new ViewHolder(binding);
@@ -72,17 +106,17 @@ public class IconAdapter extends ListAdapter<Pair<String, String>, IconAdapter.V
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         private final ImportIconListItemBinding itemBinding;
+        private String boundIconName;
 
-        public ViewHolder(ImportIconListItemBinding binding) {
+        public ViewHolder(@NonNull ImportIconListItemBinding binding) {
             super(binding.getRoot());
-            itemBinding = binding;
+            this.itemBinding = binding;
             binding.getRoot().setOnClickListener(v -> {
-                int position = getLayoutPosition();
-                if (listener != null) {
+                int position = getBindingAdapterPosition();
+                if (listener != null && position != RecyclerView.NO_POSITION) {
                     listener.onIconSelected(position);
                 }
             });
         }
     }
 }
-
