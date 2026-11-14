@@ -6,14 +6,23 @@ import android.util.Log;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LogCommand;
+import org.eclipse.jgit.api.PullResult;
+import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.Status;
+import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.treewalk.AbstractTreeIterator;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -30,6 +39,22 @@ import mod.hey.studios.project.backup.BackupFactory;
 public class GitManager {
 
     private static final String TAG = "GitManager";
+
+    public static class CommitInfo {
+        public final String fullHash;
+        public final String shortHash;
+        public final String message;
+        public final String authorName;
+        public final long commitTimeMillis;
+
+        public CommitInfo(String fullHash, String shortHash, String message, String authorName, long commitTimeMillis) {
+            this.fullHash = fullHash;
+            this.shortHash = shortHash;
+            this.message = message;
+            this.authorName = authorName;
+            this.commitTimeMillis = commitTimeMillis;
+        }
+    }
 
     public static boolean hasGitRepo(String sc_id) {
         if (sc_id == null || sc_id.isEmpty()) return false;
@@ -50,7 +75,69 @@ public class GitManager {
         File dotGit = new File(gitDir, ".git");
         if (!dotGit.exists()) {
             String initialBranch = (branch == null || branch.trim().isEmpty()) ? "main" : branch.trim();
-            Git.init().setDirectory(gitDir).setInitialBranch(initialBranch).call();
+            try (Git git = Git.init().setDirectory(gitDir).setInitialBranch(initialBranch).call()) {
+                ensureTrackingConfig(git.getRepository(), initialBranch);
+            }
+        }
+    }
+
+    private static void ensureTrackingConfig(Repository repo, String branch) {
+        try {
+            if (branch == null || branch.trim().isEmpty()) return;
+            StoredConfig config = repo.getConfig();
+            boolean changed = false;
+            if (config.getString("remote", "origin", "url") != null
+                    && config.getString("remote", "origin", "fetch") == null) {
+                config.setString("remote", "origin", "fetch", "+refs/heads/*:refs/remotes/origin/*");
+                changed = true;
+            }
+            if (!"origin".equals(config.getString("branch", branch, "remote"))) {
+                config.setString("branch", branch, "remote", "origin");
+                changed = true;
+            }
+            String expectedMerge = "refs/heads/" + branch;
+            if (!expectedMerge.equals(config.getString("branch", branch, "merge"))) {
+                config.setString("branch", branch, "merge", expectedMerge);
+                changed = true;
+            }
+            if (changed) {
+                config.save();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to update git tracking config", e);
+        }
+    }
+
+    private static UsernamePasswordCredentialsProvider getCredentials(Context context) {
+        String username = GitConfiguration.getUsername(context);
+        String password = GitConfiguration.getPassword(context);
+        if (!username.isEmpty() && !password.isEmpty()) {
+            return new UsernamePasswordCredentialsProvider(username, password);
+        }
+        return null;
+    }
+
+    public static void fetch(Context context, String sc_id) {
+        try {
+            File gitDir = getGitDir(sc_id);
+            if (!hasGitRepo(sc_id)) return;
+            try (Git git = Git.open(gitDir)) {
+                Repository repo = git.getRepository();
+                if (repo.getConfig().getString("remote", "origin", "url") == null) return;
+
+                var fetchCmd = git.fetch()
+                        .setRemote("origin")
+                        .setRefSpecs(new RefSpec("+refs/heads/*:refs/remotes/origin/*"))
+                        .setRemoveDeletedRefs(true);
+
+                var creds = getCredentials(context);
+                if (creds != null) {
+                    fetchCmd.setCredentialsProvider(creds);
+                }
+                fetchCmd.call();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Background fetch skipped/failed: " + e.getMessage());
         }
     }
 
@@ -59,19 +146,23 @@ public class GitManager {
         String target = (branch == null || branch.trim().isEmpty()) ? "main" : branch.trim();
 
         try (Git git = Git.open(gitDir)) {
-            var pushCmd = git.push().setForce(true).setRefSpecs(new RefSpec("+HEAD:refs/heads/" + target));
+            ensureTrackingConfig(git.getRepository(), target);
+            var pushCmd = git.push()
+                    .setRemote("origin")
+                    .setForce(true)
+                    .setRefSpecs(new RefSpec("+HEAD:refs/heads/" + target));
 
             if (progressMonitor != null) {
                 pushCmd.setProgressMonitor(progressMonitor);
             }
 
-            String username = GitConfiguration.getUsername(context);
-            String password = GitConfiguration.getPassword(context);
-            if (!username.isEmpty() && !password.isEmpty()) {
-                pushCmd.setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password));
+            var creds = getCredentials(context);
+            if (creds != null) {
+                pushCmd.setCredentialsProvider(creds);
             }
 
             pushCmd.call();
+            fetch(context, sc_id);
         }
     }
 
@@ -125,7 +216,7 @@ public class GitManager {
     }
 
     /**
-     * Restores project files from cloned git repository into Sketchware internal directories
+     * Restores project files from cloned/pulled git repository into Sketchware internal directories
      */
     public static boolean restoreProjectFromGitDir(String sc_id) {
         try {
@@ -140,7 +231,6 @@ public class GitManager {
 
             if (gitProject.exists()) {
                 BackupFactory.copy(gitProject, destProject);
-                // Ganti sc_id di dalam file project ke sc_id baru, sama seperti restore .swb
                 try {
                     oB fileUtil = new oB();
                     HashMap<String, Object> map = vB.a(fileUtil.a(fileUtil.h(destProject.getAbsolutePath())));
@@ -152,7 +242,6 @@ public class GitManager {
                     Log.e(TAG, "Gagal mengganti sc_id di file project: ", e);
                 }
             } else {
-                // If project metadata doesn't exist in repo, create a basic default project file
                 HashMap<String, Object> map = new HashMap<>();
                 map.put("sc_id", sc_id);
                 map.put("my_ws_name", "ClonedProject_" + sc_id);
@@ -234,39 +323,74 @@ public class GitManager {
     public static void push(Context context, String sc_id, String branch, ProgressMonitor progressMonitor) throws Exception {
         File gitDir = getGitDir(sc_id);
         try (Git git = Git.open(gitDir)) {
-            var pushCmd = git.push();
-            if (branch != null && !branch.trim().isEmpty()) {
-                pushCmd.setRefSpecs(new org.eclipse.jgit.transport.RefSpec("HEAD:refs/heads/" + branch.trim()));
-            }
+            Repository repo = git.getRepository();
+            String target = (branch == null || branch.trim().isEmpty()) ? repo.getBranch() : branch.trim();
+            ensureTrackingConfig(repo, target);
+
+            var pushCmd = git.push()
+                    .setRemote("origin")
+                    .setRefSpecs(new RefSpec("HEAD:refs/heads/" + target));
+
             if (progressMonitor != null) {
                 pushCmd.setProgressMonitor(progressMonitor);
             }
 
-            String username = GitConfiguration.getUsername(context);
-            String password = GitConfiguration.getPassword(context);
-            if (!username.isEmpty() && !password.isEmpty()) {
-                pushCmd.setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password));
+            var creds = getCredentials(context);
+            if (creds != null) {
+                pushCmd.setCredentialsProvider(creds);
             }
 
             pushCmd.call();
+            fetch(context, sc_id);
         }
     }
 
     public static void pull(Context context, String sc_id, ProgressMonitor progressMonitor) throws Exception {
         File gitDir = getGitDir(sc_id);
         try (Git git = Git.open(gitDir)) {
-            var pullCmd = git.pull();
+            Repository repo = git.getRepository();
+            String branch = repo.getBranch();
+            if (branch == null || branch.trim().isEmpty()) {
+                branch = "main";
+            }
+            ensureTrackingConfig(repo, branch);
+
+            var creds = getCredentials(context);
+
+            // 1. Fetch terbaru dari origin agar refs/remotes/origin/<branch> selalu up-to-date
+            var fetchCmd = git.fetch()
+                    .setRemote("origin")
+                    .setRefSpecs(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
+            if (creds != null) {
+                fetchCmd.setCredentialsProvider(creds);
+            }
+            fetchCmd.call();
+
+            // 2. Bersihkan perubahan working tree hasil auto-sync yang belum di-commit agar tidak bentrok CheckoutConflictException
+            if (repo.resolve("HEAD") != null) {
+                git.reset().setMode(ResetCommand.ResetType.HARD).call();
+            }
+
+            // 3. Jalankan pull dengan target remote & branch eksplisit
+            var pullCmd = git.pull()
+                    .setRemote("origin")
+                    .setRemoteBranchName(branch);
             if (progressMonitor != null) {
                 pullCmd.setProgressMonitor(progressMonitor);
             }
-
-            String username = GitConfiguration.getUsername(context);
-            String password = GitConfiguration.getPassword(context);
-            if (!username.isEmpty() && !password.isEmpty()) {
-                pullCmd.setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password));
+            if (creds != null) {
+                pullCmd.setCredentialsProvider(creds);
             }
 
-            pullCmd.call();
+            PullResult result = pullCmd.call();
+            if (!result.isSuccessful()) {
+                String reason = (result.getMergeResult() != null)
+                        ? result.getMergeResult().getMergeStatus().toString()
+                        : "Pull merge gagal";
+                throw new Exception("Pull gagal: " + reason);
+            }
+
+            // 4. Salin hasil pull ke direktori project internal Sketchware
             restoreProjectFromGitDir(sc_id);
         }
     }
@@ -282,13 +406,13 @@ public class GitManager {
             cloneCmd.setProgressMonitor(progressMonitor);
         }
 
-        String username = GitConfiguration.getUsername(context);
-        String password = GitConfiguration.getPassword(context);
-        if (!username.isEmpty() && !password.isEmpty()) {
-            cloneCmd.setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, password));
+        var creds = getCredentials(context);
+        if (creds != null) {
+            cloneCmd.setCredentialsProvider(creds);
         }
 
         try (Git git = cloneCmd.call()) {
+            ensureTrackingConfig(git.getRepository(), git.getRepository().getBranch());
             Log.i(TAG, "Cloned successfully to " + targetDir.getAbsolutePath());
         }
     }
@@ -339,9 +463,72 @@ public class GitManager {
         }
     }
 
+    public static List<CommitInfo> getCommitHistory(String sc_id, int maxCount) throws Exception {
+        List<CommitInfo> list = new ArrayList<>();
+        File gitDir = getGitDir(sc_id);
+        try (Git git = Git.open(gitDir)) {
+            Repository repo = git.getRepository();
+            if (repo.resolve("HEAD") == null) return list;
+
+            Iterable<RevCommit> commits = git.log().setMaxCount(maxCount).call();
+            for (RevCommit c : commits) {
+                String full = c.getName();
+                String shortHash = full.length() >= 7 ? full.substring(0, 7) : full;
+                String msg = c.getFullMessage() != null ? c.getFullMessage().trim() : "";
+                String author = c.getAuthorIdent() != null ? c.getAuthorIdent().getName() : "Unknown";
+                long timeMs = c.getCommitTime() * 1000L;
+                list.add(new CommitInfo(full, shortHash, msg, author, timeMs));
+            }
+        }
+        return list;
+    }
+
+    public static List<String> getCommitChangedFiles(String sc_id, String commitHash) throws Exception {
+        List<String> files = new ArrayList<>();
+        File gitDir = getGitDir(sc_id);
+        try (Git git = Git.open(gitDir)) {
+            Repository repo = git.getRepository();
+            ObjectId commitId = repo.resolve(commitHash);
+            if (commitId == null) return files;
+
+            try (RevWalk revWalk = new RevWalk(repo)) {
+                RevCommit commit = revWalk.parseCommit(commitId);
+                AbstractTreeIterator oldTreeParser;
+                if (commit.getParentCount() > 0) {
+                    RevCommit parent = revWalk.parseCommit(commit.getParent(0).getId());
+                    CanonicalTreeParser treeParser = new CanonicalTreeParser();
+                    try (ObjectReader reader = repo.newObjectReader()) {
+                        treeParser.reset(reader, parent.getTree().getId());
+                    }
+                    oldTreeParser = treeParser;
+                } else {
+                    oldTreeParser = new EmptyTreeIterator();
+                }
+
+                CanonicalTreeParser newTreeParser = new CanonicalTreeParser();
+                try (ObjectReader reader = repo.newObjectReader()) {
+                    newTreeParser.reset(reader, commit.getTree().getId());
+                }
+
+                List<DiffEntry> diffs = git.diff()
+                        .setOldTree(oldTreeParser)
+                        .setNewTree(newTreeParser)
+                        .call();
+                for (DiffEntry entry : diffs) {
+                    String path = entry.getChangeType() == DiffEntry.ChangeType.DELETE
+                            ? entry.getOldPath()
+                            : entry.getNewPath();
+                    files.add(entry.getChangeType().name().charAt(0) + "  " + path);
+                }
+            }
+        }
+        return files;
+    }
+
     public static void checkoutBranch(String sc_id, String name, boolean create) throws Exception {
         try (Git git = Git.open(getGitDir(sc_id))) {
             git.checkout().setName(name).setCreateBranch(create).call();
+            ensureTrackingConfig(git.getRepository(), name);
         }
     }
 
@@ -352,6 +539,7 @@ public class GitManager {
                 git.remoteRemove().setRemoteName("origin").call();
             } catch (Exception ignored) {}
             git.remoteAdd().setName("origin").setUri(new org.eclipse.jgit.transport.URIish(repoUrl)).call();
+            ensureTrackingConfig(git.getRepository(), git.getRepository().getBranch());
         }
     }
 }

@@ -220,12 +220,37 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/chip_group_git_mode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:chipSpacingHorizontal="8dp"
+        app:selectionRequired="true"
+        app:singleSelection="true">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_changes"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="Changes" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_history"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="History" />
+    </com.google.android.material.chip.ChipGroup>
+
     <TextView
         android:id="@+id/tv_changed_files_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="6dp"
         android:text="Changed Files"
         android:textColor="?attr/colorOnSurface"
         android:textSize="16sp"

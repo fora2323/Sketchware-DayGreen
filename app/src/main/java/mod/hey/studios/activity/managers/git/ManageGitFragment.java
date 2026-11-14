@@ -20,13 +20,16 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.besome.sketch.design.DesignActivity;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.eclipse.jgit.api.Status;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import mod.hilal.saif.activities.tools.GitConfiguration;
@@ -34,6 +37,7 @@ import mod.hilal.saif.activities.tools.GitManager;
 import pro.sketchware.R;
 import pro.sketchware.databinding.FragmentManageGitBinding;
 import pro.sketchware.databinding.ItemGitChangedFileBinding;
+import pro.sketchware.databinding.ItemGitCommitBinding;
 import pro.sketchware.utility.SketchwareUtil;
 
 public class ManageGitFragment extends Fragment {
@@ -42,8 +46,10 @@ public class ManageGitFragment extends Fragment {
 
     private String sc_id;
     private FragmentManageGitBinding binding;
-    private ChangedFilesAdapter adapter;
+    private ChangedFilesAdapter changesAdapter;
+    private CommitHistoryAdapter historyAdapter;
     private String branchName = "main";
+    private boolean isHistoryMode = false;
 
     public static ManageGitFragment newInstance(String scId) {
         ManageGitFragment fragment = new ManageGitFragment();
@@ -72,15 +78,24 @@ public class ManageGitFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        adapter = new ChangedFilesAdapter();
+        changesAdapter = new ChangedFilesAdapter();
+        historyAdapter = new CommitHistoryAdapter(this::showCommitDetailDialog);
+
         binding.rvChangedFiles.setLayoutManager(new LinearLayoutManager(requireContext()));
-        binding.rvChangedFiles.setAdapter(adapter);
+        binding.rvChangedFiles.setAdapter(changesAdapter);
+
+        binding.chipGroupGitMode.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.isEmpty()) return;
+            int checkedId = checkedIds.get(0);
+            isHistoryMode = (checkedId == R.id.chip_history);
+            updateListModeUI();
+        });
 
         binding.swipeRefresh.setOnRefreshListener(() -> {
             binding.tvNoChanges.setVisibility(View.GONE);
-            loadStatus(true);
+            loadStatus(!isHistoryMode);
         });
-        binding.btnRefreshGit.setOnClickListener(v -> loadStatus(true));
+        binding.btnRefreshGit.setOnClickListener(v -> loadStatus(!isHistoryMode));
         binding.tvGitBranch.setOnClickListener(v -> showBranchDialog());
         binding.btnCommit.setOnClickListener(v -> handleCommit());
         binding.btnPush.setOnClickListener(v -> handlePush());
@@ -105,6 +120,23 @@ public class ManageGitFragment extends Fragment {
         activity.runOnUiThread(action);
     }
 
+    private void updateListModeUI() {
+        if (binding == null) return;
+        if (isHistoryMode) {
+            binding.tvChangedFilesHeader.setText("Commit History");
+            binding.rvChangedFiles.setAdapter(historyAdapter);
+            boolean empty = historyAdapter.getItemCount() == 0;
+            binding.tvNoChanges.setText("No commits yet on branch " + branchName);
+            binding.tvNoChanges.setVisibility(empty ? View.VISIBLE : View.GONE);
+        } else {
+            binding.tvChangedFilesHeader.setText("Changed Files");
+            binding.rvChangedFiles.setAdapter(changesAdapter);
+            boolean empty = changesAdapter.getItemCount() == 0;
+            binding.tvNoChanges.setText("No changed files in working tree");
+            binding.tvNoChanges.setVisibility(empty ? View.VISIBLE : View.GONE);
+        }
+    }
+
     private void loadStatus(boolean syncFirst) {
         if (sc_id == null || sc_id.isEmpty()) return;
         Context context = getContext();
@@ -119,6 +151,9 @@ public class ManageGitFragment extends Fragment {
                     }
                     GitManager.syncProjectToGitDir(sc_id);
                 }
+
+                // Fetch dari remote agar badge Pull langsung mendeteksi commit baru di GitHub
+                GitManager.fetch(context, sc_id);
 
                 branchName = GitManager.currentBranch(sc_id);
                 Status status = GitManager.getStatus(sc_id);
@@ -136,6 +171,7 @@ public class ManageGitFragment extends Fragment {
 
                 int unpushed = GitManager.countUnpushedCommits(sc_id, branchName);
                 int behind = GitManager.countBehind(sc_id, branchName);
+                List<GitManager.CommitInfo> commits = GitManager.getCommitHistory(sc_id, 50);
 
                 String authorName = GitConfiguration.getUserName(context);
                 String authorEmail = GitConfiguration.getUserEmail(context);
@@ -148,8 +184,9 @@ public class ManageGitFragment extends Fragment {
                     binding.tvGitUser.setText("Author: " + author);
                     binding.tvGitBranch.setText("Branch: " + branchName);
 
-                    adapter.setItems(changed);
-                    binding.tvNoChanges.setVisibility(changed.isEmpty() ? View.VISIBLE : View.GONE);
+                    changesAdapter.setItems(changed);
+                    historyAdapter.setItems(commits);
+                    updateListModeUI();
 
                     updateBadges(changed.size(), unpushed, behind);
                 });
@@ -178,6 +215,42 @@ public class ManageGitFragment extends Fragment {
             badge.setText(count > 99 ? "99+" : String.valueOf(count));
             badge.setVisibility(View.VISIBLE);
         }
+    }
+
+    private void showCommitDetailDialog(GitManager.CommitInfo commit) {
+        Context context = getContext();
+        if (context == null) return;
+
+        AlertDialog busy = showBusy("Memuat detail commit...");
+        new Thread(() -> {
+            StringBuilder details = new StringBuilder();
+            String dateStr = new SimpleDateFormat("dd MMM yyyy, HH:mm:ss", Locale.getDefault())
+                    .format(new Date(commit.commitTimeMillis));
+            details.append("Hash: ").append(commit.fullHash).append("\n");
+            details.append("Author: ").append(commit.authorName).append("\n");
+            details.append("Date: ").append(dateStr).append("\n\n");
+            details.append(commit.message).append("\n\n");
+
+            try {
+                List<String> files = GitManager.getCommitChangedFiles(sc_id, commit.fullHash);
+                details.append("Changed files (").append(files.size()).append("):\n");
+                for (String f : files) {
+                    details.append("• ").append(f).append("\n");
+                }
+            } catch (Exception e) {
+                details.append("(Gagal memuat daftar file: ").append(e.getMessage()).append(")");
+            }
+
+            runOnUi(() -> {
+                busy.dismiss();
+                if (!isAdded()) return;
+                new MaterialAlertDialogBuilder(context)
+                        .setTitle("Commit " + commit.shortHash)
+                        .setMessage(details.toString().trim())
+                        .setPositiveButton("Tutup", null)
+                        .show();
+            });
+        }).start();
     }
 
     private void handleCommit() {
@@ -272,12 +345,18 @@ public class ManageGitFragment extends Fragment {
             return;
         }
 
+        Activity host = getActivity();
         AlertDialog busy = showBusy("Pulling...");
         new Thread(() -> {
             try {
                 GitManager.pull(context, sc_id, null);
                 runOnUi(() -> {
                     busy.dismiss();
+                    if (host instanceof DesignActivity) {
+                        ((DesignActivity) host).reloadProjectFromDisk();
+                    } else {
+                        DesignActivity.needReloadProjectData = true;
+                    }
                     SketchwareUtil.toast("Pulled from GitHub successfully!");
                     loadStatus(false);
                 });
@@ -348,7 +427,7 @@ public class ManageGitFragment extends Fragment {
     }
 
     private void doCheckout(String name, boolean create) {
-        Context context = requireContext();
+        Activity host = getActivity();
         AlertDialog busy = showBusy("Pindah branch...");
         new Thread(() -> {
             try {
@@ -356,7 +435,11 @@ public class ManageGitFragment extends Fragment {
                 GitManager.restoreProjectFromGitDir(sc_id);
                 runOnUi(() -> {
                     busy.dismiss();
-                    DesignActivity.needReloadProjectData = true;
+                    if (host instanceof DesignActivity) {
+                        ((DesignActivity) host).reloadProjectFromDisk();
+                    } else {
+                        DesignActivity.needReloadProjectData = true;
+                    }
                     SketchwareUtil.toast("Pindah ke branch " + name);
                     loadStatus(false);
                 });
@@ -451,6 +534,61 @@ public class ManageGitFragment extends Fragment {
             final ItemGitChangedFileBinding binding;
 
             ViewHolder(ItemGitChangedFileBinding binding) {
+                super(binding.getRoot());
+                this.binding = binding;
+            }
+        }
+    }
+
+    private static class CommitHistoryAdapter extends RecyclerView.Adapter<CommitHistoryAdapter.ViewHolder> {
+
+        interface OnCommitClickListener {
+            void onCommitClick(GitManager.CommitInfo commit);
+        }
+
+        private final List<GitManager.CommitInfo> items = new ArrayList<>();
+        private final OnCommitClickListener listener;
+        private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault());
+
+        CommitHistoryAdapter(OnCommitClickListener listener) {
+            this.listener = listener;
+        }
+
+        void setItems(List<GitManager.CommitInfo> newItems) {
+            items.clear();
+            items.addAll(newItems);
+            notifyDataSetChanged();
+        }
+
+        @NonNull
+        @Override
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            ItemGitCommitBinding binding = ItemGitCommitBinding.inflate(
+                    LayoutInflater.from(parent.getContext()), parent, false
+            );
+            return new ViewHolder(binding);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+            GitManager.CommitInfo item = items.get(position);
+            holder.binding.tvCommitMessage.setText(item.message);
+            holder.binding.tvCommitHash.setText(item.shortHash);
+            holder.binding.tvCommitMeta.setText(item.authorName + " • " + dateFormat.format(new Date(item.commitTimeMillis)));
+            holder.itemView.setOnClickListener(v -> {
+                if (listener != null) listener.onCommitClick(item);
+            });
+        }
+
+        @Override
+        public int getItemCount() {
+            return items.size();
+        }
+
+        static class ViewHolder extends RecyclerView.ViewHolder {
+            final ItemGitCommitBinding binding;
+
+            ViewHolder(ItemGitCommitBinding binding) {
                 super(binding.getRoot());
                 this.binding = binding;
             }

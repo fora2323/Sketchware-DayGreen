@@ -621,6 +621,15 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         jC.c(sc_id).l();
     }
 
+    public void reloadProjectFromDisk() {
+        needReloadProjectData = false;
+        jC.a();
+        cC.a();
+        bC.a();
+        ProjectLoader loader = new ProjectLoader(this, null);
+        loader.execute();
+    }
+
     private void saveProject() {
         k();
         ProjectSaver projectSaver = new ProjectSaver(this);
@@ -935,13 +944,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         }
 
         if (needReloadProjectData) {
-            ProjectLoader loader;
-            if (mSavedInstanceState == null) {
-                loader = new ProjectLoader(this, null);
-            } else {
-                loader = new ProjectLoader(this, mSavedInstanceState);
-            }
-            loader.execute();
+            reloadProjectFromDisk();
         }
 
         isFirstLaunch = false;
