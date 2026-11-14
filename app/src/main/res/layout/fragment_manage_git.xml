@@ -115,7 +115,9 @@
                 <FrameLayout
                     android:layout_width="0dp"
                     android:layout_height="48dp"
-                    android:layout_weight="1">
+                    android:layout_weight="1"
+                    android:clipChildren="false"
+                    android:clipToPadding="false">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_commit"
@@ -130,8 +132,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="top|end"
-                        android:layout_marginTop="-6dp"
-                        android:layout_marginEnd="-6dp"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginEnd="2dp"
                         android:background="@drawable/shape_git_badge"
                         android:gravity="center"
                         android:minWidth="20dp"
@@ -189,31 +191,40 @@
         android:textSize="16sp"
         android:textStyle="bold" />
 
-    <TextView
-        android:id="@+id/tv_no_changes"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center"
-        android:text="No changed files in working tree"
-        android:textColor="?attr/colorOnSurfaceVariant"
-        android:textSize="14sp"
-        android:visibility="gone" />
-
-    <com.expressive.refresh.ExpressivePullToRefresh
-        android:id="@+id/swipe_refresh"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:transitionGroup="true">
+        android:layout_weight="1">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_changed_files"
+        <com.expressive.refresh.ExpressivePullToRefresh
+            android:id="@+id/swipe_refresh"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingBottom="16dp" />
+            android:transitionGroup="true">
 
-    </com.expressive.refresh.ExpressivePullToRefresh>
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_changed_files"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:paddingBottom="16dp" />
+
+                <TextView
+                    android:id="@+id/tv_no_changes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:text="No changed files in working tree"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+            </FrameLayout>
+        </com.expressive.refresh.ExpressivePullToRefresh>
+    </FrameLayout>
 
 </LinearLayout>
