@@ -3,9 +3,8 @@ package pro.sketchware.activities.importicon.adapters;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -41,51 +40,81 @@ public class IconAdapter extends ListAdapter<IconCatalog.IconItem, IconAdapter.V
     private final SvgUtils svgUtils;
     private final IconDownloader iconDownloader;
     private final OnIconSelectedListener listener;
-    private final Drawable placeholderDrawable;
 
-    public IconAdapter(@NonNull Context context, @NonNull IconDownloader iconDownloader, @NonNull OnIconSelectedListener listener) {
+    private String currentStyle = IconDownloader.DEFAULT_STYLE;
+    private String currentFillType = IconDownloader.DEFAULT_FILL_TYPE;
+    private int currentOpticalSize = IconDownloader.DEFAULT_OPTICAL_SIZE;
+
+    public IconAdapter(
+            @NonNull Context context,
+            @NonNull IconDownloader iconDownloader,
+            @NonNull OnIconSelectedListener listener
+    ) {
         super(DIFF_CALLBACK);
-        this.svgUtils = new SvgUtils(context);
+        this.svgUtils = new SvgUtils(context.getApplicationContext());
         this.iconDownloader = iconDownloader;
         this.listener = listener;
-        this.placeholderDrawable = createPlaceholderDrawable(context);
+    }
+
+    public void updateVariant(@NonNull String style, @NonNull String fillType, int opticalSize) {
+        this.currentStyle = IconDownloader.normalizeStyle(style);
+        this.currentFillType = IconDownloader.normalizeFillType(fillType);
+        this.currentOpticalSize = IconDownloader.normalizeOpticalSize(opticalSize);
+        notifyDataSetChanged();
     }
 
     @NonNull
-    private Drawable createPlaceholderDrawable(@NonNull Context context) {
-        float density = context.getResources().getDisplayMetrics().density;
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setShape(GradientDrawable.RECTANGLE);
-        drawable.setCornerRadius(12f * density);
-        drawable.setColor(0x1F9E9E9E);
-        return drawable;
+    public String getCurrentStyle() {
+        return currentStyle;
+    }
+
+    @NonNull
+    public String getCurrentFillType() {
+        return currentFillType;
+    }
+
+    public int getCurrentOpticalSize() {
+        return currentOpticalSize;
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         IconCatalog.IconItem item = getItem(position);
         String iconName = item.name;
-        holder.boundIconName = iconName;
+        String style = currentStyle;
+        String fillType = currentFillType;
+        int opticalSize = currentOpticalSize;
+        String variantKey = style + "/" + fillType + "/" + opticalSize + "/" + iconName;
 
+        holder.boundVariantKey = variantKey;
         holder.itemBinding.title.setText(iconName);
         holder.itemBinding.img.setColorFilter(DEFAULT_ICON_COLOR, PorterDuff.Mode.SRC_IN);
 
-        if (iconDownloader.isCached(iconName)) {
-            File cachedFile = iconDownloader.getCachedSvgFile(iconName);
+        if (iconDownloader.isCached(iconName, style, fillType, opticalSize)) {
+            holder.itemBinding.progressLoading.setVisibility(View.GONE);
+            holder.itemBinding.img.setVisibility(View.VISIBLE);
+            File cachedFile = iconDownloader.getCachedSvgFile(iconName, style, fillType, opticalSize);
             svgUtils.loadImage(holder.itemBinding.img, cachedFile.getAbsolutePath());
         } else {
-            holder.itemBinding.img.setImageDrawable(placeholderDrawable);
-            iconDownloader.downloadSvgAsync(iconName, new IconDownloader.DownloadCallback() {
+            holder.itemBinding.img.setImageDrawable(null);
+            holder.itemBinding.img.setVisibility(View.INVISIBLE);
+            holder.itemBinding.progressLoading.setVisibility(View.VISIBLE);
+
+            iconDownloader.downloadSvgAsync(iconName, style, fillType, opticalSize, new IconDownloader.DownloadCallback() {
                 @Override
                 public void onSuccess(@NonNull File svgFile) {
-                    if (iconName.equals(holder.boundIconName)) {
+                    if (variantKey.equals(holder.boundVariantKey)) {
+                        holder.itemBinding.progressLoading.setVisibility(View.GONE);
+                        holder.itemBinding.img.setVisibility(View.VISIBLE);
                         svgUtils.loadImage(holder.itemBinding.img, svgFile.getAbsolutePath());
                     }
                 }
 
                 @Override
                 public void onError(@NonNull String errorMessage) {
-                    if (iconName.equals(holder.boundIconName)) {
+                    if (variantKey.equals(holder.boundVariantKey)) {
+                        holder.itemBinding.progressLoading.setVisibility(View.GONE);
+                        holder.itemBinding.img.setVisibility(View.VISIBLE);
                         holder.itemBinding.img.setImageResource(R.drawable.ic_remove_grey600_24dp);
                     }
                 }
@@ -96,7 +125,11 @@ public class IconAdapter extends ListAdapter<IconCatalog.IconItem, IconAdapter.V
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        ImportIconListItemBinding binding = ImportIconListItemBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+        ImportIconListItemBinding binding = ImportIconListItemBinding.inflate(
+                LayoutInflater.from(parent.getContext()),
+                parent,
+                false
+        );
         return new ViewHolder(binding);
     }
 
@@ -106,7 +139,7 @@ public class IconAdapter extends ListAdapter<IconCatalog.IconItem, IconAdapter.V
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         private final ImportIconListItemBinding itemBinding;
-        private String boundIconName;
+        private String boundVariantKey;
 
         public ViewHolder(@NonNull ImportIconListItemBinding binding) {
             super(binding.getRoot());

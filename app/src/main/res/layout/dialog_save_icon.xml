@@ -12,9 +12,16 @@
         android:orientation="vertical"
         android:paddingBottom="8dp">
 
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progress_download"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:indeterminate="true"
+            android:visibility="gone" />
+
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="116dp"
-            android:layout_height="116dp"
+            android:layout_width="124dp"
+            android:layout_height="124dp"
             android:layout_gravity="center"
             android:layout_marginTop="16dp"
             app:cardBackgroundColor="?attr/colorSurfaceContainerLow"

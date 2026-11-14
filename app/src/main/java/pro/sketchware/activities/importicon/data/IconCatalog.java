@@ -15,8 +15,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -47,16 +49,45 @@ public class IconCatalog {
             this.tags = Collections.unmodifiableList(tags);
         }
 
-        public boolean matches(@NonNull String lowerQuery) {
-            if (name.toLowerCase(Locale.ROOT).contains(lowerQuery)) {
-                return true;
+        /**
+         * Returns search priority rank:
+         * 1 = exact name match
+         * 2 = name starts with query
+         * 3 = name contains query
+         * 4 = tag contains query
+         * 0 = no match
+         */
+        public int getMatchRank(@NonNull String lowerQuery) {
+            String lowerName = name.toLowerCase(Locale.ROOT);
+            if (lowerName.equals(lowerQuery)) {
+                return 1;
+            }
+            if (lowerName.startsWith(lowerQuery)) {
+                return 2;
+            }
+            if (lowerName.contains(lowerQuery)) {
+                return 3;
             }
             for (String tag : tags) {
                 if (tag.toLowerCase(Locale.ROOT).contains(lowerQuery)) {
-                    return true;
+                    return 4;
                 }
             }
-            return false;
+            return 0;
+        }
+
+        public boolean matches(@NonNull String lowerQuery) {
+            return getMatchRank(lowerQuery) > 0;
+        }
+    }
+
+    private static class RankedIconItem {
+        final IconItem item;
+        final int rank;
+
+        RankedIconItem(@NonNull IconItem item, int rank) {
+            this.item = item;
+            this.rank = rank;
         }
     }
 
@@ -81,6 +112,31 @@ public class IconCatalog {
                 .build();
         this.executor = Executors.newSingleThreadExecutor();
         this.mainHandler = new Handler(Looper.getMainLooper());
+    }
+
+    @NonNull
+    public static List<IconItem> search(@NonNull List<IconItem> sourceItems, @NonNull String query) {
+        String trimmed = query.trim();
+        if (trimmed.isEmpty()) {
+            return new ArrayList<>(sourceItems);
+        }
+
+        String lowerQuery = trimmed.toLowerCase(Locale.ROOT);
+        List<RankedIconItem> rankedMatches = new ArrayList<>();
+        for (IconItem item : sourceItems) {
+            int rank = item.getMatchRank(lowerQuery);
+            if (rank > 0) {
+                rankedMatches.add(new RankedIconItem(item, rank));
+            }
+        }
+
+        rankedMatches.sort(Comparator.comparingInt(r -> r.rank));
+
+        List<IconItem> sortedResults = new ArrayList<>(rankedMatches.size());
+        for (RankedIconItem ranked : rankedMatches) {
+            sortedResults.add(ranked.item);
+        }
+        return sortedResults;
     }
 
     public boolean hasCache() {
@@ -167,7 +223,8 @@ public class IconCatalog {
             return Collections.emptyList();
         }
         try {
-            String jsonText = Files.readString(cacheFile.toPath(), StandardCharsets.UTF_8);
+            byte[] bytes = Files.readAllBytes(cacheFile.toPath());
+            String jsonText = new String(bytes, StandardCharsets.UTF_8);
             return parseCatalogJson(jsonText);
         } catch (Exception e) {
             Log.w(TAG, "Failed to read cached icon catalog, ignoring cache", e);
@@ -214,6 +271,7 @@ public class IconCatalog {
     }
 
     private void saveToCache(@NonNull List<IconItem> items) {
+        File tempFile = null;
         try {
             JSONObject root = new JSONObject();
             JSONArray iconsArray = new JSONArray();
@@ -225,14 +283,23 @@ public class IconCatalog {
                 iconsArray.put(obj);
             }
             root.put("icons", iconsArray);
+
             File parent = cacheFile.getParentFile();
             if (parent != null && !parent.exists()) {
                 //noinspection ResultOfMethodCallIgnored
                 parent.mkdirs();
             }
-            Files.writeString(cacheFile.toPath(), root.toString(), StandardCharsets.UTF_8);
+
+            tempFile = new File(parent, CACHE_FILE_NAME + ".tmp");
+            Files.write(tempFile.toPath(), root.toString().getBytes(StandardCharsets.UTF_8));
+            Files.move(tempFile.toPath(), cacheFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (Exception e) {
             Log.w(TAG, "Failed to write icon catalog cache", e);
+        } finally {
+            if (tempFile != null && tempFile.exists()) {
+                //noinspection ResultOfMethodCallIgnored
+                tempFile.delete();
+            }
         }
     }
 

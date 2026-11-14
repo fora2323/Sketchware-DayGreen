@@ -6,16 +6,18 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 
@@ -24,17 +26,18 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.besome.sketch.lib.ui.ColorPickerDialog;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 
 import a.a.a.WB;
@@ -46,6 +49,7 @@ import pro.sketchware.activities.importicon.adapters.IconAdapter;
 import pro.sketchware.activities.importicon.data.IconCatalog;
 import pro.sketchware.activities.importicon.data.IconDownloader;
 import pro.sketchware.activities.resourceseditor.components.utils.ColorsEditorManager;
+import pro.sketchware.databinding.BottomSheetFilterMaterialSymbolsBinding;
 import pro.sketchware.databinding.DialogSaveIconBinding;
 import pro.sketchware.databinding.ImportIconBinding;
 import pro.sketchware.utility.PropertiesUtil;
@@ -55,7 +59,7 @@ import pro.sketchware.utility.SvgUtils;
 public class ImportIconActivity extends BaseAppCompatActivity implements IconAdapter.OnIconSelectedListener {
 
     private static final int ITEMS_PER_PAGE = 40;
-    private static final int DEFAULT_ICON_SIZE_PX = 24;
+    private static final int DEFAULT_SAVE_ICON_SIZE_PX = 24;
     private static final int DEFAULT_ICON_COLOR = Color.parseColor("#9E9E9E");
     private static final String DEFAULT_ICON_COLOR_HEX = "#9E9E9E";
 
@@ -81,9 +85,16 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
     private boolean isLoadingMore = false;
     private boolean isLastPage = false;
 
+    // Active Material Symbols variant filters
+    private String selectedStyle = IconDownloader.DEFAULT_STYLE;
+    private String selectedFillType = IconDownloader.DEFAULT_FILL_TYPE;
+    private int selectedOpticalSize = IconDownloader.DEFAULT_OPTICAL_SIZE;
+
+    // Active Save Dialog state
     private int selectedColor = DEFAULT_ICON_COLOR;
     private String selectedColorHex = DEFAULT_ICON_COLOR_HEX;
-    private int selectedSizePx = DEFAULT_ICON_SIZE_PX;
+    private int selectedSaveSizePx = DEFAULT_SAVE_ICON_SIZE_PX;
+    private int previewRequestToken = 0;
 
     private final OnBackPressedCallback searchViewCloser = new OnBackPressedCallback(false) {
         @Override
@@ -98,7 +109,9 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
     };
 
     private int getGridLayoutColumnCount() {
-        int columns = (int) (getResources().getDisplayMetrics().widthPixels / getResources().getDisplayMetrics().density) / 80;
+        float density = getResources().getDisplayMetrics().density;
+        float screenWidthDp = getResources().getDisplayMetrics().widthPixels / density;
+        int columns = (int) (screenWidthDp / 88f);
         return Math.max(1, columns);
     }
 
@@ -129,6 +142,8 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
             }
         });
 
+        applyToolbarAndStatusBarColors(toolbar);
+
         getOnBackPressedDispatcher().addCallback(this, searchViewCloser);
 
         sc_id = getIntent().getStringExtra("sc_id");
@@ -144,6 +159,12 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
         binding.imageList.setLayoutManager(new GridLayoutManager(getBaseContext(), getGridLayoutColumnCount()));
         adapter = new IconAdapter(this, iconDownloader, this);
         binding.imageList.setAdapter(adapter);
+
+        binding.filterIconsButton.setOnClickListener(v -> {
+            if (!mB.a()) {
+                showFilterBottomSheet();
+            }
+        });
 
         binding.imageList.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -167,8 +188,34 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
         loadIconCatalog();
     }
 
+    private void applyToolbarAndStatusBarColors(@NonNull Toolbar toolbar) {
+        TypedValue typedValue = new TypedValue();
+        int surfaceColor = Color.WHITE;
+        if (getTheme().resolveAttribute(R.attr.colorSurface, typedValue, true)) {
+            surfaceColor = typedValue.data;
+        }
+
+        binding.appBar.setBackgroundColor(surfaceColor);
+        toolbar.setBackgroundColor(surfaceColor);
+
+        Window window = getWindow();
+        if (window != null) {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(surfaceColor);
+
+            double luminance = Color.red(surfaceColor) * 0.299
+                    + Color.green(surfaceColor) * 0.587
+                    + Color.blue(surfaceColor) * 0.114;
+            boolean isLightSurface = luminance > 186;
+            WindowInsetsControllerCompat insetsController =
+                    new WindowInsetsControllerCompat(window, window.getDecorView());
+            insetsController.setAppearanceLightStatusBars(isLightSurface);
+        }
+    }
+
     @Override
-    public void onDestroy() {
+    protected void onDestroy() {
         mainHandler.removeCallbacksAndMessages(null);
         if (iconCatalog != null) {
             iconCatalog.shutdown();
@@ -212,17 +259,7 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
     private void applyFilterAndResetPaging(@NonNull String query) {
         currentQuery = query.trim();
         filteredSourceItems.clear();
-
-        if (currentQuery.isEmpty()) {
-            filteredSourceItems.addAll(allCatalogItems);
-        } else {
-            String lowerQuery = currentQuery.toLowerCase(Locale.ROOT);
-            for (IconCatalog.IconItem item : allCatalogItems) {
-                if (item.matches(lowerQuery)) {
-                    filteredSourceItems.add(item);
-                }
-            }
-        }
+        filteredSourceItems.addAll(IconCatalog.search(allCatalogItems, currentQuery));
 
         displayedItems.clear();
         currentPage = 0;
@@ -277,6 +314,64 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
         }
     }
 
+    private void showFilterBottomSheet() {
+        BottomSheetDialog bottomSheet = new BottomSheetDialog(this);
+        BottomSheetFilterMaterialSymbolsBinding sheetBinding =
+                BottomSheetFilterMaterialSymbolsBinding.inflate(getLayoutInflater());
+        bottomSheet.setContentView(sheetBinding.getRoot());
+
+        // Restore active Style selection
+        switch (selectedStyle) {
+            case IconDownloader.STYLE_ROUNDED -> sheetBinding.chipGroupStyle.check(R.id.chip_style_rounded);
+            case IconDownloader.STYLE_SHARP -> sheetBinding.chipGroupStyle.check(R.id.chip_style_sharp);
+            default -> sheetBinding.chipGroupStyle.check(R.id.chip_style_outlined);
+        }
+
+        // Restore active Fill selection
+        sheetBinding.switchFill.setChecked(IconDownloader.FILL_FILLED.equals(selectedFillType));
+
+        // Restore active Optical Size selection
+        switch (selectedOpticalSize) {
+            case 20 -> sheetBinding.chipGroupOpsz.check(R.id.chip_opsz_20);
+            case 24 -> sheetBinding.chipGroupOpsz.check(R.id.chip_opsz_24);
+            case 48 -> sheetBinding.chipGroupOpsz.check(R.id.chip_opsz_48);
+            default -> sheetBinding.chipGroupOpsz.check(R.id.chip_opsz_40);
+        }
+
+        sheetBinding.btnCancelFilter.setOnClickListener(v -> bottomSheet.dismiss());
+
+        sheetBinding.btnApplyFilter.setOnClickListener(v -> {
+            int checkedStyleId = sheetBinding.chipGroupStyle.getCheckedChipId();
+            if (checkedStyleId == R.id.chip_style_rounded) {
+                selectedStyle = IconDownloader.STYLE_ROUNDED;
+            } else if (checkedStyleId == R.id.chip_style_sharp) {
+                selectedStyle = IconDownloader.STYLE_SHARP;
+            } else {
+                selectedStyle = IconDownloader.STYLE_OUTLINED;
+            }
+
+            selectedFillType = sheetBinding.switchFill.isChecked()
+                    ? IconDownloader.FILL_FILLED
+                    : IconDownloader.FILL_DEFAULT;
+
+            int checkedOpszId = sheetBinding.chipGroupOpsz.getCheckedChipId();
+            if (checkedOpszId == R.id.chip_opsz_20) {
+                selectedOpticalSize = 20;
+            } else if (checkedOpszId == R.id.chip_opsz_24) {
+                selectedOpticalSize = 24;
+            } else if (checkedOpszId == R.id.chip_opsz_48) {
+                selectedOpticalSize = 48;
+            } else {
+                selectedOpticalSize = 40;
+            }
+
+            adapter.updateVariant(selectedStyle, selectedFillType, selectedOpticalSize);
+            bottomSheet.dismiss();
+        });
+
+        bottomSheet.show();
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_import_icon, menu);
@@ -328,7 +423,11 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
     private void showSaveDialog(@NonNull IconCatalog.IconItem iconItem) {
         selectedColor = DEFAULT_ICON_COLOR;
         selectedColorHex = DEFAULT_ICON_COLOR_HEX;
-        selectedSizePx = DEFAULT_ICON_SIZE_PX;
+        selectedSaveSizePx = DEFAULT_SAVE_ICON_SIZE_PX;
+
+        final String activeStyle = selectedStyle;
+        final String activeFill = selectedFillType;
+        final int activeOpsz = selectedOpticalSize;
 
         DialogSaveIconBinding dialogBinding = DialogSaveIconBinding.inflate(getLayoutInflater());
 
@@ -339,55 +438,33 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
                 .setPositiveButton("Save", null)
                 .create();
 
-        String defaultResourceName = "icon_" + iconItem.name + "_outlined";
+        String fillSuffix = IconDownloader.FILL_FILLED.equals(activeFill) ? "_filled" : "";
+        String defaultResourceName = "icon_" + iconItem.name + "_" + activeStyle + fillSuffix;
         dialogBinding.inputText.setText(defaultResourceName);
         iconNameValidator = new WB(getApplicationContext(), dialogBinding.textInputLayout, uq.b, alreadyAddedImageNames);
 
-        updatePreviewSize(dialogBinding.icon, selectedSizePx);
+        updatePreviewSizePx(dialogBinding.icon, selectedSaveSizePx);
         updateColorButtonAndPreview(dialogBinding);
-
-        if (iconDownloader.isCached(iconItem.name)) {
-            File cachedFile = iconDownloader.getCachedSvgFile(iconItem.name);
-            svgUtils.loadImage(dialogBinding.icon, cachedFile.getAbsolutePath());
-        } else {
-            GradientDrawable placeholder = new GradientDrawable();
-            placeholder.setShape(GradientDrawable.RECTANGLE);
-            placeholder.setCornerRadius(8f * getResources().getDisplayMetrics().density);
-            placeholder.setColor(0x1F9E9E9E);
-            dialogBinding.icon.setImageDrawable(placeholder);
-
-            iconDownloader.downloadSvgAsync(iconItem.name, new IconDownloader.DownloadCallback() {
-                @Override
-                public void onSuccess(@NonNull File svgFile) {
-                    if (isDestroyed() || isFinishing() || !dialog.isShowing()) return;
-                    svgUtils.loadImage(dialogBinding.icon, svgFile.getAbsolutePath());
-                }
-
-                @Override
-                public void onError(@NonNull String errorMessage) {
-                    if (isDestroyed() || isFinishing() || !dialog.isShowing()) return;
-                    dialogBinding.icon.setImageResource(R.drawable.ic_remove_grey600_24dp);
-                }
-            });
-        }
+        loadDialogPreviewSvg(dialog, dialogBinding, iconItem.name, activeStyle, activeFill, activeOpsz, selectedSaveSizePx);
 
         dialogBinding.chipGroupSize.setOnCheckedStateChangeListener((group, checkedIds) -> {
             if (checkedIds.isEmpty()) return;
             int checkedId = checkedIds.get(0);
             if (checkedId == R.id.chip_size_16) {
-                selectedSizePx = 16;
+                selectedSaveSizePx = 16;
             } else if (checkedId == R.id.chip_size_24) {
-                selectedSizePx = 24;
+                selectedSaveSizePx = 24;
             } else if (checkedId == R.id.chip_size_32) {
-                selectedSizePx = 32;
+                selectedSaveSizePx = 32;
             } else if (checkedId == R.id.chip_size_48) {
-                selectedSizePx = 48;
+                selectedSaveSizePx = 48;
             } else if (checkedId == R.id.chip_size_64) {
-                selectedSizePx = 64;
+                selectedSaveSizePx = 64;
             } else if (checkedId == R.id.chip_size_96) {
-                selectedSizePx = 96;
+                selectedSaveSizePx = 96;
             }
-            updatePreviewSize(dialogBinding.icon, selectedSizePx);
+            updatePreviewSizePx(dialogBinding.icon, selectedSaveSizePx);
+            loadDialogPreviewSvg(dialog, dialogBinding, iconItem.name, activeStyle, activeFill, activeOpsz, selectedSaveSizePx);
         });
 
         dialogBinding.selectColour.setOnClickListener(view -> {
@@ -435,16 +512,21 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
 
                 String outputResourceName = Helper.getText(dialogBinding.inputText).trim();
                 positiveButton.setEnabled(false);
+                dialogBinding.progressDownload.setVisibility(View.VISIBLE);
 
                 iconDownloader.saveResizedSvgToProjectAsync(
                         iconItem.name,
+                        activeStyle,
+                        activeFill,
+                        activeOpsz,
                         sc_id,
                         outputResourceName,
-                        selectedSizePx,
+                        selectedSaveSizePx,
                         new IconDownloader.DownloadCallback() {
                             @Override
                             public void onSuccess(@NonNull File savedSvgFile) {
                                 if (isDestroyed() || isFinishing()) return;
+                                dialogBinding.progressDownload.setVisibility(View.GONE);
                                 dialogInterface.dismiss();
 
                                 Intent intent = new Intent();
@@ -452,7 +534,7 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
                                 intent.putExtra("iconPath", savedSvgFile.getAbsolutePath());
                                 intent.putExtra("iconColor", selectedColor);
                                 intent.putExtra("iconColorHex", selectedColorHex);
-                                intent.putExtra("iconSize", selectedSizePx);
+                                intent.putExtra("iconSize", selectedSaveSizePx);
                                 setResult(Activity.RESULT_OK, intent);
                                 finish();
                             }
@@ -460,6 +542,7 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
                             @Override
                             public void onError(@NonNull String errorMessage) {
                                 if (isDestroyed() || isFinishing()) return;
+                                dialogBinding.progressDownload.setVisibility(View.GONE);
                                 positiveButton.setEnabled(true);
                                 SketchwareUtil.toastError(errorMessage);
                             }
@@ -471,11 +554,58 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
         dialog.show();
     }
 
-    private void updatePreviewSize(@NonNull ImageView previewView, int sizePx) {
+    private void loadDialogPreviewSvg(
+            @NonNull AlertDialog dialog,
+            @NonNull DialogSaveIconBinding dialogBinding,
+            @NonNull String iconName,
+            @NonNull String style,
+            @NonNull String fillType,
+            int opticalSize,
+            int outputSizePx
+    ) {
+        final int requestId = ++previewRequestToken;
+        boolean alreadyCached = iconDownloader.isCached(iconName, style, fillType, opticalSize);
+        if (!alreadyCached) {
+            dialogBinding.icon.setImageDrawable(null);
+            dialogBinding.progressDownload.setVisibility(View.VISIBLE);
+        }
+
+        iconDownloader.prepareResizedSvgPreviewAsync(
+                iconName,
+                style,
+                fillType,
+                opticalSize,
+                outputSizePx,
+                new IconDownloader.DownloadCallback() {
+                    @Override
+                    public void onSuccess(@NonNull File resizedPreviewSvg) {
+                        if (isDestroyed() || isFinishing() || !dialog.isShowing() || requestId != previewRequestToken) {
+                            return;
+                        }
+                        dialogBinding.progressDownload.setVisibility(View.GONE);
+                        svgUtils.loadImage(dialogBinding.icon, resizedPreviewSvg.getAbsolutePath());
+                        dialogBinding.icon.setColorFilter(selectedColor, PorterDuff.Mode.SRC_IN);
+                    }
+
+                    @Override
+                    public void onError(@NonNull String errorMessage) {
+                        if (isDestroyed() || isFinishing() || !dialog.isShowing() || requestId != previewRequestToken) {
+                            return;
+                        }
+                        dialogBinding.progressDownload.setVisibility(View.GONE);
+                        dialogBinding.icon.setImageResource(R.drawable.ic_remove_grey600_24dp);
+                    }
+                }
+        );
+    }
+
+    private void updatePreviewSizePx(@NonNull ImageView previewView, int sizePx) {
+        float density = getResources().getDisplayMetrics().density;
+        int targetPx = Math.max(1, Math.round(sizePx * density));
         ViewGroup.LayoutParams params = previewView.getLayoutParams();
         if (params != null) {
-            params.width = sizePx;
-            params.height = sizePx;
+            params.width = targetPx;
+            params.height = targetPx;
             previewView.setLayoutParams(params);
         }
     }
@@ -484,7 +614,9 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
         dialogBinding.selectColour.setText(selectedColorHex);
         dialogBinding.selectColour.setBackgroundColor(selectedColor);
 
-        double luminance = Color.red(selectedColor) * 0.299 + Color.green(selectedColor) * 0.587 + Color.blue(selectedColor) * 0.114;
+        double luminance = Color.red(selectedColor) * 0.299
+                + Color.green(selectedColor) * 0.587
+                + Color.blue(selectedColor) * 0.114;
         dialogBinding.selectColour.setTextColor(luminance > 186 ? Color.BLACK : Color.WHITE);
 
         dialogBinding.icon.setColorFilter(selectedColor, PorterDuff.Mode.SRC_IN);

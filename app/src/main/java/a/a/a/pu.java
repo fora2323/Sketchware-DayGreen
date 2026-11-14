@@ -1,24 +1,32 @@
 package a.a.a;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -27,16 +35,25 @@ import com.besome.sketch.beans.ProjectResourceBean;
 import com.besome.sketch.editor.manage.image.AddImageActivity;
 import com.besome.sketch.editor.manage.image.ManageImageActivity;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool;
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,19 +64,34 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import coil.ComponentRegistry;
+import coil.ImageLoader;
+import coil.decode.SvgDecoder;
+import coil.request.ImageRequest;
+import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 import pro.sketchware.activities.importicon.ImportIconActivity;
+import pro.sketchware.activities.importicon.data.IconDownloader;
+import pro.sketchware.activities.resourceseditor.components.utils.ColorsEditorManager;
+import pro.sketchware.databinding.DialogSaveIconBinding;
 import pro.sketchware.databinding.FrManageImageListBinding;
 import pro.sketchware.databinding.ManageImageListItemBinding;
 import pro.sketchware.utility.FilePathUtil;
+import pro.sketchware.utility.PropertiesUtil;
+import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.SvgUtils;
 
 public class pu extends qA {
+
+    private static final int DEFAULT_ICON_SIZE_PX = 24;
+    private static final int DEFAULT_ICON_COLOR = Color.parseColor("#9E9E9E");
+    private static final String DEFAULT_ICON_COLOR_HEX = "#9E9E9E";
 
     private final FilePathUtil fpu = new FilePathUtil();
     public boolean isSelecting = false;
     public SvgUtils svgUtils;
     Map<Integer, Map<String, Object>> colorMap = new HashMap<>();
+    private ImageLoader coilImageLoader;
     private FrManageImageListBinding binding;
     private String sc_id;
     private ArrayList<ProjectResourceBean> images;
@@ -67,6 +99,7 @@ public class pu extends qA {
     private FloatingActionButton fab;
     private String projectImagesDirectory = "";
     private Adapter adapter = null;
+
     private final ActivityResultLauncher<Intent> openImportIconActivity = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == Activity.RESULT_OK) {
             var data = result.getData();
@@ -74,58 +107,69 @@ public class pu extends qA {
                 Log.e("pu.java", "data is null in openImportIconActivity");
                 return;
             }
-            ProjectResourceBean icon = new ProjectResourceBean(ProjectResourceBean.PROJECT_RES_TYPE_FILE, data.getStringExtra("iconName"), data.getStringExtra("iconPath"));
+            ProjectResourceBean icon = new ProjectResourceBean(
+                    ProjectResourceBean.PROJECT_RES_TYPE_FILE,
+                    data.getStringExtra("iconName"),
+                    data.getStringExtra("iconPath")
+            );
             icon.savedPos = 2;
             icon.isNew = true;
 
-            int selectedColor = data.getIntExtra("iconColor", -1);
+            int selectedColor = data.getIntExtra("iconColor", DEFAULT_ICON_COLOR);
             String selectedColorHex = data.getStringExtra("iconColorHex");
-            int selectedSize = data.getIntExtra("iconSize", 24);
+            if (selectedColorHex == null || selectedColorHex.isEmpty()) {
+                selectedColorHex = DEFAULT_ICON_COLOR_HEX;
+            }
+            int selectedSize = data.getIntExtra("iconSize", DEFAULT_ICON_SIZE_PX);
             addNewColorFilterInfo(selectedColorHex, selectedColor, selectedSize, images.size());
 
             addImage(icon);
             bB.a(requireActivity(), getString(R.string.design_manager_message_add_complete), bB.TOAST_NORMAL).show();
         }
     });
+
     private final ActivityResultLauncher<Intent> showAddImageDialog = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == Activity.RESULT_OK) {
             if (result.getData() == null) {
                 Log.e("pu.java", "result data is null");
                 return;
             }
-            Intent data = result.getData();
             ArrayList<ProjectResourceBean> addedImages;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 addedImages = result.getData().getParcelableArrayListExtra("images", ProjectResourceBean.class);
             } else {
                 addedImages = result.getData().getParcelableArrayListExtra("images");
             }
-            images.addAll(addedImages);
-            adapter.notifyItemRangeInserted(images.size() - addedImages.size(), addedImages.size());
+            if (addedImages != null) {
+                images.addAll(addedImages);
+                adapter.notifyItemRangeInserted(images.size() - addedImages.size(), addedImages.size());
+            }
             updateGuideVisibility();
             ((ManageImageActivity) requireActivity()).l().refreshData();
             bB.a(requireActivity(), getString(R.string.design_manager_message_add_complete), bB.TOAST_NORMAL).show();
         }
     });
+
     private final ActivityResultLauncher<Intent> showImageDetailsDialog = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == Activity.RESULT_OK) {
             if (result.getData() == null) {
                 Log.e("pu.java", "result data is null");
                 return;
             }
-            Intent data = result.getData();
             ProjectResourceBean editedImage;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 editedImage = result.getData().getParcelableExtra("image", ProjectResourceBean.class);
             } else {
                 editedImage = result.getData().getParcelableExtra("image");
             }
-            kC.z();
-            for (ProjectResourceBean image : images) {
-                if (image.resName.equals(editedImage.resName)) {
-                    image.copy(editedImage);
-                    adapter.notifyItemChanged(images.indexOf(image));
-                    break;
+            if (editedImage != null) {
+                kC.z();
+                for (ProjectResourceBean image : images) {
+                    if (image.resName.equals(editedImage.resName)) {
+                        image.copy(editedImage);
+                        adapter.notifyItemChanged(images.indexOf(image));
+                        break;
+                    }
                 }
             }
             updateGuideVisibility();
@@ -151,6 +195,21 @@ public class pu extends qA {
         }
     }
 
+    private void ensureImageLoaders() {
+        if (svgUtils == null) {
+            svgUtils = new SvgUtils(requireContext());
+            svgUtils.initImageLoader();
+        }
+        if (coilImageLoader == null) {
+            ComponentRegistry components = new ComponentRegistry.Builder()
+                    .add(new SvgDecoder.Factory())
+                    .build();
+            coilImageLoader = new ImageLoader.Builder(requireContext().getApplicationContext())
+                    .components(components)
+                    .build();
+        }
+    }
+
     public ArrayList<ProjectResourceBean> d() {
         return images;
     }
@@ -159,8 +218,7 @@ public class pu extends qA {
         sc_id = requireActivity().getIntent().getStringExtra("sc_id");
         projectImagesDirectory = jC.d(sc_id).l();
         ArrayList<ProjectResourceBean> arrayList = jC.d(sc_id).b;
-        svgUtils = new SvgUtils(requireContext());
-        svgUtils.initImageLoader();
+        ensureImageLoaders();
         if (arrayList != null) {
             for (ProjectResourceBean next : arrayList) {
                 if (next.flipVertical == 0) {
@@ -182,6 +240,19 @@ public class pu extends qA {
     }
 
     private void deleteSelected() {
+        Map<Integer, Map<String, Object>> updatedColorMap = new HashMap<>();
+        int newIndex = 0;
+        for (int i = 0; i < images.size(); i++) {
+            if (!images.get(i).isSelected) {
+                if (colorMap.containsKey(i)) {
+                    updatedColorMap.put(newIndex, colorMap.get(i));
+                }
+                newIndex++;
+            }
+        }
+        colorMap.clear();
+        colorMap.putAll(updatedColorMap);
+
         for (int i = images.size() - 1; i >= 0; i--) {
             if (images.get(i).isSelected) {
                 images.remove(i);
@@ -249,7 +320,6 @@ public class pu extends qA {
         }
         jC.d(sc_id).b(images);
         jC.d(sc_id).y();
-
         jC.a(sc_id).k();
     }
 
@@ -375,11 +445,403 @@ public class pu extends qA {
         showImageDetailsDialog.launch(intent);
     }
 
+    private void showEditIconDialog(int position) {
+        if (position < 0 || position >= images.size()) return;
+        ProjectResourceBean image = images.get(position);
+        ensureImageLoaders();
+
+        File sourceSvgFile = resolveSourceSvgFile(image);
+        if (sourceSvgFile == null || !sourceSvgFile.exists()) {
+            SketchwareUtil.toastError("Source SVG file not found for " + image.resName);
+            return;
+        }
+
+        final String oldName = image.resName;
+        int initialColor = DEFAULT_ICON_COLOR;
+        String initialColorHex = DEFAULT_ICON_COLOR_HEX;
+        int initialSizePx = DEFAULT_ICON_SIZE_PX;
+
+        Map<String, Object> savedMeta = colorMap.get(position);
+        if (savedMeta != null) {
+            if (savedMeta.get("colorHex") instanceof String hex && !hex.isEmpty()) {
+                initialColorHex = hex;
+            }
+            if (savedMeta.get("color") instanceof Integer col) {
+                initialColor = col;
+            } else {
+                initialColor = resolveColorFromHex(initialColorHex, DEFAULT_ICON_COLOR);
+            }
+            if (savedMeta.get("iconSize") instanceof Integer sz && sz > 0) {
+                initialSizePx = sz;
+            }
+        } else {
+            int extractedSize = extractSvgSizePx(sourceSvgFile);
+            if (extractedSize > 0) {
+                initialSizePx = extractedSize;
+            }
+            String extractedColorHex = extractVectorFillColorHex(image.resName);
+            if (extractedColorHex != null && !extractedColorHex.isEmpty()) {
+                initialColorHex = extractedColorHex;
+                initialColor = resolveColorFromHex(extractedColorHex, DEFAULT_ICON_COLOR);
+            }
+        }
+
+        final int[] editColor = {initialColor};
+        final String[] editColorHex = {initialColorHex};
+        final int[] editSizePx = {initialSizePx};
+
+        DialogSaveIconBinding dialogBinding = DialogSaveIconBinding.inflate(getLayoutInflater());
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setView(dialogBinding.getRoot())
+                .setTitle("Edit Icon")
+                .setNegativeButton("Cancel", (dialogInterface, i) -> dialogInterface.dismiss())
+                .setPositiveButton("Save", null)
+                .create();
+
+        dialogBinding.inputText.setText(oldName);
+        ArrayList<String> existingOtherNames = getAllImageNamesExcept(oldName);
+        WB iconNameValidator = new WB(
+                requireContext().getApplicationContext(),
+                dialogBinding.textInputLayout,
+                uq.b,
+                existingOtherNames
+        );
+
+        selectMatchingSizeChip(dialogBinding, editSizePx[0]);
+        updateIconPreviewSize(dialogBinding.icon, editSizePx[0]);
+        updateIconColorButtonAndPreview(dialogBinding, editColor[0], editColorHex[0]);
+        renderSvgPreviewFile(dialogBinding.icon, sourceSvgFile, editColor[0]);
+
+        dialogBinding.chipGroupSize.setOnCheckedStateChangeListener((group, checkedIds) -> {
+            if (checkedIds.isEmpty()) return;
+            int checkedId = checkedIds.get(0);
+            if (checkedId == R.id.chip_size_16) {
+                editSizePx[0] = 16;
+            } else if (checkedId == R.id.chip_size_24) {
+                editSizePx[0] = 24;
+            } else if (checkedId == R.id.chip_size_32) {
+                editSizePx[0] = 32;
+            } else if (checkedId == R.id.chip_size_48) {
+                editSizePx[0] = 48;
+            } else if (checkedId == R.id.chip_size_64) {
+                editSizePx[0] = 64;
+            } else if (checkedId == R.id.chip_size_96) {
+                editSizePx[0] = 96;
+            }
+            updateIconPreviewSize(dialogBinding.icon, editSizePx[0]);
+            prepareAndLoadResizedPreview(dialog, dialogBinding, sourceSvgFile, editSizePx[0], editColor[0]);
+        });
+
+        dialogBinding.selectColour.setOnClickListener(view -> {
+            ColorPickerDialog colorPicker = new ColorPickerDialog(requireContext(), editColorHex[0], false, false, sc_id);
+            colorPicker.a(new ColorPickerDialog.b() {
+                @Override
+                public void a(int color) {
+                    editColor[0] = color;
+                    editColorHex[0] = "#" + String.format("%06X", color & 0x00FFFFFF);
+                    updateIconColorButtonAndPreview(dialogBinding, editColor[0], editColorHex[0]);
+                }
+
+                @Override
+                public void a(String colorName, int color) {
+                    editColor[0] = color;
+                    editColorHex[0] = "@color/" + colorName;
+                    updateIconColorButtonAndPreview(dialogBinding, editColor[0], editColorHex[0]);
+                }
+            });
+            colorPicker.materialColorAttr((attr, attrColor) -> {
+                String attrRef = "?attr/" + attr;
+                editColor[0] = resolveColorFromHex(attrRef, DEFAULT_ICON_COLOR);
+                editColorHex[0] = attrRef;
+                updateIconColorButtonAndPreview(dialogBinding, editColor[0], editColorHex[0]);
+            });
+            colorPicker.showAtLocation(view, Gravity.CENTER, 0, 0);
+        });
+
+        dialogBinding.licenceInfo.setOnClickListener(v -> {
+            Uri webpage = Uri.parse("https://www.apache.org/licenses/LICENSE-2.0.txt");
+            Intent intent = new Intent(Intent.ACTION_VIEW, webpage);
+            if (intent.resolveActivity(requireContext().getPackageManager()) != null) {
+                startActivity(intent);
+            }
+        });
+
+        dialog.setOnShowListener(dialogInterface -> {
+            Button positiveButton = ((AlertDialog) dialogInterface).getButton(DialogInterface.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(view -> {
+                if (!iconNameValidator.b()) {
+                    return;
+                }
+
+                String newName = Helper.getText(dialogBinding.inputText).trim();
+                positiveButton.setEnabled(false);
+                dialogBinding.progressDownload.setVisibility(View.VISIBLE);
+
+                new Thread(() -> {
+                    try {
+                        byte[] rawBytes = Files.readAllBytes(sourceSvgFile.toPath());
+                        String rawSvg = new String(rawBytes, StandardCharsets.UTF_8);
+                        String resizedSvg = IconDownloader.resizeSvgDimensionsOnly(rawSvg, editSizePx[0]);
+
+                        String targetSvgPath = fpu.getSvgFullPath(sc_id, newName);
+                        File targetSvgFile = new File(targetSvgPath);
+                        File parentDir = targetSvgFile.getParentFile();
+                        if (parentDir != null && !parentDir.exists()) {
+                            //noinspection ResultOfMethodCallIgnored
+                            parentDir.mkdirs();
+                        }
+                        Files.write(targetSvgFile.toPath(), resizedSvg.getBytes(StandardCharsets.UTF_8));
+
+                        if (!newName.equals(oldName)) {
+                            File oldSvgFile = new File(fpu.getSvgFullPath(sc_id, oldName));
+                            if (oldSvgFile.exists() && !oldSvgFile.getAbsolutePath().equals(targetSvgFile.getAbsolutePath())) {
+                                //noinspection ResultOfMethodCallIgnored
+                                oldSvgFile.delete();
+                            }
+                            File oldXmlFile = new File(projectImagesDirectory, oldName + ".xml");
+                            if (oldXmlFile.exists()) {
+                                //noinspection ResultOfMethodCallIgnored
+                                oldXmlFile.delete();
+                            }
+                        }
+
+                        svgUtils.convert(targetSvgPath, projectImagesDirectory, editColorHex[0]);
+
+                        Activity activity = getActivity();
+                        if (activity == null || activity.isDestroyed() || activity.isFinishing()) return;
+
+                        activity.runOnUiThread(() -> {
+                            dialogBinding.progressDownload.setVisibility(View.GONE);
+                            dialogInterface.dismiss();
+
+                            image.resName = newName;
+                            image.resFullName = targetSvgPath;
+                            image.savedPos = 2;
+                            image.isNew = true;
+                            image.isEdited = true;
+
+                            addNewColorFilterInfo(editColorHex[0], editColor[0], editSizePx[0], position);
+                            adapter.notifyItemChanged(position);
+                            ((ManageImageActivity) activity).l().refreshData();
+                            bB.a(activity, getString(R.string.design_manager_message_edit_complete), bB.TOAST_NORMAL).show();
+                        });
+                    } catch (Exception e) {
+                        Log.e("pu.java", "Failed to save edited icon", e);
+                        Activity activity = getActivity();
+                        if (activity == null || activity.isDestroyed() || activity.isFinishing()) return;
+
+                        activity.runOnUiThread(() -> {
+                            dialogBinding.progressDownload.setVisibility(View.GONE);
+                            positiveButton.setEnabled(true);
+                            SketchwareUtil.toastError("Failed to edit icon: " + (e.getMessage() != null ? e.getMessage() : "Unknown error"));
+                        });
+                    }
+                }).start();
+            });
+        });
+
+        dialog.show();
+    }
+
+    @Nullable
+    private File resolveSourceSvgFile(@NonNull ProjectResourceBean image) {
+        if (image.isNew && image.resFullName != null && image.resFullName.endsWith(".svg")) {
+            File direct = new File(image.resFullName);
+            if (direct.exists()) {
+                return direct;
+            }
+        }
+        File convertedSvg = new File(fpu.getSvgFullPath(sc_id, image.resName));
+        if (convertedSvg.exists()) {
+            return convertedSvg;
+        }
+        return null;
+    }
+
+    private int extractSvgSizePx(@NonNull File svgFile) {
+        try {
+            String content = new String(Files.readAllBytes(svgFile.toPath()), StandardCharsets.UTF_8);
+            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+            factory.setNamespaceAware(true);
+            XmlPullParser parser = factory.newPullParser();
+            parser.setInput(new StringReader(content));
+            while (parser.getEventType() != XmlPullParser.END_DOCUMENT) {
+                if (parser.getEventType() == XmlPullParser.START_TAG && "svg".equals(parser.getName())) {
+                    String widthAttr = parser.getAttributeValue(null, "width");
+                    if (widthAttr != null) {
+                        String digits = widthAttr.replaceAll("[^0-9.]", "");
+                        if (!digits.isEmpty()) {
+                            return Math.round(Float.parseFloat(digits));
+                        }
+                    }
+                    break;
+                }
+                parser.next();
+            }
+        } catch (Exception e) {
+            Log.w("pu.java", "Failed to read SVG dimensions", e);
+        }
+        return DEFAULT_ICON_SIZE_PX;
+    }
+
+    @Nullable
+    private String extractVectorFillColorHex(@NonNull String resName) {
+        File xmlFile = new File(projectImagesDirectory, resName + ".xml");
+        if (!xmlFile.exists()) return null;
+        try {
+            String content = new String(Files.readAllBytes(xmlFile.toPath()), StandardCharsets.UTF_8);
+            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+            factory.setNamespaceAware(true);
+            XmlPullParser parser = factory.newPullParser();
+            parser.setInput(new StringReader(content));
+            while (parser.getEventType() != XmlPullParser.END_DOCUMENT) {
+                if (parser.getEventType() == XmlPullParser.START_TAG && "path".equals(parser.getName())) {
+                    String fillColor = parser.getAttributeValue("http://schemas.android.com/apk/res/android", "fillColor");
+                    if (fillColor == null) {
+                        fillColor = parser.getAttributeValue(null, "android:fillColor");
+                    }
+                    if (fillColor != null && !fillColor.isEmpty()) {
+                        return fillColor;
+                    }
+                }
+                parser.next();
+            }
+        } catch (Exception e) {
+            Log.w("pu.java", "Failed to read vector fill color", e);
+        }
+        return null;
+    }
+
+    private int resolveColorFromHex(@Nullable String colorHex, int fallback) {
+        if (colorHex == null || colorHex.isEmpty()) return fallback;
+        try {
+            if (colorHex.startsWith("?attr/") || colorHex.startsWith("@color/")) {
+                String resolved = new ColorsEditorManager().getColorValue(requireContext().getApplicationContext(), colorHex, 3);
+                if (resolved != null && !resolved.isEmpty()) {
+                    return PropertiesUtil.parseColor(resolved);
+                }
+            }
+            return Color.parseColor(colorHex);
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    private void selectMatchingSizeChip(@NonNull DialogSaveIconBinding dialogBinding, int sizePx) {
+        int[] options = {16, 24, 32, 48, 64, 96};
+        int[] chipIds = {
+                R.id.chip_size_16,
+                R.id.chip_size_24,
+                R.id.chip_size_32,
+                R.id.chip_size_48,
+                R.id.chip_size_64,
+                R.id.chip_size_96
+        };
+        int bestIndex = 1; // default 24
+        int minDiff = Integer.MAX_VALUE;
+        for (int i = 0; i < options.length; i++) {
+            int diff = Math.abs(options[i] - sizePx);
+            if (diff < minDiff) {
+                minDiff = diff;
+                bestIndex = i;
+            }
+        }
+        dialogBinding.chipGroupSize.check(chipIds[bestIndex]);
+    }
+
+    private void updateIconPreviewSize(@NonNull ImageView previewView, int sizePx) {
+        float density = getResources().getDisplayMetrics().density;
+        int targetPx = Math.max(1, Math.round(sizePx * density));
+        ViewGroup.LayoutParams params = previewView.getLayoutParams();
+        if (params != null) {
+            params.width = targetPx;
+            params.height = targetPx;
+            previewView.setLayoutParams(params);
+        }
+    }
+
+    private void updateIconColorButtonAndPreview(@NonNull DialogSaveIconBinding dialogBinding, int color, @NonNull String colorHex) {
+        dialogBinding.selectColour.setText(colorHex);
+        dialogBinding.selectColour.setBackgroundColor(color);
+
+        double luminance = Color.red(color) * 0.299
+                + Color.green(color) * 0.587
+                + Color.blue(color) * 0.114;
+        dialogBinding.selectColour.setTextColor(luminance > 186 ? Color.BLACK : Color.WHITE);
+
+        dialogBinding.icon.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+    }
+
+    private void prepareAndLoadResizedPreview(
+            @NonNull AlertDialog dialog,
+            @NonNull DialogSaveIconBinding dialogBinding,
+            @NonNull File sourceSvgFile,
+            int sizePx,
+            int tintColor
+    ) {
+        new Thread(() -> {
+            try {
+                byte[] rawBytes = Files.readAllBytes(sourceSvgFile.toPath());
+                String rawSvg = new String(rawBytes, StandardCharsets.UTF_8);
+                String resizedSvg = IconDownloader.resizeSvgDimensionsOnly(rawSvg, sizePx);
+
+                File tempPreview = new File(requireContext().getCacheDir(), "edit_icon_preview_" + sizePx + "px.svg");
+                Files.write(tempPreview.toPath(), resizedSvg.getBytes(StandardCharsets.UTF_8));
+
+                Activity activity = getActivity();
+                if (activity == null || activity.isDestroyed() || activity.isFinishing()) return;
+                activity.runOnUiThread(() -> {
+                    if (dialog.isShowing()) {
+                        renderSvgPreviewFile(dialogBinding.icon, tempPreview, tintColor);
+                    }
+                });
+            } catch (Exception e) {
+                Log.w("pu.java", "Failed to render resized preview", e);
+            }
+        }).start();
+    }
+
+    private void renderSvgPreviewFile(@NonNull ImageView imageView, @NonNull File svgFile, int tintColor) {
+        ensureImageLoaders();
+        ImageRequest request = new ImageRequest.Builder(requireContext())
+                .data(svgFile)
+                .target(new coil.target.Target() {
+                    @Override
+                    public void onStart(@Nullable Drawable placeholder) {
+                    }
+
+                    @Override
+                    public void onSuccess(@NonNull Drawable result) {
+                        imageView.setImageDrawable(result);
+                        imageView.setColorFilter(tintColor, PorterDuff.Mode.SRC_IN);
+                    }
+
+                    @Override
+                    public void onError(@Nullable Drawable error) {
+                        imageView.setImageResource(R.drawable.ic_remove_grey600_24dp);
+                    }
+                })
+                .build();
+        coilImageLoader.enqueue(request);
+    }
+
     private ArrayList<String> getAllImageNames() {
         ArrayList<String> names = new ArrayList<>();
         names.add("app_icon");
         for (ProjectResourceBean projectResourceBean : images) {
             names.add(projectResourceBean.resName);
+        }
+        return names;
+    }
+
+    private ArrayList<String> getAllImageNamesExcept(@NonNull String excludedName) {
+        ArrayList<String> names = new ArrayList<>();
+        names.add("app_icon");
+        for (ProjectResourceBean projectResourceBean : images) {
+            if (!projectResourceBean.resName.equals(excludedName)) {
+                names.add(projectResourceBean.resName);
+            }
         }
         return names;
     }
@@ -441,7 +903,7 @@ public class pu extends qA {
     }
 
     private void addNewColorFilterInfo(String colorHex, int color, int forPosition) {
-        addNewColorFilterInfo(colorHex, color, 24, forPosition);
+        addNewColorFilterInfo(colorHex, color, DEFAULT_ICON_SIZE_PX, forPosition);
     }
 
     private void addNewColorFilterInfo(String colorHex, int color, int iconSize, int forPosition) {
@@ -482,6 +944,8 @@ public class pu extends qA {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             ProjectResourceBean image = images.get(position);
+            String bindTag = image.resName + "|" + image.resFullName + "|" + position;
+            holder.boundTag = bindTag;
 
             holder.binding.deleteImgContainer.setVisibility(isSelecting ? View.VISIBLE : View.GONE);
             holder.binding.imgNinePatch.setVisibility(image.isNinePatch() ? View.VISIBLE : View.GONE);
@@ -498,17 +962,54 @@ public class pu extends qA {
                 holder.binding.img.clearColorFilter();
             }
 
-            if (svgUtils == null) {
-                svgUtils = new SvgUtils(requireContext());
-                svgUtils.initImageLoader();
-            }
+            ensureImageLoaders();
 
-            if (image.resFullName.endsWith(".svg")) {
-                svgUtils.loadImage(holder.binding.img, image.isNew ? image.resFullName : String.join(File.separator, projectImagesDirectory, image.resFullName));
-            } else if (image.resFullName.endsWith(".xml")) {
-                Log.d("loading converted vector: ", fpu.getSvgFullPath(sc_id, image.resName));
-                svgUtils.loadImage(holder.binding.img, image.isNew ? image.resFullName : fpu.getSvgFullPath(sc_id, image.resName));
+            if (image.resFullName.endsWith(".svg") || image.resFullName.endsWith(".xml")) {
+                String targetPath;
+                if (image.resFullName.endsWith(".svg")) {
+                    targetPath = image.isNew ? image.resFullName : String.join(File.separator, projectImagesDirectory, image.resFullName);
+                } else {
+                    targetPath = image.isNew ? image.resFullName : fpu.getSvgFullPath(sc_id, image.resName);
+                }
+
+                File svgFile = new File(targetPath);
+                if (!svgFile.exists()) {
+                    holder.binding.progressLoading.setVisibility(View.GONE);
+                    holder.binding.img.setImageResource(R.drawable.ic_remove_grey600_24dp);
+                    return;
+                }
+
+                ImageRequest request = new ImageRequest.Builder(requireContext())
+                        .data(svgFile)
+                        .target(new coil.target.Target() {
+                            @Override
+                            public void onStart(@Nullable Drawable placeholder) {
+                                if (bindTag.equals(holder.boundTag)) {
+                                    holder.binding.img.setImageDrawable(null);
+                                    holder.binding.progressLoading.setVisibility(View.VISIBLE);
+                                }
+                            }
+
+                            @Override
+                            public void onSuccess(@NonNull Drawable result) {
+                                if (bindTag.equals(holder.boundTag)) {
+                                    holder.binding.progressLoading.setVisibility(View.GONE);
+                                    holder.binding.img.setImageDrawable(result);
+                                }
+                            }
+
+                            @Override
+                            public void onError(@Nullable Drawable error) {
+                                if (bindTag.equals(holder.boundTag)) {
+                                    holder.binding.progressLoading.setVisibility(View.GONE);
+                                    holder.binding.img.setImageResource(R.drawable.ic_remove_grey600_24dp);
+                                }
+                            }
+                        })
+                        .build();
+                coilImageLoader.enqueue(request);
             } else {
+                holder.binding.progressLoading.setVisibility(View.VISIBLE);
                 Glide.with(requireActivity())
                         .asBitmap()
                         .load(image.savedPos == 0 ? projectImagesDirectory + File.separator + image.resFullName
@@ -530,6 +1031,23 @@ public class pu extends qA {
                         })
                         .centerCrop()
                         .signature(kC.n())
+                        .listener(new RequestListener<>() {
+                            @Override
+                            public boolean onLoadFailed(@Nullable GlideException e, Object model, @NonNull Target<Bitmap> target, boolean isFirstResource) {
+                                if (bindTag.equals(holder.boundTag)) {
+                                    holder.binding.progressLoading.setVisibility(View.GONE);
+                                }
+                                return false;
+                            }
+
+                            @Override
+                            public boolean onResourceReady(@NonNull Bitmap resource, @NonNull Object model, Target<Bitmap> target, @NonNull DataSource dataSource, boolean isFirstResource) {
+                                if (bindTag.equals(holder.boundTag)) {
+                                    holder.binding.progressLoading.setVisibility(View.GONE);
+                                }
+                                return false;
+                            }
+                        })
                         .error(R.drawable.ic_remove_grey600_24dp)
                         .into(holder.binding.img);
             }
@@ -549,27 +1067,37 @@ public class pu extends qA {
 
         private class ViewHolder extends RecyclerView.ViewHolder {
             private final ManageImageListItemBinding binding;
+            private String boundTag;
 
             public ViewHolder(@NonNull ManageImageListItemBinding binding) {
                 super(binding.getRoot());
                 this.binding = binding;
 
                 binding.img.setOnClickListener(v -> {
+                    int pos = getBindingAdapterPosition();
+                    if (pos == RecyclerView.NO_POSITION) return;
+
                     if (!isSelecting) {
-                        if (!(images.get(getLayoutPosition()).resFullName.endsWith(".svg") || images.get(getLayoutPosition()).resFullName.endsWith(".xml"))) {
-                            showImageDetailsDialog(images.get(getLayoutPosition()));
+                        ProjectResourceBean clicked = images.get(pos);
+                        if (clicked.resFullName.endsWith(".svg") || clicked.resFullName.endsWith(".xml")) {
+                            showEditIconDialog(pos);
+                        } else {
+                            showImageDetailsDialog(clicked);
                         }
                     } else {
                         binding.chkSelect.setChecked(!binding.chkSelect.isChecked());
-                        images.get(getLayoutPosition()).isSelected = binding.chkSelect.isChecked();
-                        notifyItemChanged(getLayoutPosition());
+                        images.get(pos).isSelected = binding.chkSelect.isChecked();
+                        notifyItemChanged(pos);
                     }
                 });
 
                 binding.img.setOnLongClickListener(v -> {
+                    int pos = getBindingAdapterPosition();
+                    if (pos == RecyclerView.NO_POSITION) return true;
+
                     a(true);
                     binding.chkSelect.setChecked(!binding.chkSelect.isChecked());
-                    images.get(getLayoutPosition()).isSelected = binding.chkSelect.isChecked();
+                    images.get(pos).isSelected = binding.chkSelect.isChecked();
                     return true;
                 });
             }
