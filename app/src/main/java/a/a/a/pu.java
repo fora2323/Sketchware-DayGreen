@@ -556,8 +556,7 @@ public class pu extends qA {
 
                 binding.img.setOnClickListener(v -> {
                     if (!isSelecting) {
-                        if (!(images.get(getLayoutPosition()).resFullName.endsWith(".svg") ||
-                                images.get(getLayoutPosition()).resFullName.endsWith(".xml"))) {
+                        if (!(images.get(getLayoutPosition()).resFullName.endsWith(".svg") || images.get(getLayoutPosition()).resFullName.endsWith(".xml"))) {
                             showImageDetailsDialog(images.get(getLayoutPosition()));
                         }
                     } else {

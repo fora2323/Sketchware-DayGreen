@@ -34,7 +34,7 @@ public class IconCatalog {
     private static final String TAG = "IconCatalog";
     private static final String METADATA_URL = "https://fonts.google.com/metadata/icons";
     private static final String CACHE_FILE_NAME = "material_symbols_catalog.json";
-    private static final long CACHE_MAX_AGE_MS = 7L * 24L * 60L * 60L * 1000L;
+    private static final long CACHE_MAX_AGE_MS = 7L * 24L * 60L * 60L * 1000L; // 7 days
 
     public static class IconItem {
         public final String name;
@@ -70,6 +70,7 @@ public class IconCatalog {
     private final OkHttpClient httpClient;
     private final ExecutorService executor;
     private final Handler mainHandler;
+    private volatile boolean isShutdown = false;
 
     public IconCatalog(@NonNull Context context) {
         Context appContext = context.getApplicationContext();
@@ -87,19 +88,31 @@ public class IconCatalog {
     }
 
     public void loadCatalog(@NonNull CatalogCallback callback) {
+        if (isShutdown) return;
+
         executor.execute(() -> {
+            if (isShutdown) return;
+
             List<IconItem> cachedItems = readFromCache();
             boolean hasValidCache = !cachedItems.isEmpty();
 
             if (hasValidCache) {
-                mainHandler.post(() -> callback.onCatalogLoaded(cachedItems, false));
+                mainHandler.post(() -> {
+                    if (!isShutdown) {
+                        callback.onCatalogLoaded(cachedItems, false);
+                    }
+                });
 
                 boolean isExpired = (System.currentTimeMillis() - cacheFile.lastModified()) > CACHE_MAX_AGE_MS;
-                if (isExpired && SketchwareUtil.isConnected()) {
+                if (isExpired && SketchwareUtil.isConnected() && !isShutdown) {
                     try {
                         List<IconItem> freshItems = fetchAndCacheCatalog();
-                        if (!freshItems.isEmpty()) {
-                            mainHandler.post(() -> callback.onCatalogLoaded(freshItems, true));
+                        if (!freshItems.isEmpty() && !isShutdown) {
+                            mainHandler.post(() -> {
+                                if (!isShutdown) {
+                                    callback.onCatalogLoaded(freshItems, true);
+                                }
+                            });
                         }
                     } catch (Exception e) {
                         Log.w(TAG, "Background catalog refresh failed, keeping cached data", e);
@@ -110,25 +123,40 @@ public class IconCatalog {
 
             if (!SketchwareUtil.isConnected()) {
                 String msg = "No internet connection. Connect to the internet to load Material Symbols.";
-                SketchwareUtil.toastError(msg);
-                mainHandler.post(() -> callback.onCatalogError(msg));
+                mainHandler.post(() -> {
+                    if (!isShutdown) {
+                        callback.onCatalogError(msg);
+                    }
+                });
                 return;
             }
 
             try {
                 List<IconItem> freshItems = fetchAndCacheCatalog();
+                if (isShutdown) return;
+
                 if (freshItems.isEmpty()) {
                     String msg = "Icon catalog is empty.";
-                    SketchwareUtil.toastError(msg);
-                    mainHandler.post(() -> callback.onCatalogError(msg));
+                    mainHandler.post(() -> {
+                        if (!isShutdown) {
+                            callback.onCatalogError(msg);
+                        }
+                    });
                 } else {
-                    mainHandler.post(() -> callback.onCatalogLoaded(freshItems, true));
+                    mainHandler.post(() -> {
+                        if (!isShutdown) {
+                            callback.onCatalogLoaded(freshItems, true);
+                        }
+                    });
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Failed to load icon catalog", e);
                 String msg = "Failed to load icon catalog: " + (e.getMessage() != null ? e.getMessage() : "Unknown error");
-                SketchwareUtil.toastError(msg);
-                mainHandler.post(() -> callback.onCatalogError(msg));
+                mainHandler.post(() -> {
+                    if (!isShutdown) {
+                        callback.onCatalogError(msg);
+                    }
+                });
             }
         });
     }
@@ -199,6 +227,7 @@ public class IconCatalog {
             root.put("icons", iconsArray);
             File parent = cacheFile.getParentFile();
             if (parent != null && !parent.exists()) {
+                //noinspection ResultOfMethodCallIgnored
                 parent.mkdirs();
             }
             Files.writeString(cacheFile.toPath(), root.toString(), StandardCharsets.UTF_8);
@@ -246,6 +275,7 @@ public class IconCatalog {
     }
 
     public void shutdown() {
+        isShutdown = true;
         executor.shutdownNow();
     }
 }
