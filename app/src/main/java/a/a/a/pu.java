@@ -63,7 +63,6 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import coil.ComponentRegistry;
 import coil.ImageLoader;
@@ -622,6 +621,9 @@ public class pu extends qA {
                             image.isNew = true;
                             image.isEdited = true;
 
+                            iconTintCache.remove(oldName);
+                            iconTintCache.remove(newName);
+
                             addNewColorFilterInfo(editColorHex[0], editColor[0], editSizePx[0], position);
                             adapter.notifyItemChanged(position);
                             ((ManageImageActivity) activity).l().refreshData();
@@ -727,6 +729,31 @@ public class pu extends qA {
         } catch (Exception e) {
             return fallback;
         }
+    }
+
+    private final Map<String, Integer> iconTintCache = new HashMap<>();
+
+    @Nullable
+    private Integer resolveIconTint(int position, @NonNull ProjectResourceBean image) {
+        if (!image.isNew && image.resFullName.endsWith(".xml")) {
+            Integer cached = iconTintCache.get(image.resName);
+            if (cached != null) {
+                return cached;
+            }
+            String hex = extractVectorFillColorHex(image.resName);
+            if (hex == null || hex.isEmpty()) {
+                return null;
+            }
+            int color = resolveColorFromHex(hex, DEFAULT_ICON_COLOR);
+            iconTintCache.put(image.resName, color);
+            return color;
+        }
+
+        Map<String, Object> meta = colorMap.get(position);
+        if (meta != null && meta.get("color") instanceof Integer c) {
+            return c;
+        }
+        return null;
     }
 
     private void selectMatchingSizeChip(@NonNull DialogSaveIconBinding dialogBinding, int sizePx) {
@@ -955,10 +982,9 @@ public class pu extends qA {
             holder.binding.chkSelect.setChecked(image.isSelected);
             holder.binding.tvImageName.setText(image.resName);
 
-            if (colorMap.get(position) != null) {
-                int color = Objects.requireNonNullElse((int) colorMap.get(position).get("color"), 0xFFFFFFFF);
-                Log.d("Applying filter to " + position, String.valueOf(color));
-                holder.binding.img.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+            Integer tint = resolveIconTint(position, image);
+            if (tint != null) {
+                holder.binding.img.setColorFilter(tint, PorterDuff.Mode.SRC_IN);
             } else {
                 holder.binding.img.clearColorFilter();
             }
