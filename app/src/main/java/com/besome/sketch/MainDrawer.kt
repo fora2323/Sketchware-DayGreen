@@ -16,6 +16,8 @@ import androidx.annotation.StringRes
 import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 
+import org.sketchware.daygreen.donation.DonationActivity
+
 import com.besome.sketch.help.ProgramInfoActivity
 import com.besome.sketch.tools.NewKeyStoreActivity
 import com.google.android.material.navigation.NavigationView
@@ -105,7 +107,7 @@ class MainDrawer @JvmOverloads constructor(context: Context, attrs: AttributeSet
                 activity.startActivity(intent)
             }
             R.id.donation -> {
-                DonationDialog(activity, activity.getString(R.string.link_donation_url)).show()
+                activity.startActivity(Intent(activity, DonationActivity::class.java))
             }
         }
     }
