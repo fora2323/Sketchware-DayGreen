@@ -11,6 +11,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -134,6 +135,7 @@ public class ManageGitFragment extends Fragment {
                 changed.removeIf(i -> i.path.equals("project"));
 
                 int unpushed = GitManager.countUnpushedCommits(sc_id, branchName);
+                int behind = GitManager.countBehind(sc_id, branchName);
 
                 String authorName = GitConfiguration.getUserName(context);
                 String authorEmail = GitConfiguration.getUserEmail(context);
@@ -149,7 +151,7 @@ public class ManageGitFragment extends Fragment {
                     adapter.setItems(changed);
                     binding.tvNoChanges.setVisibility(changed.isEmpty() ? View.VISIBLE : View.GONE);
 
-                    updateBadge(changed.size(), unpushed);
+                    updateBadges(changed.size(), unpushed, behind);
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Error loading git status: ", e);
@@ -163,13 +165,18 @@ public class ManageGitFragment extends Fragment {
         }).start();
     }
 
-    private void updateBadge(int changedCount, int unpushedCount) {
-        int count = changedCount > 0 ? changedCount : unpushedCount;
+    private void updateBadges(int changedCount, int unpushedCount, int behindCount) {
+        setBadge(binding.tvCommitBadge, changedCount);
+        setBadge(binding.tvPushBadge, unpushedCount);
+        setBadge(binding.tvPullBadge, behindCount);
+    }
+
+    private void setBadge(TextView badge, int count) {
         if (count <= 0) {
-            binding.tvGitBadge.setVisibility(View.GONE);
+            badge.setVisibility(View.GONE);
         } else {
-            binding.tvGitBadge.setText(count > 99 ? "99+" : String.valueOf(count));
-            binding.tvGitBadge.setVisibility(View.VISIBLE);
+            badge.setText(count > 99 ? "99+" : String.valueOf(count));
+            badge.setVisibility(View.VISIBLE);
         }
     }
 

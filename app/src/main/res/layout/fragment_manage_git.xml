@@ -115,9 +115,7 @@
                 <FrameLayout
                     android:layout_width="0dp"
                     android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:clipChildren="false"
-                    android:clipToPadding="false">
+                    android:layout_weight="1">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_commit"
@@ -128,12 +126,10 @@
                         android:text="Commit" />
 
                     <TextView
-                        android:id="@+id/tv_git_badge"
+                        android:id="@+id/tv_commit_badge"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="top|end"
-                        android:layout_marginTop="2dp"
-                        android:layout_marginEnd="2dp"
                         android:background="@drawable/shape_git_badge"
                         android:gravity="center"
                         android:minWidth="20dp"
@@ -147,27 +143,71 @@
                         android:visibility="gone" />
                 </FrameLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_push"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                <FrameLayout
                     android:layout_width="0dp"
                     android:layout_height="48dp"
                     android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:maxLines="1"
-                    android:minWidth="0dp"
-                    android:text="Push" />
+                    android:layout_weight="1">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_pull"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_push"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:maxLines="1"
+                        android:minWidth="0dp"
+                        android:text="Push" />
+
+                    <TextView
+                        android:id="@+id/tv_push_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="top|end"
+                        android:background="@drawable/shape_git_badge"
+                        android:gravity="center"
+                        android:minWidth="20dp"
+                        android:minHeight="20dp"
+                        android:paddingStart="5dp"
+                        android:paddingEnd="5dp"
+                        android:text="0"
+                        android:textColor="?attr/colorOnError"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+                </FrameLayout>
+
+                <FrameLayout
                     android:layout_width="0dp"
                     android:layout_height="48dp"
                     android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:maxLines="1"
-                    android:minWidth="0dp"
-                    android:text="Pull" />
+                    android:layout_weight="1">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_pull"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:maxLines="1"
+                        android:minWidth="0dp"
+                        android:text="Pull" />
+
+                    <TextView
+                        android:id="@+id/tv_pull_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="top|end"
+                        android:background="@drawable/shape_git_badge"
+                        android:gravity="center"
+                        android:minWidth="20dp"
+                        android:minHeight="20dp"
+                        android:paddingStart="5dp"
+                        android:paddingEnd="5dp"
+                        android:text="0"
+                        android:textColor="?attr/colorOnError"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+                </FrameLayout>
             </LinearLayout>
 
             <com.google.android.material.progressindicator.LinearProgressIndicator
