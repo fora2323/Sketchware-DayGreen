@@ -156,4 +156,4 @@
             android:text="This icon is available under the Apache Licence Version 2.0. Press to read more." />
 
     </LinearLayout>
-</androidx.core.widget.NestedScrollView>q
+</androidx.core.widget.NestedScrollView>
