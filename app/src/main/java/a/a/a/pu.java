@@ -535,7 +535,7 @@ public class pu extends qA {
         });
 
         dialogBinding.selectColour.setOnClickListener(view -> {
-            ColorPickerDialog colorPicker = new ColorPickerDialog(requireContext(), editColorHex[0], false, false, sc_id);
+            ColorPickerDialog colorPicker = new ColorPickerDialog(requireActivity(), editColorHex[0], false, false, sc_id);
             colorPicker.a(new ColorPickerDialog.b() {
                 @Override
                 public void a(int color) {
