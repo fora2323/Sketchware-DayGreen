@@ -6,7 +6,6 @@ import android.os.Looper;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
-import android.widget.EditText;
 import android.widget.RadioButton;
 
 import androidx.annotation.Nullable;
@@ -18,11 +17,15 @@ import com.besome.sketch.editor.manage.library.LibraryCategoryView;
 import com.besome.sketch.editor.manage.library.LibraryItemView;
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputLayout;
 
 import org.sketchware.daygreen.ai.AiConnectionTester;
 import org.sketchware.daygreen.ai.AiSettingsStore;
 import pro.sketchware.databinding.ActivityAiSettingsBinding;
+import pro.sketchware.databinding.DialogAiInputBinding;
 import pro.sketchware.utility.SketchwareUtil;
+
+import java.util.function.Consumer;
 
 public class AiSettingsActivity extends BaseAppCompatActivity {
 
@@ -224,7 +227,7 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
         new MaterialAlertDialogBuilder(this)
                 .setTitle("Provider")
                 .setSingleChoiceItems(names, providerIndex, (d, which) -> selected[0] = which)
-                .setPositiveButton("Apply", (d, w) -> {
+                .setPositiveButton("OK", (d, w) -> {
                     if (providerIndex != selected[0]) {
                         providerIndex = selected[0];
                         modelIndex = 0;
@@ -238,27 +241,14 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
     }
 
     private void showApiKeyDialog() {
-        EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        input.setHint("API key");
-        input.setText(store.getApiKey(providerIndex));
-        int pad = SketchwareUtil.dpToPx(16);
-        input.setPadding(pad, pad, pad, pad);
-
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("API key")
-                .setView(input)
-                .setPositiveButton("Apply", (d, w) -> {
-                    String key = input.getText().toString().trim();
-                    store.setApiKey(providerIndex, key);
-                    store.setVerified(providerIndex, false);
-                    refreshValues();
-                    if (!key.isEmpty()) {
-                        runTest();
-                    }
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+        showInputDialog("API key", "API key", store.getApiKey(providerIndex), true, false, key -> {
+            store.setApiKey(providerIndex, key);
+            store.setVerified(providerIndex, false);
+            refreshValues();
+            if (!key.isEmpty()) {
+                runTest();
+            }
+        });
     }
 
     private void showModelDialog() {
@@ -268,7 +258,7 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
         new MaterialAlertDialogBuilder(this)
                 .setTitle("Model")
                 .setSingleChoiceItems(provider.models, modelIndex, (d, which) -> selected[0] = which)
-                .setPositiveButton("Apply", (d, w) -> {
+                .setPositiveButton("OK", (d, w) -> {
                     modelIndex = selected[0];
                     store.setModelIndex(modelIndex);
                     refreshValues();
@@ -278,21 +268,37 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
     }
 
     private void showSystemPromptDialog() {
-        EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
-        input.setMinLines(4);
-        input.setGravity(Gravity.TOP);
-        input.setText(store.getSystemPrompt(DEFAULT_SYSTEM_PROMPT));
-        int pad = SketchwareUtil.dpToPx(16);
-        input.setPadding(pad, pad, pad, pad);
+        showInputDialog("System prompt", "System prompt", store.getSystemPrompt(DEFAULT_SYSTEM_PROMPT), false, true, prompt -> {
+            store.setSystemPrompt(prompt);
+            refreshValues();
+        });
+    }
+
+    /**
+     * Dialog input dengan gaya yang sama seperti dialog Clone repository.
+     */
+    private void showInputDialog(String title, String hint, String initial, boolean password, boolean multiline,
+                                 Consumer<String> onSave) {
+        DialogAiInputBinding dialog = DialogAiInputBinding.inflate(getLayoutInflater());
+        dialog.tilInput.setHint(hint);
+
+        if (password) {
+            dialog.etInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            dialog.tilInput.setEndIconMode(TextInputLayout.END_ICON_PASSWORD_TOGGLE);
+        } else if (multiline) {
+            dialog.etInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+            dialog.etInput.setMinLines(4);
+            dialog.etInput.setGravity(Gravity.TOP);
+        } else {
+            dialog.etInput.setInputType(InputType.TYPE_CLASS_TEXT);
+        }
+
+        dialog.etInput.setText(initial);
 
         new MaterialAlertDialogBuilder(this)
-                .setTitle("System prompt")
-                .setView(input)
-                .setPositiveButton("Apply", (d, w) -> {
-                    store.setSystemPrompt(input.getText().toString().trim());
-                    refreshValues();
-                })
+                .setTitle(title)
+                .setView(dialog.getRoot())
+                .setPositiveButton("OK", (d, w) -> onSave.accept(dialog.etInput.getText().toString().trim()))
                 .setNegativeButton("Cancel", null)
                 .show();
     }
