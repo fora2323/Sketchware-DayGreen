@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import org.sketchware.daygreen.ai.activities.AiSettingsActivity;
 
 import java.util.List;
 
+import pro.sketchware.databinding.DialogAiInputBinding;
 import pro.sketchware.databinding.FragmentAiChatBinding;
 import pro.sketchware.utility.SketchwareUtil;
 
@@ -56,12 +58,9 @@ public class AiChatFragment extends Fragment {
 
         binding.btnSend.setOnClickListener(v -> send());
         binding.btnApply.setOnClickListener(v -> confirmApply());
-        binding.btnSettings.setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), AiSettingsActivity.class)));
-        binding.btnModel.setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), AiSettingsActivity.class)));
-        binding.btnAttach.setOnClickListener(v ->
-                SketchwareUtil.toast("Selecting files with @ is not available yet."));
+        binding.btnLink.setOnClickListener(v -> showLinkDialog());
+        binding.btnSettings.setOnClickListener(v -> openSettings());
+        binding.btnModel.setOnClickListener(v -> openSettings());
     }
 
     @Override
@@ -76,6 +75,10 @@ public class AiChatFragment extends Fragment {
         super.onDestroyView();
     }
 
+    private void openSettings() {
+        startActivity(new Intent(requireContext(), AiSettingsActivity.class));
+    }
+
     private void refreshModelLabel() {
         if (binding == null) return;
         AiSettingsStore store = new AiSettingsStore(requireContext());
@@ -87,6 +90,33 @@ public class AiChatFragment extends Fragment {
         if (modelIndex < 0 || modelIndex >= provider.models.length) modelIndex = 0;
 
         binding.btnModel.setText(provider.models[modelIndex]);
+    }
+
+    /**
+     * Opens a dialog to paste a URL. The URL is appended to the input field.
+     */
+    private void showLinkDialog() {
+        DialogAiInputBinding dialog = DialogAiInputBinding.inflate(getLayoutInflater());
+        dialog.tilInput.setHint("URL");
+        dialog.etInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Add link")
+                .setView(dialog.getRoot())
+                .setPositiveButton("Add", (d, w) -> {
+                    String url = dialog.etInput.getText() == null
+                            ? ""
+                            : dialog.etInput.getText().toString().trim();
+                    if (url.isEmpty()) return;
+
+                    String current = binding.etInput.getText() == null
+                            ? ""
+                            : binding.etInput.getText().toString();
+                    String separator = current.isEmpty() || current.endsWith(" ") ? "" : " ";
+                    binding.etInput.append(separator + url + " ");
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void send() {

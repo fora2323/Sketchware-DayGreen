@@ -10,12 +10,17 @@
         android:id="@+id/scroll_log"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:fadingEdge="vertical"
+        android:fadingEdgeLength="32dp"
+        android:requiresFadingEdge="vertical">
 
         <TextView
             android:id="@+id/tv_log"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
             android:textColor="?attr/colorOnSurface"
             android:textIsSelectable="true"
             android:textSize="14sp" />
@@ -78,12 +83,12 @@
                 android:orientation="horizontal">
 
                 <ImageButton
-                    android:id="@+id/btn_attach"
+                    android:id="@+id/btn_link"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Attach"
-                    android:src="@drawable/ic_mtrl_file_present"
+                    android:contentDescription="Add link"
+                    android:src="@drawable/ic_mtrl_link"
                     app:tint="?attr/colorOnSurfaceVariant" />
 
                 <View
@@ -100,7 +105,12 @@
                     android:paddingStart="12dp"
                     android:paddingEnd="8dp"
                     android:text="GPT-4o"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    app:icon="@drawable/ic_mtrl_arrow_down"
+                    app:iconGravity="textEnd"
+                    app:iconPadding="4dp"
+                    app:iconSize="18dp"
+                    app:iconTint="?attr/colorOnSurfaceVariant" />
 
                 <ImageButton
                     android:id="@+id/btn_settings"
