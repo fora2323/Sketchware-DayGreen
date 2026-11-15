@@ -2001,8 +2001,7 @@ private String fixPackage(String code, String pkg) {
                 case "git":
                     return ManageGitFragment.newInstance(sc_id);
                 case "ai":
-                    return AiChatFragment.newInstance(sc_id,
-                           projectFile != null ? projectFile.getJavaName() : ProjectFileBean.DEFAULT_JAVA_NAME);                    
+                    return AiChatFragment.newInstance(sc_id, projectFile != null ? projectFile.getJavaName() : ProjectFileBean.DEFAULT_JAVA_NAME);                    
                 default:
                     return new Fragment();
             }
