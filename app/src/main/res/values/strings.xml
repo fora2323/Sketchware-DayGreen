@@ -15,13 +15,19 @@
     <string name="settings_design_tabs_title">Design tabs</string>
     <string name="settings_design_tabs_desc">Choose which tabs appear in the project editor</string>
     <string name="design_tabs_empty_error">Select at least one tab</string>
+    <string name="donation_title">Support</string>
+    <string name="donation_subtitle">Help support the developer.</string>
     <!--link new-->
     <string name="link_github_release">https://github.com/fora2323/Sketchware-DayGreen/releases</string>
     <string name="link_whatsapp_channel">https://whatsapp.com/channel/0029VbB9HaBCnA7s3RCXsR1o</string>
     <string name="link_discord_invite">https://discord.gg/ukRxYdXVF</string>
     <string name="link_telegram_invite">https://t.me/sketchware_daygreen</string>
     <string name="link_github_url">https://github.com/fora2323/Sketchware-DayGreen.git</string>
-    <string name="link_donation_url">https://tako.id/azura_xd23</string>
+    <!--support-->
+    <string name="donation_kofi_title">Ko-fi</string>
+    <string name="donation_kofi_url">https://ko-fi.com/fora23</string>
+    <string name="donation_saweria_title">Saweria</string>
+    <string name="donation_saweria_url">https://saweria.co/fora23</string>
     <!--atribut lagecy-->
     <string name="shrink_resources_title">Shrink Resources</string>
     <string name="shrink_resources_desc">Remove unused resources from the final APK to reduce app size. Requires Code Shrinking to be enabled.</string>

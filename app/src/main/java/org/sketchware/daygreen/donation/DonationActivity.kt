@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import pro.sketchware.R
 import pro.sketchware.databinding.ActivityDonationBinding
 import pro.sketchware.databinding.ItemDonationOptionBinding
 
@@ -12,19 +13,20 @@ class DonationActivity : AppCompatActivity() {
 
     private data class Option(val title: String, val url: String)
 
-    private val options = listOf(
-        Option("GitHub Sponsors", "https://github.com/sponsors/fora2323"),
-        Option("Buy Me a Coffee", "https://buymeacoffee.com/fora2323"),
-        Option("Ko-fi", "https://ko-fi.com/fora2323")
-    )
+    private val options by lazy {
+        listOf(
+            Option(getString(R.string.donation_kofi_title), getString(R.string.donation_kofi_url)),
+            Option(getString(R.string.donation_saweria_title), getString(R.string.donation_saweria_url))
+        )
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = ActivityDonationBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.collapsingToolbar.title = "Support"
-        binding.collapsingToolbar.subtitle = "Help support the developer."
+        binding.collapsingToolbar.title = getString(R.string.donation_title)
+        binding.collapsingToolbar.subtitle = getString(R.string.donation_subtitle)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
         options.forEachIndexed { index, option ->
