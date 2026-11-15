@@ -423,6 +423,12 @@
             android:exported="false"
             android:label="Support" />
 
+        <activity
+            android:name="org.sketchware.daygreen.ai.activities.AiSettingsActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="false"
+            android:label="AI" />
+
         <meta-data
             android:name="moe.shizuku.client.V3_SUPPORT"
             android:value="true" />

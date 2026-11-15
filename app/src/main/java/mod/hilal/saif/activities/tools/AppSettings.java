@@ -26,7 +26,6 @@ import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.jetbrains.annotations.NotNull;
-import org.sketchware.daygreen.DownloadUtility;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -43,6 +42,9 @@ import mod.alucard.tn.apksigner.ApkSigner;
 import mod.hey.studios.code.SrcCodeEditor;
 import mod.hey.studios.util.Helper;
 import mod.khaled.logcat.LogReaderActivity;
+
+import org.sketchware.daygreen.DownloadUtility;
+import org.sketchware.daygreen.ai.activities.AiSettingsActivity;
 import org.sketchware.daygreen.git.activities.GitSettingsActivity;
 
 import pro.sketchware.R;
@@ -108,6 +110,7 @@ public class AppSettings extends BaseAppCompatActivity {
         managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_list, "Event manager", "Manage your own events", openSettingsActivity(SettingsActivity.EVENTS_MANAGER_FRAGMENT)), true);
         managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_box, "Local library manager", "Manage and download local libraries", new ActivityLauncher(new Intent(getApplicationContext(), ManageLocalLibraryActivity.class), new Pair<>("sc_id", "system"))), true);
         managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_article, Helper.getResString(R.string.design_drawer_menu_title_logcat_reader), Helper.getResString(R.string.design_drawer_menu_subtitle_logcat_reader), new ActivityLauncher(new Intent(getApplicationContext(), LogReaderActivity.class))), true);
+        managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_settings, "AI", "Configure AI assistant", new ActivityLauncher(new Intent(getApplicationContext(), AiSettingsActivity.class))), true);
         managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_version_control, "Git", "Configuration system control version", new ActivityLauncher(new Intent(getApplicationContext(), GitSettingsActivity.class))), true);
         managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_settings, "Build Tools", "Manage and download build tools", new ActivityLauncher(new Intent(getApplicationContext(), BuildToolsActivity.class))), true);
         managersCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_folder, "SDK Manager", "Manage and download SDK platforms", new ActivityLauncher(new Intent(getApplicationContext(), SdkManagerActivity.class))), false);
