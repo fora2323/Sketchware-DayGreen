@@ -1950,8 +1950,8 @@ private String fixPackage(String code, String pkg) {
                     return Helper.getResString(R.string.design_tab_title_resource);
                 case "git":
                     return "Git";
-                case "ai":
-                    return "AI";                    
+                 case "ai":
+                    return "Agent";             
                 default:
                     return "";
             }

@@ -394,9 +394,9 @@ public class ConfigActivity extends BaseAppCompatActivity {
         }), true);
         
         appearanceCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_devices, Helper.getResString(R.string.settings_design_tabs_title), Helper.getResString(R.string.settings_design_tabs_desc), v -> {
-            String[] tabNames = {"View", "Event", "Component", "Java & Kotlin", "Resource"};
-            String[] tabKeys = {"view", "event", "component", "java", "resource"};
-            boolean[] checkedItems = new boolean[5];
+            String[] tabNames = {"View", "Event", "Component", "Java & Kotlin", "Resource", "Agent"};
+            String[] tabKeys = {"view", "event", "component", "java", "resource", "ai"};
+            boolean[] checkedItems = new boolean[6];
             
             List<String> currentTabs = getVisibleDesignTabs();
             for (int i = 0; i < tabKeys.length; i++) {
