@@ -41,19 +41,22 @@ public final class AiChatClient {
     }
 
     private static final int MAX_ROUNDS = 4;
-    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+    private static final MediaType JSON_TYPE = MediaType.get("application/json; charset=utf-8");
     private static final OkHttpClient HTTP = new OkHttpClient.Builder()
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(90, TimeUnit.SECONDS)
             .build();
 
+    private static final String DEFAULT_PROMPT =
+            "You are an AI assistant for Sketchware DayGreen. Be concise and precise.";
+
     private static final String RULES =
-            "\nAturan block:\n"
-                    + "1. Panggil list_event_keys dulu untuk memilih event yang valid.\n"
-                    + "2. Panggil list_blocks untuk mencari opcode. Jangan mengarang opcode.\n"
-                    + "3. Jumlah params harus sama dengan params dari list_blocks.\n"
-                    + "4. Gunakan append_blocks untuk menambah block. User harus menyetujui sebelum ditulis.\n"
-                    + "5. Jangan bilang block sudah tertulis sebelum user menyetujui.\n";
+            "\n\nBlock rules:\n"
+                    + "1. Call list_event_keys first to choose a valid event.\n"
+                    + "2. Call list_blocks to find opcodes. Never invent opcodes.\n"
+                    + "3. The number of params must match the params listed by list_blocks.\n"
+                    + "4. Use append_blocks to add blocks. The user must approve before anything is written.\n"
+                    + "5. Do not say blocks were written until the user approves.";
 
     private final AiSettingsStore store;
     private final String scId;
@@ -65,14 +68,14 @@ public final class AiChatClient {
         this.scId = scId;
         this.javaName = javaName;
         try {
-            messages.put(message("system", store.getSystemPrompt(
-                    "You are an AI assistant for Sketchware DayGreen. Be concise and precise.") + RULES));
+            messages.put(message("system", store.getSystemPrompt(DEFAULT_PROMPT) + RULES));
         } catch (JSONException ignored) {
         }
     }
 
     /**
-     * Jalan di background thread. Callback juga dipanggil dari background thread.
+     * Runs on a background thread. The callback is also called from that thread,
+     * so the caller must switch to the main thread.
      */
     public void ask(String userText, Callback callback) {
         new Thread(() -> run(userText, callback)).start();
@@ -83,14 +86,14 @@ public final class AiChatClient {
             int providerIndex = store.getProviderIndex();
             AiProviders.Provider provider = AiProviders.ALL[providerIndex];
             if (!provider.openAiCompatible) {
-                callback.onError("Provider " + provider.name + " belum didukung di chat AI. "
-                        + "Pilih OpenAI, DeepSeek, OpenRouter, atau Kimi.");
+                callback.onError("Provider " + provider.name + " is not supported in agent chat yet. "
+                        + "Choose OpenAI, DeepSeek, OpenRouter, or Kimi.");
                 return;
             }
 
             String apiKey = store.getApiKey(providerIndex);
             if (apiKey.isEmpty()) {
-                callback.onError("API key belum diisi di pengaturan AI.");
+                callback.onError("No API key set. Add one in the agent settings.");
                 return;
             }
 
@@ -121,7 +124,7 @@ public final class AiChatClient {
                     messages.put(toolMessage(call.getString("id"), result));
                 }
             }
-            callback.onResult("(Batas putaran tool tercapai. Coba pertanyaan yang lebih sempit.)", proposals);
+            callback.onResult("(Tool call limit reached. Try a narrower question.)", proposals);
         } catch (Exception e) {
             callback.onError(e.getMessage() == null ? e.toString() : e.getMessage());
         }
@@ -170,21 +173,22 @@ public final class AiChatClient {
                             params.add(p.optString(j, ""));
                         }
                     }
-                    steps.add(new AiBlockWriter.Step(s.getString("op"), params));
-                    summary.append(i + 1).append(". ").append(s.getString("op")).append(params).append('\n');
+                    String op = s.getString("op");
+                    steps.add(new AiBlockWriter.Step(op, params));
+                    summary.append(i + 1).append(". ").append(op).append(params).append('\n');
                 }
 
                 proposals.add(new Proposal(javaName, eventKey, steps, summary.toString().trim()));
-                return "Menunggu persetujuan user. Jangan anggap sudah tertulis.";
+                return "Waiting for user approval. Do not assume the blocks were written.";
             }
 
             default:
-                return "Tool tidak dikenal: " + name;
+                return "Unknown tool: " + name;
         }
     }
 
     private static String disabled(String tool) {
-        return "Tool " + tool + " dinonaktifkan user di Settings. Minta user mengaktifkannya dulu.";
+        return "Tool " + tool + " is disabled in the agent settings. Ask the user to enable it first.";
     }
 
     private JSONObject post(AiProviders.Provider provider, String apiKey, String model)
@@ -198,7 +202,7 @@ public final class AiChatClient {
         Request request = new Request.Builder()
                 .url(provider.baseUrl)
                 .header("Authorization", "Bearer " + apiKey)
-                .post(RequestBody.create(body.toString(), JSON))
+                .post(RequestBody.create(body.toString(), JSON_TYPE))
                 .build();
 
         try (Response response = HTTP.newCall(request).execute()) {
@@ -214,53 +218,57 @@ public final class AiChatClient {
     private static JSONArray toolSchemas() throws JSONException {
         JSONArray tools = new JSONArray();
 
-        tools.put(tool("list_blocks", "Cari block yang tersedia. Kosongkan query untuk daftar umum.", props(prop("query", "string", "Kata kunci opcode atau teks block")), new String[0]));
+        JSONObject listBlocksProps = new JSONObject()
+                .put("query", new JSONObject()
+                        .put("type", "string")
+                        .put("description", "Keyword for opcode or block text"));
+        tools.put(tool("list_blocks",
+                "Search available blocks. Leave query empty for a general list.",
+                listBlocksProps,
+                new JSONArray()));
 
-        tools.put(tool("list_event_keys", "Daftar event yang sudah punya block di file Java aktif.", props(), new String[0]));
+        tools.put(tool("list_event_keys",
+                "List events that already have blocks in the active Java file.",
+                new JSONObject(),
+                new JSONArray()));
 
-        JSONObject stepItem = new JSONObject();
-        stepItem.put("type", "object");
-        JSONObject stepProps = new JSONObject();
-        stepProps.put("op", new JSONObject().put("type", "string"));
-        stepProps.put("params", new JSONObject().put("type", "array").put("items", new JSONObject().put("type", "string")));
-        stepItem.put("properties", stepProps);
-        stepItem.put("required", new JSONArray().put("op").put("params"));
+        JSONObject stepItem = new JSONObject()
+                .put("type", "object")
+                .put("properties", new JSONObject()
+                        .put("op", new JSONObject().put("type", "string"))
+                        .put("params", new JSONObject()
+                                .put("type", "array")
+                                .put("items", new JSONObject().put("type", "string"))))
+                .put("required", new JSONArray().put("op").put("params"));
 
-        JSONObject appendProps = new JSONObject();
-        appendProps.put("event_key", new JSONObject().put("type", "string"));
-        appendProps.put("steps", new JSONObject().put("type", "array").put("items", stepItem));
-        tools.put(tool("append_blocks", "Usulkan block baru ditambahkan ke ekor event. User harus menyetujui.", appendProps, new String[]{"event_key", "steps"}));
+        JSONObject appendProps = new JSONObject()
+                .put("event_key", new JSONObject().put("type", "string"))
+                .put("steps", new JSONObject()
+                        .put("type", "array")
+                        .put("items", stepItem));
+        tools.put(tool("append_blocks",
+                "Propose blocks to add to the end of an event. The user must approve.",
+                appendProps,
+                new JSONArray().put("event_key").put("steps")));
 
         return tools;
     }
 
-    private static JSONObject tool(String name, String description, JSONObject properties, String[] required) throws JSONException {
-        JSONObject params = new JSONObject();
-        params.put("type", "object");
-        params.put("properties", properties);
-        params.put("required", new JSONArray(required));
+    private static JSONObject tool(String name, String description, JSONObject properties, JSONArray required)
+            throws JSONException {
+        JSONObject params = new JSONObject()
+                .put("type", "object")
+                .put("properties", properties)
+                .put("required", required);
 
-        JSONObject fn = new JSONObject();
-        fn.put("name", name);
-        fn.put("description", description);
-        fn.put("parameters", params);
+        JSONObject fn = new JSONObject()
+                .put("name", name)
+                .put("description", description)
+                .put("parameters", params);
 
-        JSONObject tool = new JSONObject();
-        tool.put("type", "function");
-        tool.put("function", fn);
-        return tool;
-    }
-
-    private static JSONObject props(Object... pairs) throws JSONException {
-        JSONObject o = new JSONObject();
-        for (int i = 0; i < pairs.length; i += 2) {
-            o.put((String) pairs[i], pairs[i + 1]);
-        }
-        return o;
-    }
-
-    private static Object[] prop(String name, String type, String desc) throws JSONException {
-        return new Object[]{name, new JSONObject().put("type", type).put("description", desc)};
+        return new JSONObject()
+                .put("type", "function")
+                .put("function", fn);
     }
 
     private static JSONObject message(String role, String content) throws JSONException {
@@ -268,6 +276,9 @@ public final class AiChatClient {
     }
 
     private static JSONObject toolMessage(String id, String content) throws JSONException {
-        return new JSONObject().put("role", "tool").put("tool_call_id", id).put("content", content);
+        return new JSONObject()
+                .put("role", "tool")
+                .put("tool_call_id", id)
+                .put("content", content);
     }
 }

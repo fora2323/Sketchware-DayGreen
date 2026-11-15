@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,8 +17,8 @@ import a.a.a.jC;
 import a.a.a.wq;
 
 /**
- * Menulis block ke event yang sudah punya block (sebagai ekor rantai).
- * v1: hanya block linear (bukan C-block / if), dan event harus sudah ada blocknya.
+ * Writes blocks to the end of an event that already has blocks.
+ * v1: linear blocks only (no C-blocks or if), and the event must already exist.
  */
 public final class AiBlockWriter {
 
@@ -47,8 +46,8 @@ public final class AiBlockWriter {
     }
 
     /**
-     * Daftar event key yang sudah punya block di file Java tertentu.
-     * AI hanya boleh memilih dari daftar ini.
+     * Event keys that already have blocks in the given Java file.
+     * The agent may only pick from this list.
      */
     public static List<String> listEventKeys(String scId, String javaName) {
         return new ArrayList<>(jC.a(scId).b(javaName).keySet());
@@ -56,41 +55,41 @@ public final class AiBlockWriter {
 
     public static Result appendBlocks(String scId, String javaName, String eventKey, List<Step> steps) {
         if (steps == null || steps.isEmpty()) {
-            return new Result(false, "Tidak ada block yang mau ditulis.");
+            return new Result(false, "There are no blocks to write.");
         }
 
         Map<String, AiBlockCatalog.Entry> catalog = AiBlockCatalog.getAll();
 
-        // 1. Validasi setiap block sebelum menyentuh data project.
+        // 1. Validate every step before touching project data.
         for (int i = 0; i < steps.size(); i++) {
             Step s = steps.get(i);
             AiBlockCatalog.Entry entry = catalog.get(s.opCode);
             if (entry == null) {
-                return new Result(false, "Langkah " + (i + 1) + ": opcode \"" + s.opCode + "\" tidak ada di katalog.");
+                return new Result(false, "Step " + (i + 1) + ": opcode \"" + s.opCode + "\" is not in the catalog.");
             }
             if ("c".equals(entry.type) || "e".equals(entry.type)) {
-                return new Result(false, "Langkah " + (i + 1) + ": block C/if belum didukung AI.");
+                return new Result(false, "Step " + (i + 1) + ": C-blocks and if-blocks are not supported by the agent yet.");
             }
             if (s.parameters == null || s.parameters.size() != entry.paramTypes.size()) {
                 int expected = entry.paramTypes.size();
-                return new Result(false, "Langkah " + (i + 1) + " (" + s.opCode + "): butuh " + expected + " parameter.");
+                return new Result(false, "Step " + (i + 1) + " (" + s.opCode + "): expects " + expected + " parameter(s).");
             }
         }
 
         eC data = jC.a(scId);
         Map<String, ArrayList<BlockBean>> fileBlocks = data.b(javaName);
         if (!fileBlocks.containsKey(eventKey)) {
-            return new Result(false, "Event \"" + eventKey + "\" belum ada di file ini. Buat dulu di editor.");
+            return new Result(false, "Event \"" + eventKey + "\" does not exist in this file. Create it in the editor first.");
         }
 
         ArrayList<BlockBean> current = new ArrayList<>(fileBlocks.get(eventKey));
         if (current.isEmpty()) {
-            return new Result(false, "Event \"" + eventKey + "\" belum punya block. Buat dulu blocknya di editor.");
+            return new Result(false, "Event \"" + eventKey + "\" has no blocks yet. Add its first block in the editor.");
         }
 
         BlockBean tail = findTail(current);
         if (tail == null) {
-            return new Result(false, "Rantai block di event ini tidak valid.");
+            return new Result(false, "The block chain in this event is invalid.");
         }
 
         File logic = new File(wq.a(scId), "logic");
@@ -117,10 +116,10 @@ public final class AiBlockWriter {
             if (backup != null) {
                 Files.deleteIfExists(backup.toPath());
             }
-            return new Result(true, "Berhasil menambah " + steps.size() + " block ke \"" + eventKey + "\".");
+            return new Result(true, "Added " + steps.size() + " block(s) to \"" + eventKey + "\".");
         } catch (Exception e) {
             restore(backup, logic);
-            return new Result(false, "Gagal menyimpan, perubahan dikembalikan: " + e.getMessage());
+            return new Result(false, "Save failed, changes were reverted: " + e.getMessage());
         }
     }
 

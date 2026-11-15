@@ -1,5 +1,6 @@
 package org.sketchware.daygreen.ai;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -12,6 +13,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import org.sketchware.daygreen.ai.activities.AiSettingsActivity;
 
 import java.util.List;
 
@@ -29,17 +32,18 @@ public class AiChatFragment extends Fragment {
     private AiChatClient.Proposal pending;
 
     public static AiChatFragment newInstance(String scId, String javaName) {
-        AiChatFragment f = new AiChatFragment();
+        AiChatFragment fragment = new AiChatFragment();
         Bundle args = new Bundle();
         args.putString(ARG_SC_ID, scId);
         args.putString(ARG_JAVA_NAME, javaName);
-        f.setArguments(args);
-        return f;
+        fragment.setArguments(args);
+        return fragment;
     }
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         binding = FragmentAiChatBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
@@ -48,13 +52,22 @@ public class AiChatFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Bundle args = getArguments();
-        String scId = args != null ? args.getString(ARG_SC_ID, "") : "";
-        String javaName = args != null ? args.getString(ARG_JAVA_NAME, "") : "";
-        client = new AiChatClient(requireContext(), scId, javaName);
+        client = new AiChatClient(requireContext(), getScId(), getJavaName());
 
         binding.btnSend.setOnClickListener(v -> send());
         binding.btnApply.setOnClickListener(v -> confirmApply());
+        binding.btnSettings.setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), AiSettingsActivity.class)));
+        binding.btnModel.setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), AiSettingsActivity.class)));
+        binding.btnAttach.setOnClickListener(v ->
+                SketchwareUtil.toast("Selecting files with @ is not available yet."));
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        refreshModelLabel();
     }
 
     @Override
@@ -63,13 +76,28 @@ public class AiChatFragment extends Fragment {
         super.onDestroyView();
     }
 
+    private void refreshModelLabel() {
+        if (binding == null) return;
+        AiSettingsStore store = new AiSettingsStore(requireContext());
+        int providerIndex = store.getProviderIndex();
+        if (providerIndex < 0 || providerIndex >= AiProviders.ALL.length) return;
+
+        AiProviders.Provider provider = AiProviders.ALL[providerIndex];
+        int modelIndex = store.getModelIndex();
+        if (modelIndex < 0 || modelIndex >= provider.models.length) modelIndex = 0;
+
+        binding.btnModel.setText(provider.models[modelIndex]);
+    }
+
     private void send() {
-        String text = binding.etInput.getText() == null ? "" : binding.etInput.getText().toString().trim();
+        String text = binding.etInput.getText() == null
+                ? ""
+                : binding.etInput.getText().toString().trim();
         if (text.isEmpty()) {
             return;
         }
         binding.etInput.setText("");
-        appendLog("Kamu: " + text);
+        appendLog("You: " + text);
         setBusy(true);
 
         client.ask(text, new AiChatClient.Callback() {
@@ -78,11 +106,11 @@ public class AiChatFragment extends Fragment {
                 main.post(() -> {
                     if (binding == null) return;
                     setBusy(false);
-                    appendLog("AI: " + reply);
+                    appendLog("Agent: " + reply);
                     if (!proposals.isEmpty()) {
                         pending = proposals.get(proposals.size() - 1);
                         binding.btnApply.setVisibility(View.VISIBLE);
-                        appendLog("Usulan block (belum ditulis):\n" + pending.summary);
+                        appendLog("Proposed blocks (not written yet):\n" + pending.summary);
                     }
                 });
             }
@@ -103,15 +131,15 @@ public class AiChatFragment extends Fragment {
         AiChatClient.Proposal p = pending;
 
         new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Tulis block?")
+                .setTitle("Write blocks?")
                 .setMessage("Event: " + p.eventKey + "\n\n" + p.summary)
-                .setPositiveButton("Tulis", (d, w) -> applyPending(p))
-                .setNegativeButton("Batal", null)
+                .setPositiveButton("Write", (d, w) -> applyPending(p))
+                .setNegativeButton("Cancel", null)
                 .show();
     }
 
     private void applyPending(AiChatClient.Proposal p) {
-        String scId = getArguments() != null ? getArguments().getString(ARG_SC_ID, "") : "";
+        String scId = getScId();
         new Thread(() -> {
             AiBlockWriter.Result r = AiBlockWriter.appendBlocks(scId, p.javaName, p.eventKey, p.steps);
             main.post(() -> {
@@ -120,7 +148,7 @@ public class AiChatFragment extends Fragment {
                 if (r.success) {
                     pending = null;
                     binding.btnApply.setVisibility(View.GONE);
-                    SketchwareUtil.toast("Block ditulis.");
+                    SketchwareUtil.toast("Blocks written.");
                 }
             });
         }).start();
@@ -134,5 +162,15 @@ public class AiChatFragment extends Fragment {
     private void appendLog(String text) {
         binding.tvLog.append(text + "\n\n");
         binding.scrollLog.post(() -> binding.scrollLog.fullScroll(View.FOCUS_DOWN));
+    }
+
+    private String getScId() {
+        Bundle args = getArguments();
+        return args != null ? args.getString(ARG_SC_ID, "") : "";
+    }
+
+    private String getJavaName() {
+        Bundle args = getArguments();
+        return args != null ? args.getString(ARG_JAVA_NAME, "") : "";
     }
 }
