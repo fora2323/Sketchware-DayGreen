@@ -108,7 +108,7 @@ public class ConfigActivity extends BaseAppCompatActivity {
         if (saved == null || saved.trim().isEmpty()) {
             return Arrays.asList("view", "event");
         }
-        List<String> validTabs = Arrays.asList("view", "event", "component", "java", "resource");
+        List<String> validTabs = Arrays.asList("view", "event", "component", "java", "resource", "ai");
         List<String> result = new ArrayList<>();
         for (String tab : validTabs) {
             if (saved.contains(tab)) {
