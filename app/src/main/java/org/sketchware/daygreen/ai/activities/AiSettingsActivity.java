@@ -7,18 +7,22 @@ import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.RadioButton;
 
 import androidx.annotation.Nullable;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
+import com.besome.sketch.editor.manage.library.LibraryCategoryView;
+import com.besome.sketch.editor.manage.library.LibraryItemView;
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.switchmaterial.SwitchMaterial;
 
 import org.sketchware.daygreen.ai.AiConnectionTester;
 import org.sketchware.daygreen.ai.AiSettingsStore;
 import pro.sketchware.databinding.ActivityAiSettingsBinding;
+import pro.sketchware.utility.SketchwareUtil;
 
 public class AiSettingsActivity extends BaseAppCompatActivity {
 
@@ -32,6 +36,18 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
         }
     }
 
+    private static final class Tool {
+        final String name;
+        final String category;
+        final String policy;
+
+        Tool(String name, String category, String policy) {
+            this.name = name;
+            this.category = category;
+            this.policy = policy;
+        }
+    }
+
     private static final Provider[] PROVIDERS = {
             new Provider("OpenAI", "gpt-4o", "gpt-4o-mini", "gpt-4.1", "gpt-4.1-mini"),
             new Provider("Anthropic (Claude)", "claude-sonnet-4-5", "claude-haiku-4-5", "claude-opus-4-1"),
@@ -41,12 +57,31 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
             new Provider("Moonshot (Kimi)", "kimi-k2-0711-preview")
     };
 
-    private static final String[] TOOLS = {
-            "file_info", "read_file", "write_file", "edit_file", "list_dir", "search",
-            "make_dir", "copy_path", "move_path", "delete_path", "find_files",
-            "run_android_shell", "run_ubuntu", "http_get", "http_request", "http_download",
-            "http_upload", "save_memory", "forget_memory", "scratchpad", "spawn_agent",
-            "ask_user", "set_goal", "write_todos"
+    private static final Tool[] TOOLS = {
+            new Tool("file_info", "Read", "runs freely"),
+            new Tool("read_file", "Read", "runs freely"),
+            new Tool("write_file", "Write", "asks first"),
+            new Tool("edit_file", "Write", "asks first"),
+            new Tool("list_dir", "Read", "runs freely"),
+            new Tool("search", "Read", "runs freely"),
+            new Tool("make_dir", "Write", "asks first"),
+            new Tool("copy_path", "Write", "asks first"),
+            new Tool("move_path", "Write", "asks first"),
+            new Tool("delete_path", "Write", "asks first"),
+            new Tool("find_files", "Read", "runs freely"),
+            new Tool("run_android_shell", "Shell", "asks first"),
+            new Tool("run_ubuntu", "Shell", "asks first"),
+            new Tool("http_get", "Network", "runs freely"),
+            new Tool("http_request", "Network", "asks first"),
+            new Tool("http_download", "Write", "asks first"),
+            new Tool("http_upload", "Network", "asks first"),
+            new Tool("save_memory", "Write", "runs freely"),
+            new Tool("forget_memory", "Write", "runs freely"),
+            new Tool("scratchpad", "Write", "runs freely"),
+            new Tool("spawn_agent", "Read", "runs freely"),
+            new Tool("ask_user", "Read", "runs freely"),
+            new Tool("set_goal", "Read", "runs freely"),
+            new Tool("write_todos", "Read", "runs freely")
     };
 
     private static final String DEFAULT_SYSTEM_PROMPT =
@@ -64,9 +99,38 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
+        enableEdgeToEdgeNoContrast();
         super.onCreate(savedInstanceState);
         binding = ActivityAiSettingsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        {
+            View view = binding.main;
+            int left = view.getPaddingLeft();
+            int top = view.getPaddingTop();
+            int right = view.getPaddingRight();
+            int bottom = view.getPaddingBottom();
+
+            ViewCompat.setOnApplyWindowInsetsListener(view, (v, insets) -> {
+                Insets systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+                v.setPadding(left + systemInsets.left, top, right + systemInsets.right, bottom);
+                return insets;
+            });
+        }
+
+        {
+            View view = binding.contentScroll;
+            int left = view.getPaddingLeft();
+            int top = view.getPaddingTop();
+            int right = view.getPaddingRight();
+            int bottom = view.getPaddingBottom();
+
+            ViewCompat.setOnApplyWindowInsetsListener(view, (v, insets) -> {
+                Insets navBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(left, top, right, bottom + navBarInsets.bottom);
+                return insets;
+            });
+        }
 
         store = new AiSettingsStore(this);
         providerIndex = store.getProviderIndex();
@@ -127,24 +191,27 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
     }
 
     private void buildToolRows() {
-        int padH = dp(20);
-        int padV = dp(12);
-        for (int i = 0; i < TOOLS.length; i++) {
-            String tool = TOOLS[i];
-            SwitchMaterial toggle = new SwitchMaterial(this);
-            toggle.setText(tool);
-            toggle.setChecked(store.isToolEnabled(tool));
-            toggle.setPadding(padH, padV, padH, padV);
-            toggle.setOnCheckedChangeListener((button, isChecked) -> store.setToolEnabled(tool, isChecked));
-            binding.toolsContainer.addView(toggle);
+        LibraryCategoryView toolsCategory = new LibraryCategoryView(this);
+        toolsCategory.setTitle("Tools (" + TOOLS.length + ")");
 
-            if (i < TOOLS.length - 1) {
-                View divider = new View(this);
-                divider.setBackgroundColor(0x33808080);
-                binding.toolsContainer.addView(divider, new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, dp(1)));
-            }
+        for (int i = 0; i < TOOLS.length; i++) {
+            Tool tool = TOOLS[i];
+
+            LibraryItemView item = new LibraryItemView(this);
+            item.setHideIcon(true);
+            item.setHideEnabled();
+            item.title.setText(tool.name);
+            item.description.setText(tool.category + " · " + tool.policy);
+            item.sw_enable.setVisibility(View.VISIBLE);
+            item.sw_enable.setChecked(store.isToolEnabled(tool.name));
+            item.sw_enable.setOnCheckedChangeListener((button, isChecked) ->
+                    store.setToolEnabled(tool.name, isChecked));
+            item.setOnClickListener(v -> item.sw_enable.toggle());
+
+            toolsCategory.addLibraryItem(item, i < TOOLS.length - 1);
         }
+
+        binding.toolsContainer.addView(toolsCategory);
     }
 
     private void showProviderDialog() {
@@ -175,7 +242,7 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         input.setHint("API key");
         input.setText(store.getApiKey(providerIndex));
-        int pad = dp(16);
+        int pad = SketchwareUtil.dpToPx(16);
         input.setPadding(pad, pad, pad, pad);
 
         new MaterialAlertDialogBuilder(this)
@@ -216,7 +283,7 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
         input.setMinLines(4);
         input.setGravity(Gravity.TOP);
         input.setText(store.getSystemPrompt(DEFAULT_SYSTEM_PROMPT));
-        int pad = dp(16);
+        int pad = SketchwareUtil.dpToPx(16);
         input.setPadding(pad, pad, pad, pad);
 
         new MaterialAlertDialogBuilder(this)
@@ -246,9 +313,5 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
                 setTestStatus(message, success ? COLOR_OK : COLOR_ERROR);
             }
         }));
-    }
-
-    private int dp(int value) {
-        return (int) (value * getResources().getDisplayMetrics().density);
     }
 }
