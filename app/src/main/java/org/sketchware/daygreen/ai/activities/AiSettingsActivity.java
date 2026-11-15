@@ -6,6 +6,7 @@ import android.os.Looper;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.RadioButton;
 
 import androidx.annotation.Nullable;
@@ -20,24 +21,14 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
 
 import org.sketchware.daygreen.ai.AiConnectionTester;
+import org.sketchware.daygreen.ai.AiProviders;
 import org.sketchware.daygreen.ai.AiSettingsStore;
 import pro.sketchware.databinding.ActivityAiSettingsBinding;
 import pro.sketchware.databinding.DialogAiInputBinding;
-import pro.sketchware.utility.SketchwareUtil;
 
 import java.util.function.Consumer;
 
 public class AiSettingsActivity extends BaseAppCompatActivity {
-
-    private static final class Provider {
-        final String name;
-        final String[] models;
-
-        Provider(String name, String... models) {
-            this.name = name;
-            this.models = models;
-        }
-    }
 
     private static final class Tool {
         final String name;
@@ -51,16 +42,9 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
         }
     }
 
-    private static final Provider[] PROVIDERS = {
-            new Provider("OpenAI", "gpt-4o", "gpt-4o-mini", "gpt-4.1", "gpt-4.1-mini"),
-            new Provider("Anthropic (Claude)", "claude-sonnet-4-5", "claude-haiku-4-5", "claude-opus-4-1"),
-            new Provider("Google (Gemini)", "gemini-2.5-pro", "gemini-2.5-flash"),
-            new Provider("DeepSeek", "deepseek-chat", "deepseek-reasoner"),
-            new Provider("OpenRouter", "openrouter/auto"),
-            new Provider("Moonshot (Kimi)", "kimi-k2-0711-preview")
-    };
-
     private static final Tool[] TOOLS = {
+            new Tool("list_blocks", "Read", "runs freely"),
+            new Tool("append_blocks", "Write", "asks first"),
             new Tool("file_info", "Read", "runs freely"),
             new Tool("read_file", "Read", "runs freely"),
             new Tool("write_file", "Write", "asks first"),
@@ -164,7 +148,7 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
     }
 
     private void refreshValues() {
-        Provider provider = PROVIDERS[providerIndex];
+        AiProviders.Provider provider = AiProviders.ALL[providerIndex];
         String apiKey = store.getApiKey(providerIndex);
 
         binding.tvProviderValue.setText(provider.name);
@@ -218,9 +202,9 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
     }
 
     private void showProviderDialog() {
-        String[] names = new String[PROVIDERS.length];
-        for (int i = 0; i < PROVIDERS.length; i++) {
-            names[i] = PROVIDERS[i].name;
+        String[] names = new String[AiProviders.ALL.length];
+        for (int i = 0; i < AiProviders.ALL.length; i++) {
+            names[i] = AiProviders.ALL[i].name;
         }
         final int[] selected = {providerIndex};
 
@@ -252,7 +236,7 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
     }
 
     private void showModelDialog() {
-        Provider provider = PROVIDERS[providerIndex];
+        AiProviders.Provider provider = AiProviders.ALL[providerIndex];
         final int[] selected = {modelIndex};
 
         new MaterialAlertDialogBuilder(this)

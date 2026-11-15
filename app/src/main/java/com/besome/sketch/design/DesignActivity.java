@@ -134,6 +134,7 @@ import mod.khaled.logcat.LogReaderActivity;
 
 import org.sketchware.daygreen.FileCheckUtils;
 import org.sketchware.daygreen.builds.BuildCache;
+import org.sketchware.daygreen.ai.AiChatFragment;
 
 import pro.sketchware.R;
 import pro.sketchware.activities.appcompat.ManageAppCompatActivity;
@@ -1949,6 +1950,8 @@ private String fixPackage(String code, String pkg) {
                     return Helper.getResString(R.string.design_tab_title_resource);
                 case "git":
                     return "Git";
+                case "ai":
+                    return "AI";                    
                 default:
                     return "";
             }
@@ -1997,6 +2000,9 @@ private String fixPackage(String code, String pkg) {
                     return ManageResourceFragment.newInstance(sc_id);
                 case "git":
                     return ManageGitFragment.newInstance(sc_id);
+                case "ai":
+                    return AiChatFragment.newInstance(sc_id,
+                           projectFile != null ? projectFile.getJavaName() : ProjectFileBean.DEFAULT_JAVA_NAME);                    
                 default:
                     return new Fragment();
             }
