@@ -1,32 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface"
-    android:fitsSystemWindows="true"
-    android:orientation="vertical">
+    android:background="?attr/colorSurface">
 
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:fitsSystemWindows="true"
         android:background="?attr/colorSurface"
-        app:navigationIcon="?attr/homeAsUpIndicator"
-        app:navigationIconTint="?attr/colorOnSurface"
-        app:title="AI"
-        app:titleTextColor="?attr/colorOnSurface" />
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$Behavior">
+
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            android:background="?attr/colorSurface"
+            app:contentScrim="?attr/colorSurface"
+            app:statusBarScrim="?attr/colorSurface"
+            style="@style/DayDream.CollapsingToolbarLarge"
+            android:fitsSystemWindows="true"
+            app:title="AI">
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="?attr/colorSurface"
+                app:navigationIcon="@drawable/arrow_back_24px"
+                app:layout_collapseMode="pin" />
+
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+    </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true">
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="24dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -47,36 +65,30 @@
                 app:strokeWidth="0dp">
 
                 <LinearLayout
+                    android:id="@+id/row_provider"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:background="?attr/selectableItemBackground"
+                    android:orientation="vertical"
+                    android:paddingStart="20dp"
+                    android:paddingTop="16dp"
+                    android:paddingEnd="20dp"
+                    android:paddingBottom="16dp">
 
-                    <LinearLayout
-                        android:id="@+id/row_provider"
-                        android:layout_width="match_parent"
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:orientation="vertical"
-                        android:paddingStart="20dp"
-                        android:paddingTop="16dp"
-                        android:paddingEnd="20dp"
-                        android:paddingBottom="16dp">
+                        android:text="Provider"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="16sp" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Provider"
-                            android:textColor="?attr/colorOnSurface"
-                            android:textSize="16sp" />
-
-                        <TextView
-                            android:id="@+id/tv_provider_value"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:textColor="?attr/colorOnSurfaceVariant"
-                            android:textSize="13sp" />
-                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/tv_provider_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="13sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -163,6 +175,39 @@
                             android:textColor="?attr/colorOnSurfaceVariant"
                             android:textSize="13sp" />
                     </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginStart="20dp"
+                        android:layout_marginEnd="20dp"
+                        android:background="?attr/colorOutlineVariant" />
+
+                    <LinearLayout
+                        android:id="@+id/row_test"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:orientation="vertical"
+                        android:paddingStart="20dp"
+                        android:paddingTop="16dp"
+                        android:paddingEnd="20dp"
+                        android:paddingBottom="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Test connection"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:id="@+id/tv_test_status"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:textSize="13sp" />
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -246,7 +291,7 @@
                         android:id="@+id/rb_ask"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:checked="true"
+                        android:padding="12dp"
                         android:text="Ask before every tool"
                         android:textColor="?attr/colorOnSurface" />
 
@@ -254,6 +299,7 @@
                         android:id="@+id/rb_auto_edit"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:padding="12dp"
                         android:text="Auto-approve file edits"
                         android:textColor="?attr/colorOnSurface" />
 
@@ -261,6 +307,7 @@
                         android:id="@+id/rb_plan"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:padding="12dp"
                         android:text="Plan only"
                         android:textColor="?attr/colorOnSurface" />
 
@@ -268,11 +315,39 @@
                         android:id="@+id/rb_autonomous"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:padding="12dp"
                         android:text="Autonomous"
                         android:textColor="?attr/colorOnSurface" />
                 </RadioGroup>
             </com.google.android.material.card.MaterialCardView>
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="16dp"
+                android:text="Tools (24)"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="14sp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:id="@+id/tools_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp" />
+            </com.google.android.material.card.MaterialCardView>
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-</LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
