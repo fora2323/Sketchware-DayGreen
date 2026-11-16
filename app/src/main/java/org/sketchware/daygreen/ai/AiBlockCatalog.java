@@ -1,5 +1,7 @@
 package org.sketchware.daygreen.ai;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,8 +12,11 @@ import java.util.Map;
 
 import a.a.a.lq;
 import mod.hilal.saif.blocks.BlocksHandler;
+import pro.sketchware.blocks.ExtraBlocks;
 
 public final class AiBlockCatalog {
+
+    private static final String TAG = "AiBlockCatalog";
 
     public static final class Entry {
         public final String opCode;
@@ -37,12 +42,26 @@ public final class AiBlockCatalog {
     }
 
     public static synchronized Map<String, Entry> getAll() {
-        if (cache == null) {
-            ArrayList<HashMap<String, Object>> raw = new ArrayList<>();
-            BlocksHandler.builtInBlocks(raw);
+        if (cache != null) {
+            return cache;
+        }
 
-            Map<String, Entry> map = new LinkedHashMap<>();
-            for (HashMap<String, Object> b : raw) {
+        ArrayList<HashMap<String, Object>> raw = new ArrayList<>();
+        try {
+            BlocksHandler.builtInBlocks(raw);
+        } catch (Throwable t) {
+            Log.e(TAG, "BlocksHandler.builtInBlocks failed, falling back to ExtraBlocks only", t);
+            raw.clear();
+            try {
+                ExtraBlocks.extraBlocks(raw);
+            } catch (Throwable t2) {
+                Log.e(TAG, "ExtraBlocks.extraBlocks failed too", t2);
+            }
+        }
+
+        Map<String, Entry> map = new LinkedHashMap<>();
+        for (HashMap<String, Object> b : raw) {
+            try {
                 String name = str(b.get("name"));
                 if (name.isEmpty() || map.containsKey(name)) {
                     continue;
@@ -53,12 +72,17 @@ public final class AiBlockCatalog {
                         str(b.get("typeName")),
                         str(b.get("spec")),
                         str(b.get("color")),
-                        lq.a(name)
+                        safeParamTypes(name)
                 ));
+            } catch (Throwable t) {
+                Log.e(TAG, "Skipping a block that could not be read", t);
             }
+        }
+
+        if (!map.isEmpty()) {
             cache = map;
         }
-        return cache;
+        return map;
     }
 
     public static Entry get(String opCode) {
@@ -66,7 +90,7 @@ public final class AiBlockCatalog {
     }
 
     /**
-     * Cari block berdasarkan opcode atau teks spec. Dipakai AI sebelum memilih block.
+     * Searches blocks by opcode or spec text. Used by the agent before it picks a block.
      */
     public static List<Entry> search(String query, int limit) {
         String q = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
@@ -82,6 +106,16 @@ public final class AiBlockCatalog {
             }
         }
         return result;
+    }
+
+    private static List<String> safeParamTypes(String opCode) {
+        try {
+            List<String> types = lq.a(opCode);
+            return types == null ? new ArrayList<>() : new ArrayList<>(types);
+        } catch (Throwable t) {
+            Log.w(TAG, "No param info for opcode " + opCode, t);
+            return new ArrayList<>();
+        }
     }
 
     private static String str(Object o) {

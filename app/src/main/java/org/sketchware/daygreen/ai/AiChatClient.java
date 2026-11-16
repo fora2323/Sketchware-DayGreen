@@ -55,7 +55,7 @@ public final class AiChatClient {
 
     private static final String RULES =
             "\n\nBlock rules:\n"
-                    + "1. Call list_event_keys first to choose a valid event.\n"
+                    + "1. Call list_event_keys for events that already have blocks, or list_events for built-in Activity events.\n"
                     + "2. Call list_blocks to find opcodes. Never invent opcodes.\n"
                     + "3. The number of params must match the params listed by list_blocks.\n"
                     + "4. Use append_blocks to add blocks. The user must approve before anything is written.\n"
@@ -170,9 +170,20 @@ public final class AiChatClient {
                 }
                 List<String> keys = AiBlockWriter.listEventKeys(scId, javaName);
                 if (keys.isEmpty()) {
-                    return "No events with blocks in " + javaName + ". Ask the user to add a first block in the editor.";
+                    return "No events with blocks in " + javaName + ". Use list_events for built-in events.";
                 }
                 return new JSONArray(keys).toString();
+            }
+
+            case "list_events": {
+                if (!store.isToolEnabled("list_blocks")) {
+                    return disabled("list_blocks");
+                }
+                JSONArray out = new JSONArray();
+                for (AiEventCatalog.Event e : AiEventCatalog.activityEvents()) {
+                    out.put(new JSONObject().put("name", e.name).put("key", e.key));
+                }
+                return out.toString();
             }
 
             case "append_blocks": {
@@ -249,6 +260,11 @@ public final class AiChatClient {
 
         tools.put(tool("list_event_keys",
                 "List events that already have blocks in the active Java file.",
+                new JSONObject(),
+                new JSONArray()));
+
+        tools.put(tool("list_events",
+                "List the built-in Activity events and the key to use for each one.",
                 new JSONObject(),
                 new JSONArray()));
 

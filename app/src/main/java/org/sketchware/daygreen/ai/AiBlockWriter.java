@@ -1,6 +1,7 @@
 package org.sketchware.daygreen.ai;
 
 import android.graphics.Color;
+import android.util.Pair;
 
 import com.besome.sketch.beans.BlockBean;
 
@@ -11,16 +12,19 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import a.a.a.eC;
 import a.a.a.jC;
 import a.a.a.wq;
 
 /**
- * Writes blocks to the end of an event that already has blocks.
- * v1: linear blocks only (no C-blocks or if), and the event must already exist.
+ * Writes blocks to Activity events, and creates More Blocks.
+ * v1: linear blocks only (no C-blocks or if-blocks).
  */
 public final class AiBlockWriter {
+
+    private static final Pattern MORE_BLOCK_NAME = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
 
     public static final class Step {
         public final String opCode;
@@ -47,7 +51,6 @@ public final class AiBlockWriter {
 
     /**
      * Event keys that already have blocks in the given Java file.
-     * The agent may only pick from this list.
      */
     public static List<String> listEventKeys(String scId, String javaName) {
         List<String> keys = new ArrayList<>();
@@ -61,10 +64,14 @@ public final class AiBlockWriter {
         }
         return keys;
     }
-    
+
+    /**
+     * Appends blocks to an event. The event can be an existing one, a built-in Activity event
+     * that has no blocks yet, or a More Block (name_moreBlock).
+     */
     public static Result appendBlocks(String scId, String javaName, String eventKey, List<Step> steps) {
         if (steps == null || steps.isEmpty()) {
-            return new Result(false, "There are no blocks to write.");
+            return fail("There are no blocks to write.");
         }
 
         Map<String, AiBlockCatalog.Entry> catalog = AiBlockCatalog.getAll();
@@ -74,31 +81,36 @@ public final class AiBlockWriter {
             Step s = steps.get(i);
             AiBlockCatalog.Entry entry = catalog.get(s.opCode);
             if (entry == null) {
-                return new Result(false, "Step " + (i + 1) + ": opcode \"" + s.opCode + "\" is not in the catalog.");
+                return fail("Step " + (i + 1) + ": opcode \"" + s.opCode + "\" is not in the catalog.");
             }
             if ("c".equals(entry.type) || "e".equals(entry.type)) {
-                return new Result(false, "Step " + (i + 1) + ": C-blocks and if-blocks are not supported by the agent yet.");
+                return fail("Step " + (i + 1) + ": C-blocks and if-blocks are not supported by the agent yet.");
             }
             if (s.parameters == null || s.parameters.size() != entry.paramTypes.size()) {
-                int expected = entry.paramTypes.size();
-                return new Result(false, "Step " + (i + 1) + " (" + s.opCode + "): expects " + expected + " parameter(s).");
+                return fail("Step " + (i + 1) + " (" + s.opCode + "): expects "
+                        + entry.paramTypes.size() + " parameter(s).");
             }
         }
 
         eC data = jC.a(scId);
+        if (data == null) {
+            return fail("Project data is not loaded. Close the project and open it again.");
+        }
+
+        if (!isAllowedEventKey(scId, javaName, eventKey)) {
+            return fail("Event \"" + eventKey + "\" is not a valid event for this file.");
+        }
+
         Map<String, ArrayList<BlockBean>> fileBlocks = data.b(javaName);
-        if (!fileBlocks.containsKey(eventKey)) {
-            return new Result(false, "Event \"" + eventKey + "\" does not exist in this file. Create it in the editor first.");
+        ArrayList<BlockBean> current = new ArrayList<>();
+        if (fileBlocks != null && fileBlocks.get(eventKey) != null) {
+            current.addAll(fileBlocks.get(eventKey));
         }
 
-        ArrayList<BlockBean> current = new ArrayList<>(fileBlocks.get(eventKey));
-        if (current.isEmpty()) {
-            return new Result(false, "Event \"" + eventKey + "\" has no blocks yet. Add its first block in the editor.");
-        }
-
-        BlockBean tail = findTail(current);
-        if (tail == null) {
-            return new Result(false, "The block chain in this event is invalid.");
+        // An empty event is fine: the first new block becomes the head of the event.
+        BlockBean tail = current.isEmpty() ? null : findTail(current);
+        if (!current.isEmpty() && tail == null) {
+            return fail("The block chain in this event is invalid.");
         }
 
         File logic = new File(wq.a(scId), "logic");
@@ -114,7 +126,9 @@ public final class AiBlockWriter {
                 block.parameters.addAll(s.parameters);
                 block.nextBlock = -1;
 
-                tail.nextBlock = nextId;
+                if (tail != null) {
+                    tail.nextBlock = nextId;
+                }
                 current.add(block);
                 tail = block;
                 nextId++;
@@ -122,14 +136,68 @@ public final class AiBlockWriter {
 
             data.a(javaName, eventKey, current);
             data.k();
-            if (backup != null) {
-                Files.deleteIfExists(backup.toPath());
-            }
-            return new Result(true, "Added " + steps.size() + " block(s) to \"" + eventKey + "\".");
+            deleteBackup(backup);
+            return ok("Added " + steps.size() + " block(s) to \"" + eventKey + "\".");
         } catch (Exception e) {
             restore(backup, logic);
-            return new Result(false, "Save failed, changes were reverted: " + e.getMessage());
+            return fail("Save failed, changes were reverted: " + e.getMessage());
         }
+    }
+
+    /**
+     * Creates a More Block. Same write path that LogicEditorActivity uses after MakeBlockActivity.
+     */
+    public static Result createMoreBlock(String scId, String javaName, String name, String spec) {
+        if (name == null || !MORE_BLOCK_NAME.matcher(name).matches()) {
+            return fail("More block name must start with a letter and contain only letters, digits, or underscores.");
+        }
+        if (spec == null || spec.trim().isEmpty()) {
+            return fail("More block spec cannot be empty.");
+        }
+
+        eC data = jC.a(scId);
+        if (data == null) {
+            return fail("Project data is not loaded. Close the project and open it again.");
+        }
+
+        for (Pair<String, String> more : data.i(javaName)) {
+            if (name.equals(more.first)) {
+                return fail("A more block named \"" + name + "\" already exists.");
+            }
+        }
+
+        File logic = new File(wq.a(scId), "logic");
+        File backup = backup(logic);
+        try {
+            data.a(javaName, name, spec.trim());
+            data.k();
+            deleteBackup(backup);
+            return ok("Created more block \"" + name + "\".");
+        } catch (Exception e) {
+            restore(backup, logic);
+            return fail("Failed to create more block, changes were reverted: " + e.getMessage());
+        }
+    }
+
+    private static boolean isAllowedEventKey(String scId, String javaName, String eventKey) {
+        if (eventKey == null || eventKey.isEmpty()) {
+            return false;
+        }
+
+        Map<String, ArrayList<BlockBean>> blocks = jC.a(scId).b(javaName);
+        if (blocks != null && blocks.containsKey(eventKey)) {
+            return true;
+        }
+        if (AiEventCatalog.isKnownActivityKey(eventKey)) {
+            return true;
+        }
+
+        for (Pair<String, String> more : jC.a(scId).i(javaName)) {
+            if (eventKey.equals(more.first + "_moreBlock")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static BlockBean findTail(List<BlockBean> blocks) {
@@ -144,7 +212,11 @@ public final class AiBlockWriter {
 
     private static int maxId(Map<String, ArrayList<BlockBean>> fileBlocks) {
         int max = 0;
+        if (fileBlocks == null) {
+            return max;
+        }
         for (ArrayList<BlockBean> list : fileBlocks.values()) {
+            if (list == null) continue;
             for (BlockBean b : list) {
                 try {
                     max = Math.max(max, Integer.parseInt(b.id));
@@ -176,6 +248,14 @@ public final class AiBlockWriter {
         }
     }
 
+    private static void deleteBackup(File backup) {
+        if (backup == null) return;
+        try {
+            Files.deleteIfExists(backup.toPath());
+        } catch (IOException ignored) {
+        }
+    }
+
     private static void restore(File backup, File logic) {
         if (backup == null || !backup.exists()) {
             return;
@@ -184,5 +264,13 @@ public final class AiBlockWriter {
             Files.copy(backup.toPath(), logic.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException ignored) {
         }
+    }
+
+    private static Result ok(String message) {
+        return new Result(true, message);
+    }
+
+    private static Result fail(String message) {
+        return new Result(false, message);
     }
 }
