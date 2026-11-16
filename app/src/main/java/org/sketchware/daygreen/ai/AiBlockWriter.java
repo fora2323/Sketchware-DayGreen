@@ -50,9 +50,18 @@ public final class AiBlockWriter {
      * The agent may only pick from this list.
      */
     public static List<String> listEventKeys(String scId, String javaName) {
-        return new ArrayList<>(jC.a(scId).b(javaName).keySet());
+        List<String> keys = new ArrayList<>();
+        eC data = jC.a(scId);
+        if (data == null) {
+            return keys;
+        }
+        Map<String, ArrayList<BlockBean>> blocks = data.b(javaName);
+        if (blocks != null) {
+            keys.addAll(blocks.keySet());
+        }
+        return keys;
     }
-
+    
     public static Result appendBlocks(String scId, String javaName, String eventKey, List<Step> steps) {
         if (steps == null || steps.isEmpty()) {
             return new Result(false, "There are no blocks to write.");

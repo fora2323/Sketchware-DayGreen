@@ -60,6 +60,15 @@ public class AiChatFragment extends Fragment {
         store = new AiSettingsStore(requireContext());
         client = new AiChatClient(requireContext(), getScId(), getJavaName());
 
+        if (getScId().isEmpty()) {
+            adapter = new ChatAdapter();
+            binding.rvChat.setAdapter(adapter);
+            adapter.add(ChatAdapter.ChatMessage.agent(
+                    "Project id is missing. Close the project and open it again."));
+            binding.btnSend.setEnabled(false);
+            return;
+        }
+
         adapter = new ChatAdapter();
         LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
         layoutManager.setStackFromEnd(true);

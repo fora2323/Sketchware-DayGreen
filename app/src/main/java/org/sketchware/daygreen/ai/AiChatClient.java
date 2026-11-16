@@ -1,6 +1,7 @@
 package org.sketchware.daygreen.ai;
 
 import android.content.Context;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -19,6 +20,8 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 public final class AiChatClient {
+
+    private static final String TAG = "AiChatClient";
 
     public static final class Proposal {
         public final String javaName;
@@ -56,7 +59,8 @@ public final class AiChatClient {
                     + "2. Call list_blocks to find opcodes. Never invent opcodes.\n"
                     + "3. The number of params must match the params listed by list_blocks.\n"
                     + "4. Use append_blocks to add blocks. The user must approve before anything is written.\n"
-                    + "5. Do not say blocks were written until the user approves.";
+                    + "5. Do not say blocks were written until the user approves.\n"
+                    + "6. If a tool returns an error, read it, adjust, and try again or explain to the user.";
 
     private final AiSettingsStore store;
     private final String scId;
@@ -69,7 +73,8 @@ public final class AiChatClient {
         this.javaName = javaName;
         try {
             messages.put(message("system", store.getSystemPrompt(DEFAULT_PROMPT) + RULES));
-        } catch (JSONException ignored) {
+        } catch (JSONException e) {
+            Log.e(TAG, "Failed to build system message", e);
         }
     }
 
@@ -86,8 +91,7 @@ public final class AiChatClient {
             int providerIndex = store.getProviderIndex();
             AiProviders.Provider provider = AiProviders.ALL[providerIndex];
             if (!provider.openAiCompatible) {
-                callback.onError("Provider " + provider.name + " is not supported in agent chat yet. "
-                        + "Choose OpenAI, DeepSeek, OpenRouter, or Kimi.");
+                callback.onError("Provider " + provider.name + " is not supported in agent chat yet.");
                 return;
             }
 
@@ -120,15 +124,21 @@ public final class AiChatClient {
                 for (int i = 0; i < calls.length(); i++) {
                     JSONObject call = calls.getJSONObject(i);
                     JSONObject fn = call.getJSONObject("function");
-                    String result = execute(
-                            fn.getString("name"),
-                            new JSONObject(fn.getString("arguments")),
-                            proposals);
+                    String name = fn.getString("name");
+                    String result;
+                    try {
+                        result = execute(name, new JSONObject(fn.getString("arguments")), proposals);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Tool '" + name + "' failed", e);
+                        result = "Tool " + name + " failed: " + e
+                                + ". Check the arguments and try again.";
+                    }
                     messages.put(toolMessage(call.getString("id"), result));
                 }
             }
             callback.onResult("(Tool call limit reached. Try a narrower question.)", proposals);
         } catch (Exception e) {
+            Log.e(TAG, "Chat request failed", e);
             callback.onError(e.getMessage() == null ? e.toString() : e.getMessage());
         }
     }
@@ -148,14 +158,21 @@ public final class AiChatClient {
                     o.put("params", new JSONArray(e.paramTypes));
                     out.put(o);
                 }
-                return out.toString();
+                return out.length() == 0 ? "No blocks matched the query." : out.toString();
             }
 
             case "list_event_keys": {
                 if (!store.isToolEnabled("list_blocks")) {
                     return disabled("list_blocks");
                 }
-                return new JSONArray(AiBlockWriter.listEventKeys(scId, javaName)).toString();
+                if (scId == null || scId.isEmpty()) {
+                    return "Project id is missing. Ask the user to reopen the project.";
+                }
+                List<String> keys = AiBlockWriter.listEventKeys(scId, javaName);
+                if (keys.isEmpty()) {
+                    return "No events with blocks in " + javaName + ". Ask the user to add a first block in the editor.";
+                }
+                return new JSONArray(keys).toString();
             }
 
             case "append_blocks": {
