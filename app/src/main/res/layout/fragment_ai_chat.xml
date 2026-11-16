@@ -6,32 +6,17 @@
     android:orientation="vertical"
     android:padding="12dp">
 
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/scroll_log"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_chat"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:clipToPadding="false"
         android:fadingEdge="vertical"
         android:fadingEdgeLength="32dp"
-        android:requiresFadingEdge="vertical">
-
-        <TextView
-            android:id="@+id/tv_log"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:textColor="?attr/colorOnSurface"
-            android:textIsSelectable="true"
-            android:textSize="14sp" />
-    </androidx.core.widget.NestedScrollView>
-
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/progress"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:indeterminate="true"
-        android:visibility="gone" />
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:requiresFadingEdge="vertical" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_apply"

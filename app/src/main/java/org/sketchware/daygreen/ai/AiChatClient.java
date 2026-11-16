@@ -97,7 +97,10 @@ public final class AiChatClient {
                 return;
             }
 
-            String model = provider.models[store.getModelIndex()];
+            String model = store.getModelId("");
+            if (model.isEmpty()) {
+                model = provider.models[0];
+            }
             messages.put(message("user", userText));
 
             List<Proposal> proposals = new ArrayList<>();

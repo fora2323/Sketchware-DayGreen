@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -30,6 +31,8 @@ public class AiChatFragment extends Fragment {
 
     private FragmentAiChatBinding binding;
     private AiChatClient client;
+    private AiSettingsStore store;
+    private ChatAdapter adapter;
     private final Handler main = new Handler(Looper.getMainLooper());
     private AiChatClient.Proposal pending;
 
@@ -54,13 +57,21 @@ public class AiChatFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        store = new AiSettingsStore(requireContext());
         client = new AiChatClient(requireContext(), getScId(), getJavaName());
+
+        adapter = new ChatAdapter();
+        LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
+        layoutManager.setStackFromEnd(true);
+        binding.rvChat.setLayoutManager(layoutManager);
+        binding.rvChat.setAdapter(adapter);
 
         binding.btnSend.setOnClickListener(v -> send());
         binding.btnApply.setOnClickListener(v -> confirmApply());
         binding.btnLink.setOnClickListener(v -> showLinkDialog());
         binding.btnSettings.setOnClickListener(v -> openSettings());
-        binding.btnModel.setOnClickListener(v -> openSettings());
+        binding.btnModel.setOnClickListener(v ->
+                AiModelPicker.show(requireContext(), store, store.getProviderIndex(), this::refreshModelLabel));
     }
 
     @Override
@@ -81,15 +92,12 @@ public class AiChatFragment extends Fragment {
 
     private void refreshModelLabel() {
         if (binding == null) return;
-        AiSettingsStore store = new AiSettingsStore(requireContext());
         int providerIndex = store.getProviderIndex();
         if (providerIndex < 0 || providerIndex >= AiProviders.ALL.length) return;
 
         AiProviders.Provider provider = AiProviders.ALL[providerIndex];
-        int modelIndex = store.getModelIndex();
-        if (modelIndex < 0 || modelIndex >= provider.models.length) modelIndex = 0;
-
-        binding.btnModel.setText(provider.models[modelIndex]);
+        String modelId = store.getModelId("");
+        binding.btnModel.setText(modelId.isEmpty() ? provider.models[0] : modelId);
     }
 
     /**
@@ -127,7 +135,9 @@ public class AiChatFragment extends Fragment {
             return;
         }
         binding.etInput.setText("");
-        appendLog("You: " + text);
+        adapter.add(ChatAdapter.ChatMessage.user(text));
+        adapter.add(ChatAdapter.ChatMessage.loading());
+        scrollToBottom();
         setBusy(true);
 
         client.ask(text, new AiChatClient.Callback() {
@@ -136,12 +146,15 @@ public class AiChatFragment extends Fragment {
                 main.post(() -> {
                     if (binding == null) return;
                     setBusy(false);
-                    appendLog("Agent: " + reply);
+                    adapter.removeLoading();
+                    adapter.add(ChatAdapter.ChatMessage.agent(reply));
                     if (!proposals.isEmpty()) {
                         pending = proposals.get(proposals.size() - 1);
                         binding.btnApply.setVisibility(View.VISIBLE);
-                        appendLog("Proposed blocks (not written yet):\n" + pending.summary);
+                        adapter.add(ChatAdapter.ChatMessage.agent(
+                                "Proposed blocks (not written yet):\n" + pending.summary));
                     }
+                    scrollToBottom();
                 });
             }
 
@@ -150,7 +163,9 @@ public class AiChatFragment extends Fragment {
                 main.post(() -> {
                     if (binding == null) return;
                     setBusy(false);
-                    appendLog("Error: " + error);
+                    adapter.removeLoading();
+                    adapter.add(ChatAdapter.ChatMessage.agent("Error: " + error));
+                    scrollToBottom();
                 });
             }
         });
@@ -174,24 +189,24 @@ public class AiChatFragment extends Fragment {
             AiBlockWriter.Result r = AiBlockWriter.appendBlocks(scId, p.javaName, p.eventKey, p.steps);
             main.post(() -> {
                 if (binding == null) return;
-                appendLog(r.message);
+                adapter.add(ChatAdapter.ChatMessage.agent(r.message));
                 if (r.success) {
                     pending = null;
                     binding.btnApply.setVisibility(View.GONE);
                     SketchwareUtil.toast("Blocks written.");
                 }
+                scrollToBottom();
             });
         }).start();
     }
 
     private void setBusy(boolean busy) {
         binding.btnSend.setEnabled(!busy);
-        binding.progress.setVisibility(busy ? View.VISIBLE : View.GONE);
     }
 
-    private void appendLog(String text) {
-        binding.tvLog.append(text + "\n\n");
-        binding.scrollLog.post(() -> binding.scrollLog.fullScroll(View.FOCUS_DOWN));
+    private void scrollToBottom() {
+        if (binding == null || adapter.getItemCount() == 0) return;
+        binding.rvChat.post(() -> binding.rvChat.scrollToPosition(adapter.getItemCount() - 1));
     }
 
     private String getScId() {

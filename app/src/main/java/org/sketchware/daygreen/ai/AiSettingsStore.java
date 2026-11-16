@@ -13,6 +13,7 @@ public final class AiSettingsStore {
     private static final String KEY_SYSTEM_PROMPT = "system_prompt";
     private static final String KEY_PERMISSION = "permission";
     private static final String KEY_TOOL = "tool_";
+    private static final String KEY_MODEL_ID = "model_id";    
 
     private final SharedPreferences prefs;
 
@@ -71,6 +72,14 @@ public final class AiSettingsStore {
     public boolean isToolEnabled(String tool) {
         return prefs.getBoolean(KEY_TOOL + tool, true);
     }
+
+    public String getModelId(String fallback) {
+        return prefs.getString(KEY_MODEL_ID, fallback);
+    }
+
+    public void setModelId(String id) {
+        prefs.edit().putString(KEY_MODEL_ID, id).apply();
+    }    
 
     public void setToolEnabled(String tool, boolean enabled) {
         prefs.edit().putBoolean(KEY_TOOL + tool, enabled).apply();

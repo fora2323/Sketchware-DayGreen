@@ -23,6 +23,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import org.sketchware.daygreen.ai.AiConnectionTester;
 import org.sketchware.daygreen.ai.AiProviders;
 import org.sketchware.daygreen.ai.AiSettingsStore;
+import org.sketchware.daygreen.ai.AiModelPicker;
 import pro.sketchware.databinding.ActivityAiSettingsBinding;
 import pro.sketchware.databinding.DialogAiInputBinding;
 
@@ -153,7 +154,8 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
 
         binding.tvProviderValue.setText(provider.name);
         binding.tvApiKeyValue.setText(apiKey.isEmpty() ? "Not set" : maskKey(apiKey));
-        binding.tvModelValue.setText(provider.models[modelIndex]);
+        String modelId = store.getModelId("");
+        binding.tvModelValue.setText(modelId.isEmpty() ? provider.models[0] : modelId);
         binding.tvSystemPromptValue.setText(store.getSystemPrompt(DEFAULT_SYSTEM_PROMPT));
 
         if (apiKey.isEmpty()) {
@@ -217,6 +219,7 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
                         modelIndex = 0;
                         store.setProviderIndex(providerIndex);
                         store.setModelIndex(modelIndex);
+                        store.setModelId("");
                     }
                     refreshValues();
                 })
@@ -236,19 +239,7 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
     }
 
     private void showModelDialog() {
-        AiProviders.Provider provider = AiProviders.ALL[providerIndex];
-        final int[] selected = {modelIndex};
-
-        new MaterialAlertDialogBuilder(this)
-                .setTitle("Model")
-                .setSingleChoiceItems(provider.models, modelIndex, (d, which) -> selected[0] = which)
-                .setPositiveButton("OK", (d, w) -> {
-                    modelIndex = selected[0];
-                    store.setModelIndex(modelIndex);
-                    refreshValues();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+        AiModelPicker.show(this, store, providerIndex, this::refreshValues);
     }
 
     private void showSystemPromptDialog() {
