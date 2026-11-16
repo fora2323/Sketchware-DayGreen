@@ -162,12 +162,9 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
             title = itemView.findViewById(R.id.tv_thinking_title);
             body = itemView.findViewById(R.id.tv_thinking_body);
 
-            TextView link = text != null ? text : (TextView) itemView.findViewById(R.id.tv_status);
-            if (link == null) {
-                link = body;
-            }
-            if (link != null) {
-                link.setMovementMethod(LinkMovementMethod.getInstance());
+            if (text != null) {
+                // Makes the event names clickable.
+                text.setMovementMethod(LinkMovementMethod.getInstance());
             }
         }
     }

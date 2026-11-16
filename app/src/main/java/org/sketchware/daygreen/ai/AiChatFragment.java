@@ -17,12 +17,15 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.besome.sketch.beans.ProjectFileBean;
+import com.besome.sketch.editor.LogicEditorActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import org.sketchware.daygreen.ai.activities.AiSettingsActivity;
 
 import java.util.List;
 
+import a.a.a.jC;
 import pro.sketchware.databinding.DialogAiInputBinding;
 import pro.sketchware.databinding.FragmentAiChatBinding;
 import pro.sketchware.utility.SketchwareUtil;
@@ -143,28 +146,41 @@ public class AiChatFragment extends Fragment {
 
     /**
      * Tapping a highlighted event name (onCreate, onResume, initializeLogic...)
-     * shows the blocks already written in that event.
+     * opens that event in the Logic editor.
      */
     private void openEvent(String eventName) {
         if (binding == null) return;
 
-        String key = "onCreate".equals(eventName)
-                ? "onCreate_initializeLogic"
-                : AiEventCatalog.keyFor(eventName);
         String scId = getScId();
         String javaName = getJavaName();
 
-        new Thread(() -> {
-            String body = AiBlockWriter.readEventBlocks(scId, javaName, key);
-            main.post(() -> {
-                if (binding == null) return;
-                new MaterialAlertDialogBuilder(requireContext())
-                        .setTitle(eventName)
-                        .setMessage(body)
-                        .setPositiveButton("Tutup", null)
-                        .show();
-            });
-        }).start();
+        ProjectFileBean file = findProjectFile(scId, javaName);
+        if (file == null) {
+            SketchwareUtil.toast("File Java tidak ditemukan di project.");
+            return;
+        }
+
+        // Same key rule as AiEventCatalog: id + "_" + event.
+        // initializeLogic (and onCreate) live under the onCreate target.
+        boolean onCreateGroup = "onCreate".equals(eventName) || "initializeLogic".equals(eventName);
+        String id = onCreateGroup ? "onCreate" : eventName;
+        String event = "onCreate".equals(eventName) ? "initializeLogic" : eventName;
+
+        Intent intent = new Intent(requireContext(), LogicEditorActivity.class);
+        intent.putExtra("sc_id", scId);
+        intent.putExtra("id", id);
+        intent.putExtra("event", event);
+        intent.putExtra("project_file", file);
+        startActivity(intent);
+    }
+
+    private static ProjectFileBean findProjectFile(String scId, String javaName) {
+        for (ProjectFileBean projectFile : jC.b(scId).b()) {
+            if (javaName.equals(projectFile.getJavaName())) {
+                return projectFile;
+            }
+        }
+        return null;
     }
 
     private void send() {
