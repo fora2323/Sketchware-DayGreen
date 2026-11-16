@@ -36,6 +36,7 @@ public class AiChatFragment extends Fragment {
     private AiChatClient client;
     private AiSettingsStore store;
     private ChatAdapter adapter;
+    private ChatTextFormatter formatter;
     private final Handler main = new Handler(Looper.getMainLooper());
     private AiChatClient.Proposal pending;
 
@@ -63,9 +64,12 @@ public class AiChatFragment extends Fragment {
         store = new AiSettingsStore(requireContext());
         client = new AiChatClient(requireContext(), getScId(), getJavaName());
 
-        adapter = new ChatAdapter();
+        formatter = new ChatTextFormatter(requireContext());
+        adapter = new ChatAdapter(formatter, this::openEvent);
+
+        // Messages start at the top and grow downward, like a normal chat list.
         LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
-        layoutManager.setStackFromEnd(true);
+        layoutManager.setStackFromEnd(false);
         binding.rvChat.setLayoutManager(layoutManager);
         binding.rvChat.setAdapter(adapter);
 
@@ -137,6 +141,32 @@ public class AiChatFragment extends Fragment {
                 .show();
     }
 
+    /**
+     * Tapping a highlighted event name (onCreate, onResume, initializeLogic...)
+     * shows the blocks already written in that event.
+     */
+    private void openEvent(String eventName) {
+        if (binding == null) return;
+
+        String key = "onCreate".equals(eventName)
+                ? "onCreate_initializeLogic"
+                : AiEventCatalog.keyFor(eventName);
+        String scId = getScId();
+        String javaName = getJavaName();
+
+        new Thread(() -> {
+            String body = AiBlockWriter.readEventBlocks(scId, javaName, key);
+            main.post(() -> {
+                if (binding == null) return;
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(eventName)
+                        .setMessage(body)
+                        .setPositiveButton("Tutup", null)
+                        .show();
+            });
+        }).start();
+    }
+
     private void send() {
         String text = binding.etInput.getText() == null
                 ? ""
@@ -158,7 +188,12 @@ public class AiChatFragment extends Fragment {
                     setBusy(false);
                     adapter.removeStatus();
                     adapter.add(ChatAdapter.ChatMessage.agent(reply));
-                    if (!proposals.isEmpty()) {
+
+                    if (proposals.isEmpty()) {
+                        // A new answer without a proposal clears the old proposal.
+                        pending = null;
+                        binding.btnApply.setVisibility(View.GONE);
+                    } else {
                         pending = proposals.get(proposals.size() - 1);
                         binding.btnApply.setVisibility(View.VISIBLE);
                         String label = pending.isSource()
@@ -263,6 +298,8 @@ public class AiChatFragment extends Fragment {
 
     private void setBusy(boolean busy) {
         binding.btnSend.setEnabled(!busy);
+        // Keep the disabled look clearly different, so it does not look frozen.
+        binding.btnSend.setAlpha(busy ? 0.45f : 1f);
     }
 
     private void scrollToBottom() {

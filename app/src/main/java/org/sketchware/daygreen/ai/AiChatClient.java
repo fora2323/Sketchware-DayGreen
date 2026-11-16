@@ -71,7 +71,7 @@ public final class AiChatClient {
         void onThinking(String text);
     }
 
-    private static final int MAX_ROUNDS = 8;
+    private static final int MAX_ROUNDS = 12;
     private static final MediaType JSON_TYPE = MediaType.get("application/json; charset=utf-8");
     private static final OkHttpClient HTTP = new OkHttpClient.Builder()
             .connectTimeout(20, TimeUnit.SECONDS)
@@ -91,7 +91,8 @@ public final class AiChatClient {
                     + "5. Do not say blocks were written until the user approves.\n"
                     + "6. If a tool returns an error, read it, adjust, and try again or explain to the user.\n"
                     + "7. Only call tools that are listed to you. If a tool is missing, tell the user.\n"
-                    + "8. If list_blocks has no block that fits the request, do NOT write code yourself. "
+                    + "8. If list_blocks has no block that fits the request, do NOT write code yourself.\n"
+                    + "9. Once you have enough data, answer the user in plain text. Do not keep calling list tools."
                     + "Tell the user no matching block exists and ask whether they want raw source code instead. "
                     + "Only call propose_source_code after the user explicitly says yes.";
 

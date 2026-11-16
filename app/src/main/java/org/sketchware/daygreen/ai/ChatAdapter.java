@@ -1,5 +1,6 @@
 package org.sketchware.daygreen.ai;
 
+import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +24,8 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
     public static final class ChatMessage {
         final int type;
         final String text;
+        /** Only used by thinking rows: whether the reasoning is open. */
+        boolean expanded;
 
         private ChatMessage(int type, String text) {
             this.type = type;
@@ -42,13 +45,20 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
             return new ChatMessage(TYPE_STATUS, text);
         }
 
-        /** Reasoning returned by the model. Kept in the chat history. */
+        /** Reasoning returned by the model. Kept in the chat history, collapsed by default. */
         public static ChatMessage thinking(String text) {
             return new ChatMessage(TYPE_THINKING, text);
         }
     }
 
     private final List<ChatMessage> items = new ArrayList<>();
+    private final ChatTextFormatter formatter;
+    private final ChatTextFormatter.OnEventClick onEventClick;
+
+    public ChatAdapter(ChatTextFormatter formatter, ChatTextFormatter.OnEventClick onEventClick) {
+        this.formatter = formatter;
+        this.onEventClick = onEventClick;
+    }
 
     public void add(ChatMessage message) {
         items.add(message);
@@ -85,7 +95,21 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
     @NonNull
     @Override
     public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        int layout = viewType == TYPE_USER ? R.layout.item_chat_user : R.layout.item_chat_agent;
+        int layout;
+        switch (viewType) {
+            case TYPE_USER:
+                layout = R.layout.item_chat_user;
+                break;
+            case TYPE_STATUS:
+                layout = R.layout.item_chat_status;
+                break;
+            case TYPE_THINKING:
+                layout = R.layout.item_chat_thinking;
+                break;
+            default:
+                layout = R.layout.item_chat_agent;
+                break;
+        }
         View view = LayoutInflater.from(parent.getContext()).inflate(layout, parent, false);
         return new Holder(view);
     }
@@ -93,22 +117,58 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
     @Override
     public void onBindViewHolder(@NonNull Holder holder, int position) {
         ChatMessage item = items.get(position);
-        if (holder.text == null) {
-            return;
-        }
-        if (item.type == TYPE_THINKING) {
-            holder.text.setText("Thinking: " + item.text);
-        } else {
-            holder.text.setText(item.text);
+
+        switch (item.type) {
+            case TYPE_USER:
+                holder.text.setText(item.text);
+                break;
+            case TYPE_AGENT:
+                holder.text.setText(formatter.format(item.text, onEventClick));
+                break;
+            case TYPE_STATUS:
+                holder.text.setText(item.text);
+                break;
+            case TYPE_THINKING:
+                bindThinking(holder, item);
+                break;
+            default:
+                break;
         }
     }
 
+    private void bindThinking(Holder holder, ChatMessage item) {
+        holder.title.setText((item.expanded ? "▾ " : "▸ ") + "Proses berpikir");
+        holder.body.setText(item.text);
+        holder.body.setVisibility(item.expanded ? View.VISIBLE : View.GONE);
+
+        holder.title.setOnClickListener(v -> {
+            int pos = holder.getAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION) return;
+            item.expanded = !item.expanded;
+            notifyItemChanged(pos);
+        });
+    }
+
     static final class Holder extends RecyclerView.ViewHolder {
+        /** Message text for user, agent and status rows. */
         final TextView text;
+        /** Thinking rows only. */
+        final TextView title;
+        final TextView body;
 
         Holder(View itemView) {
             super(itemView);
             text = itemView.findViewById(R.id.tv_message);
+            title = itemView.findViewById(R.id.tv_thinking_title);
+            body = itemView.findViewById(R.id.tv_thinking_body);
+
+            TextView link = text != null ? text : (TextView) itemView.findViewById(R.id.tv_status);
+            if (link == null) {
+                link = body;
+            }
+            if (link != null) {
+                link.setMovementMethod(LinkMovementMethod.getInstance());
+            }
         }
     }
 }
