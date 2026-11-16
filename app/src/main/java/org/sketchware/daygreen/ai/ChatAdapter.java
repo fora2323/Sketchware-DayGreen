@@ -17,7 +17,8 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
 
     private static final int TYPE_USER = 0;
     private static final int TYPE_AGENT = 1;
-    private static final int TYPE_LOADING = 2;
+    private static final int TYPE_STATUS = 2;
+    private static final int TYPE_THINKING = 3;
 
     public static final class ChatMessage {
         final int type;
@@ -36,8 +37,14 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
             return new ChatMessage(TYPE_AGENT, text);
         }
 
-        public static ChatMessage loading() {
-            return new ChatMessage(TYPE_LOADING, "");
+        /** Live progress line. Only one exists at a time. */
+        public static ChatMessage status(String text) {
+            return new ChatMessage(TYPE_STATUS, text);
+        }
+
+        /** Reasoning returned by the model. Kept in the chat history. */
+        public static ChatMessage thinking(String text) {
+            return new ChatMessage(TYPE_THINKING, text);
         }
     }
 
@@ -48,9 +55,17 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
         notifyItemInserted(items.size() - 1);
     }
 
-    public void removeLoading() {
+    /**
+     * Replaces the current status line. The status always sits at the bottom of the chat.
+     */
+    public void updateStatus(String text) {
+        removeStatus();
+        add(ChatMessage.status(text));
+    }
+
+    public void removeStatus() {
         for (int i = items.size() - 1; i >= 0; i--) {
-            if (items.get(i).type == TYPE_LOADING) {
+            if (items.get(i).type == TYPE_STATUS) {
                 items.remove(i);
                 notifyItemRemoved(i);
             }
@@ -70,22 +85,21 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
     @NonNull
     @Override
     public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        int layout;
-        if (viewType == TYPE_USER) {
-            layout = R.layout.item_chat_user;
-        } else if (viewType == TYPE_AGENT) {
-            layout = R.layout.item_chat_agent;
-        } else {
-            layout = R.layout.item_chat_loading;
-        }
+        int layout = viewType == TYPE_USER ? R.layout.item_chat_user : R.layout.item_chat_agent;
         View view = LayoutInflater.from(parent.getContext()).inflate(layout, parent, false);
         return new Holder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull Holder holder, int position) {
-        if (holder.text != null) {
-            holder.text.setText(items.get(position).text);
+        ChatMessage item = items.get(position);
+        if (holder.text == null) {
+            return;
+        }
+        if (item.type == TYPE_THINKING) {
+            holder.text.setText("Thinking: " + item.text);
+        } else {
+            holder.text.setText(item.text);
         }
     }
 

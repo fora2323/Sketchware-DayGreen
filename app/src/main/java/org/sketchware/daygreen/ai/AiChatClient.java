@@ -41,9 +41,15 @@ public final class AiChatClient {
         void onResult(String reply, List<Proposal> proposals);
 
         void onError(String error);
+
+        /** Short progress line, e.g. "Thinking..." or "Running list_blocks...". */
+        void onStatus(String status);
+
+        /** Reasoning text returned by the model, when the provider sends it. */
+        void onThinking(String text);
     }
 
-    private static final int MAX_ROUNDS = 4;
+    private static final int MAX_ROUNDS = 8;
     private static final MediaType JSON_TYPE = MediaType.get("application/json; charset=utf-8");
     private static final OkHttpClient HTTP = new OkHttpClient.Builder()
             .connectTimeout(20, TimeUnit.SECONDS)
@@ -55,12 +61,14 @@ public final class AiChatClient {
 
     private static final String RULES =
             "\n\nBlock rules:\n"
-                    + "1. Call list_event_keys for events that already have blocks, or list_events for built-in Activity events.\n"
+                    + "1. Call list_event_keys to see events that already have blocks. Call read_event_blocks "
+                    + "to read an event before you add to it. Call list_events for built-in Activity events.\n"
                     + "2. Call list_blocks to find opcodes. Never invent opcodes.\n"
                     + "3. The number of params must match the params listed by list_blocks.\n"
                     + "4. Use append_blocks to add blocks. The user must approve before anything is written.\n"
                     + "5. Do not say blocks were written until the user approves.\n"
-                    + "6. If a tool returns an error, read it, adjust, and try again or explain to the user.";
+                    + "6. If a tool returns an error, read it, adjust, and try again or explain to the user.\n"
+                    + "7. Only call tools that are listed to you. If a tool is missing, tell the user.";
 
     private final AiSettingsStore store;
     private final String scId;
@@ -79,7 +87,7 @@ public final class AiChatClient {
     }
 
     /**
-     * Runs on a background thread. The callback is also called from that thread,
+     * Runs on a background thread. Every callback is also called from that thread,
      * so the caller must switch to the main thread.
      */
     public void ask(String userText, Callback callback) {
@@ -109,15 +117,25 @@ public final class AiChatClient {
 
             List<Proposal> proposals = new ArrayList<>();
             for (int round = 0; round < MAX_ROUNDS; round++) {
+                callback.onStatus(round == 0 ? "Thinking..." : "Continuing...");
+
                 JSONObject reply = post(provider, apiKey, model);
                 JSONObject assistant = reply.getJSONArray("choices")
                         .getJSONObject(0)
                         .getJSONObject("message");
+
+                // Reasoning is shown to the user, but not sent back to the model in history.
+                String reasoning = assistant.optString("reasoning_content", "");
+                assistant.remove("reasoning_content");
+                if (!reasoning.isEmpty()) {
+                    callback.onThinking(reasoning);
+                }
                 messages.put(assistant);
 
                 JSONArray calls = assistant.optJSONArray("tool_calls");
                 if (calls == null || calls.length() == 0) {
-                    callback.onResult(assistant.optString("content", ""), proposals);
+                    String content = assistant.isNull("content") ? "" : assistant.optString("content", "");
+                    callback.onResult(content, proposals);
                     return;
                 }
 
@@ -125,6 +143,8 @@ public final class AiChatClient {
                     JSONObject call = calls.getJSONObject(i);
                     JSONObject fn = call.getJSONObject("function");
                     String name = fn.getString("name");
+                    callback.onStatus("Running " + name + "...");
+
                     String result;
                     try {
                         result = execute(name, new JSONObject(fn.getString("arguments")), proposals);
@@ -136,7 +156,7 @@ public final class AiChatClient {
                     messages.put(toolMessage(call.getString("id"), result));
                 }
             }
-            callback.onResult("(Tool call limit reached. Try a narrower question.)", proposals);
+            callback.onResult("(Step limit reached. Try a narrower question.)", proposals);
         } catch (Exception e) {
             Log.e(TAG, "Chat request failed", e);
             callback.onError(e.getMessage() == null ? e.toString() : e.getMessage());
@@ -144,11 +164,12 @@ public final class AiChatClient {
     }
 
     private String execute(String name, JSONObject args, List<Proposal> proposals) throws JSONException {
+        if (!store.isToolEnabled(name)) {
+            return disabled(name);
+        }
+
         switch (name) {
             case "list_blocks": {
-                if (!store.isToolEnabled("list_blocks")) {
-                    return disabled("list_blocks");
-                }
                 JSONArray out = new JSONArray();
                 for (AiBlockCatalog.Entry e : AiBlockCatalog.search(args.optString("query", ""), 40)) {
                     JSONObject o = new JSONObject();
@@ -162,9 +183,6 @@ public final class AiChatClient {
             }
 
             case "list_event_keys": {
-                if (!store.isToolEnabled("list_blocks")) {
-                    return disabled("list_blocks");
-                }
                 if (scId == null || scId.isEmpty()) {
                     return "Project id is missing. Ask the user to reopen the project.";
                 }
@@ -176,9 +194,6 @@ public final class AiChatClient {
             }
 
             case "list_events": {
-                if (!store.isToolEnabled("list_blocks")) {
-                    return disabled("list_blocks");
-                }
                 JSONArray out = new JSONArray();
                 for (AiEventCatalog.Event e : AiEventCatalog.activityEvents()) {
                     out.put(new JSONObject().put("name", e.name).put("key", e.key));
@@ -186,10 +201,18 @@ public final class AiChatClient {
                 return out.toString();
             }
 
-            case "append_blocks": {
-                if (!store.isToolEnabled("append_blocks")) {
-                    return disabled("append_blocks");
+            case "read_event_blocks": {
+                if (scId == null || scId.isEmpty()) {
+                    return "Project id is missing. Ask the user to reopen the project.";
                 }
+                String eventKey = args.optString("event_key", "");
+                if (eventKey.isEmpty()) {
+                    return "Missing event_key. Call list_event_keys first.";
+                }
+                return AiBlockWriter.readEventBlocks(scId, javaName, eventKey);
+            }
+
+            case "append_blocks": {
                 String eventKey = args.getString("event_key");
                 JSONArray stepsJson = args.getJSONArray("steps");
 
@@ -227,8 +250,12 @@ public final class AiChatClient {
         JSONObject body = new JSONObject();
         body.put("model", model);
         body.put("messages", messages);
-        body.put("tools", toolSchemas());
-        body.put("tool_choice", "auto");
+
+        JSONArray schemas = toolSchemas();
+        if (schemas.length() > 0) {
+            body.put("tools", schemas);
+            body.put("tool_choice", "auto");
+        }
 
         Request request = new Request.Builder()
                 .url(provider.baseUrl)
@@ -246,46 +273,68 @@ public final class AiChatClient {
         }
     }
 
-    private static JSONArray toolSchemas() throws JSONException {
+    /**
+     * Only tools that are enabled in the settings are sent to the model.
+     */
+    private JSONArray toolSchemas() throws JSONException {
         JSONArray tools = new JSONArray();
 
-        JSONObject listBlocksProps = new JSONObject()
-                .put("query", new JSONObject()
-                        .put("type", "string")
-                        .put("description", "Keyword for opcode or block text"));
-        tools.put(tool("list_blocks",
-                "Search available blocks. Leave query empty for a general list.",
-                listBlocksProps,
-                new JSONArray()));
+        if (store.isToolEnabled("list_blocks")) {
+            JSONObject props = new JSONObject()
+                    .put("query", new JSONObject()
+                            .put("type", "string")
+                            .put("description", "Keyword for opcode or block text"));
+            tools.put(tool("list_blocks",
+                    "Search available blocks. Leave query empty for a general list.",
+                    props,
+                    new JSONArray()));
+        }
 
-        tools.put(tool("list_event_keys",
-                "List events that already have blocks in the active Java file.",
-                new JSONObject(),
-                new JSONArray()));
+        if (store.isToolEnabled("list_event_keys")) {
+            tools.put(tool("list_event_keys",
+                    "List events that already have blocks in the active Java file.",
+                    new JSONObject(),
+                    new JSONArray()));
+        }
 
-        tools.put(tool("list_events",
-                "List the built-in Activity events and the key to use for each one.",
-                new JSONObject(),
-                new JSONArray()));
+        if (store.isToolEnabled("list_events")) {
+            tools.put(tool("list_events",
+                    "List the built-in Activity events and the key to use for each one.",
+                    new JSONObject(),
+                    new JSONArray()));
+        }
 
-        JSONObject stepItem = new JSONObject()
-                .put("type", "object")
-                .put("properties", new JSONObject()
-                        .put("op", new JSONObject().put("type", "string"))
-                        .put("params", new JSONObject()
-                                .put("type", "array")
-                                .put("items", new JSONObject().put("type", "string"))))
-                .put("required", new JSONArray().put("op").put("params"));
+        if (store.isToolEnabled("read_event_blocks")) {
+            JSONObject props = new JSONObject()
+                    .put("event_key", new JSONObject()
+                            .put("type", "string")
+                            .put("description", "Event key from list_event_keys or list_events"));
+            tools.put(tool("read_event_blocks",
+                    "Read the blocks in one event, in chain order. Use it before adding to an existing event.",
+                    props,
+                    new JSONArray().put("event_key")));
+        }
 
-        JSONObject appendProps = new JSONObject()
-                .put("event_key", new JSONObject().put("type", "string"))
-                .put("steps", new JSONObject()
-                        .put("type", "array")
-                        .put("items", stepItem));
-        tools.put(tool("append_blocks",
-                "Propose blocks to add to the end of an event. The user must approve.",
-                appendProps,
-                new JSONArray().put("event_key").put("steps")));
+        if (store.isToolEnabled("append_blocks")) {
+            JSONObject stepItem = new JSONObject()
+                    .put("type", "object")
+                    .put("properties", new JSONObject()
+                            .put("op", new JSONObject().put("type", "string"))
+                            .put("params", new JSONObject()
+                                    .put("type", "array")
+                                    .put("items", new JSONObject().put("type", "string"))))
+                    .put("required", new JSONArray().put("op").put("params"));
+
+            JSONObject props = new JSONObject()
+                    .put("event_key", new JSONObject().put("type", "string"))
+                    .put("steps", new JSONObject()
+                            .put("type", "array")
+                            .put("items", stepItem));
+            tools.put(tool("append_blocks",
+                    "Propose blocks to add to the end of an event. The user must approve.",
+                    props,
+                    new JSONArray().put("event_key").put("steps")));
+        }
 
         return tools;
     }

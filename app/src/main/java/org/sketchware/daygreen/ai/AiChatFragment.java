@@ -60,20 +60,18 @@ public class AiChatFragment extends Fragment {
         store = new AiSettingsStore(requireContext());
         client = new AiChatClient(requireContext(), getScId(), getJavaName());
 
-        if (getScId().isEmpty()) {
-            adapter = new ChatAdapter();
-            binding.rvChat.setAdapter(adapter);
-            adapter.add(ChatAdapter.ChatMessage.agent(
-                    "Project id is missing. Close the project and open it again."));
-            binding.btnSend.setEnabled(false);
-            return;
-        }
-
         adapter = new ChatAdapter();
         LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
         layoutManager.setStackFromEnd(true);
         binding.rvChat.setLayoutManager(layoutManager);
         binding.rvChat.setAdapter(adapter);
+
+        if (getScId().isEmpty()) {
+            adapter.add(ChatAdapter.ChatMessage.agent(
+                    "Project id is missing. Close the project and open it again."));
+            binding.btnSend.setEnabled(false);
+            return;
+        }
 
         binding.btnSend.setOnClickListener(v -> send());
         binding.btnApply.setOnClickListener(v -> confirmApply());
@@ -145,7 +143,7 @@ public class AiChatFragment extends Fragment {
         }
         binding.etInput.setText("");
         adapter.add(ChatAdapter.ChatMessage.user(text));
-        adapter.add(ChatAdapter.ChatMessage.loading());
+        adapter.updateStatus("Thinking...");
         scrollToBottom();
         setBusy(true);
 
@@ -155,7 +153,7 @@ public class AiChatFragment extends Fragment {
                 main.post(() -> {
                     if (binding == null) return;
                     setBusy(false);
-                    adapter.removeLoading();
+                    adapter.removeStatus();
                     adapter.add(ChatAdapter.ChatMessage.agent(reply));
                     if (!proposals.isEmpty()) {
                         pending = proposals.get(proposals.size() - 1);
@@ -172,8 +170,27 @@ public class AiChatFragment extends Fragment {
                 main.post(() -> {
                     if (binding == null) return;
                     setBusy(false);
-                    adapter.removeLoading();
+                    adapter.removeStatus();
                     adapter.add(ChatAdapter.ChatMessage.agent("Error: " + error));
+                    scrollToBottom();
+                });
+            }
+
+            @Override
+            public void onStatus(String status) {
+                main.post(() -> {
+                    if (binding == null) return;
+                    adapter.updateStatus(status);
+                    scrollToBottom();
+                });
+            }
+
+            @Override
+            public void onThinking(String thinking) {
+                main.post(() -> {
+                    if (binding == null) return;
+                    adapter.removeStatus();
+                    adapter.add(ChatAdapter.ChatMessage.thinking(thinking));
                     scrollToBottom();
                 });
             }

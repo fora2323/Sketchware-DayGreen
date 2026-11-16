@@ -66,6 +66,34 @@ public final class AiBlockWriter {
     }
 
     /**
+     * Readable dump of one event's blocks, in the order they are in the chain,
+     * so the agent can see what is already there before it adds more.
+     */
+    public static String readEventBlocks(String scId, String javaName, String eventKey) {
+        eC data = jC.a(scId);
+        if (data == null) {
+            return "Project data is not loaded. Close the project and open it again.";
+        }
+
+        Map<String, ArrayList<BlockBean>> fileBlocks = data.b(javaName);
+        ArrayList<BlockBean> blocks = fileBlocks == null ? null : fileBlocks.get(eventKey);
+        if (blocks == null || blocks.isEmpty()) {
+            return "Event \"" + eventKey + "\" has no blocks yet.";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (BlockBean b : blocks) {
+            sb.append("id=").append(b.id)
+                    .append(" op=").append(b.opCode)
+                    .append(" spec=").append(b.spec)
+                    .append(" next=").append(b.nextBlock)
+                    .append(" params=").append(b.parameters)
+                    .append('\n');
+        }
+        return sb.toString().trim();
+    }
+
+    /**
      * Appends blocks to an event. The event can be an existing one, a built-in Activity event
      * that has no blocks yet, or a More Block (name_moreBlock).
      */

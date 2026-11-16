@@ -43,33 +43,16 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
         }
     }
 
+    /**
+     * Only tools that AiChatClient actually sends to the model and executes.
+     * Add a row here only together with a case in AiChatClient.execute() and a schema in toolSchemas().
+     */
     private static final Tool[] TOOLS = {
             new Tool("list_blocks", "Read", "runs freely"),
-            new Tool("append_blocks", "Write", "asks first"),
-            new Tool("file_info", "Read", "runs freely"),
-            new Tool("read_file", "Read", "runs freely"),
-            new Tool("write_file", "Write", "asks first"),
-            new Tool("edit_file", "Write", "asks first"),
-            new Tool("list_dir", "Read", "runs freely"),
-            new Tool("search", "Read", "runs freely"),
-            new Tool("make_dir", "Write", "asks first"),
-            new Tool("copy_path", "Write", "asks first"),
-            new Tool("move_path", "Write", "asks first"),
-            new Tool("delete_path", "Write", "asks first"),
-            new Tool("find_files", "Read", "runs freely"),
-            new Tool("run_android_shell", "Shell", "asks first"),
-            new Tool("run_ubuntu", "Shell", "asks first"),
-            new Tool("http_get", "Network", "runs freely"),
-            new Tool("http_request", "Network", "asks first"),
-            new Tool("http_download", "Write", "asks first"),
-            new Tool("http_upload", "Network", "asks first"),
-            new Tool("save_memory", "Write", "runs freely"),
-            new Tool("forget_memory", "Write", "runs freely"),
-            new Tool("scratchpad", "Write", "runs freely"),
-            new Tool("spawn_agent", "Read", "runs freely"),
-            new Tool("ask_user", "Read", "runs freely"),
-            new Tool("set_goal", "Read", "runs freely"),
-            new Tool("write_todos", "Read", "runs freely")
+            new Tool("list_event_keys", "Read", "runs freely"),
+            new Tool("list_events", "Read", "runs freely"),
+            new Tool("read_event_blocks", "Read", "runs freely"),
+            new Tool("append_blocks", "Write", "asks first")
     };
 
     private static final String DEFAULT_SYSTEM_PROMPT =
