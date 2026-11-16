@@ -52,7 +52,8 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
             new Tool("list_event_keys", "Read", "runs freely"),
             new Tool("list_events", "Read", "runs freely"),
             new Tool("read_event_blocks", "Read", "runs freely"),
-            new Tool("append_blocks", "Write", "asks first")
+            new Tool("append_blocks", "Write", "asks first"),
+            new Tool("propose_source_code", "Write", "asks first")
     };
 
     private static final String DEFAULT_SYSTEM_PROMPT =

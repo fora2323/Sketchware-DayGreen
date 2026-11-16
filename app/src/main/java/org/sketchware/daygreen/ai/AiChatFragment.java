@@ -1,6 +1,7 @@
 package org.sketchware.daygreen.ai;
 
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -8,6 +9,8 @@ import android.text.InputType;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ScrollView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -158,8 +161,10 @@ public class AiChatFragment extends Fragment {
                     if (!proposals.isEmpty()) {
                         pending = proposals.get(proposals.size() - 1);
                         binding.btnApply.setVisibility(View.VISIBLE);
-                        adapter.add(ChatAdapter.ChatMessage.agent(
-                                "Proposed blocks (not written yet):\n" + pending.summary));
+                        String label = pending.isSource()
+                                ? "Proposed source code (not written yet):\n"
+                                : "Proposed blocks (not written yet):\n";
+                        adapter.add(ChatAdapter.ChatMessage.agent(label + pending.summary));
                     }
                     scrollToBottom();
                 });
@@ -201,9 +206,36 @@ public class AiChatFragment extends Fragment {
         if (pending == null) return;
         AiChatClient.Proposal p = pending;
 
+        if (p.isSource()) {
+            confirmSourceCode(p);
+        } else {
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Write blocks?")
+                    .setMessage("Event: " + p.eventKey + "\n\n" + p.summary)
+                    .setPositiveButton("Write", (d, w) -> applyPending(p))
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        }
+    }
+
+    /**
+     * Shows the whole code before anything is written. The user can scroll the full text.
+     */
+    private void confirmSourceCode(AiChatClient.Proposal p) {
+        TextView code = new TextView(requireContext());
+        code.setText(p.sourceCode);
+        code.setTypeface(Typeface.MONOSPACE);
+        code.setTextIsSelectable(true);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        code.setPadding(pad, pad, pad, pad);
+
+        ScrollView scroll = new ScrollView(requireContext());
+        scroll.addView(code);
+
         new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Write blocks?")
-                .setMessage("Event: " + p.eventKey + "\n\n" + p.summary)
+                .setTitle("Write this source code?")
+                .setMessage("Event: " + p.eventKey + "\nNo block fits, so this is raw code.")
+                .setView(scroll)
                 .setPositiveButton("Write", (d, w) -> applyPending(p))
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -212,14 +244,17 @@ public class AiChatFragment extends Fragment {
     private void applyPending(AiChatClient.Proposal p) {
         String scId = getScId();
         new Thread(() -> {
-            AiBlockWriter.Result r = AiBlockWriter.appendBlocks(scId, p.javaName, p.eventKey, p.steps);
+            AiBlockWriter.Result r = p.isSource()
+                    ? AiBlockWriter.writeSourceCode(scId, p.javaName, p.eventKey, p.sourceCode)
+                    : AiBlockWriter.appendBlocks(scId, p.javaName, p.eventKey, p.steps);
+
             main.post(() -> {
                 if (binding == null) return;
                 adapter.add(ChatAdapter.ChatMessage.agent(r.message));
                 if (r.success) {
                     pending = null;
                     binding.btnApply.setVisibility(View.GONE);
-                    SketchwareUtil.toast("Blocks written.");
+                    SketchwareUtil.toast(p.isSource() ? "Source code written." : "Blocks written.");
                 }
                 scrollToBottom();
             });

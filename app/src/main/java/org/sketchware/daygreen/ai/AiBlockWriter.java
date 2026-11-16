@@ -125,7 +125,7 @@ public final class AiBlockWriter {
             return fail("Project data is not loaded. Close the project and open it again.");
         }
 
-        if (!isAllowedEventKey(scId, javaName, eventKey)) {
+        if (!isValidEventKey(scId, javaName, eventKey)) {
             return fail("Event \"" + eventKey + "\" is not a valid event for this file.");
         }
 
@@ -173,6 +173,23 @@ public final class AiBlockWriter {
     }
 
     /**
+     * Writes raw source code for an event. Only called after the user approved the full code.
+     *
+     * NOT CONNECTED YET: the storage format for raw code in a Sketchware event has not been
+     * verified. Until it is, this refuses to write, so nothing is saved by mistake.
+     */
+    public static Result writeSourceCode(String scId, String javaName, String eventKey, String code) {
+        if (code == null || code.trim().isEmpty()) {
+            return fail("The code is empty. Nothing was written.");
+        }
+        if (!isValidEventKey(scId, javaName, eventKey)) {
+            return fail("Event \"" + eventKey + "\" is not a valid event for this file.");
+        }
+        return fail("Writing raw source code is not connected to project storage yet. "
+                + "Nothing was written. The storage format needs to be checked first.");
+    }
+
+    /**
      * Creates a More Block. Same write path that LogicEditorActivity uses after MakeBlockActivity.
      */
     public static Result createMoreBlock(String scId, String javaName, String name, String spec) {
@@ -207,12 +224,21 @@ public final class AiBlockWriter {
         }
     }
 
-    private static boolean isAllowedEventKey(String scId, String javaName, String eventKey) {
+    /**
+     * True if the event key is an existing event in this file, a built-in Activity event,
+     * or a More Block event of this file.
+     */
+    public static boolean isValidEventKey(String scId, String javaName, String eventKey) {
         if (eventKey == null || eventKey.isEmpty()) {
             return false;
         }
 
-        Map<String, ArrayList<BlockBean>> blocks = jC.a(scId).b(javaName);
+        eC data = jC.a(scId);
+        if (data == null) {
+            return false;
+        }
+
+        Map<String, ArrayList<BlockBean>> blocks = data.b(javaName);
         if (blocks != null && blocks.containsKey(eventKey)) {
             return true;
         }
@@ -220,7 +246,7 @@ public final class AiBlockWriter {
             return true;
         }
 
-        for (Pair<String, String> more : jC.a(scId).i(javaName)) {
+        for (Pair<String, String> more : data.i(javaName)) {
             if (eventKey.equals(more.first + "_moreBlock")) {
                 return true;
             }

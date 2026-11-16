@@ -23,17 +23,39 @@ public final class AiChatClient {
 
     private static final String TAG = "AiChatClient";
 
+    /** Max size of raw source code proposed in one call. */
+    private static final int MAX_SOURCE_CHARS = 4000;
+
     public static final class Proposal {
         public final String javaName;
         public final String eventKey;
+        /** Non-null only for block proposals. */
         public final List<AiBlockWriter.Step> steps;
+        /** Non-null only for raw source code proposals. */
+        public final String sourceCode;
         public final String summary;
 
-        Proposal(String javaName, String eventKey, List<AiBlockWriter.Step> steps, String summary) {
+        private Proposal(String javaName, String eventKey, List<AiBlockWriter.Step> steps,
+                         String sourceCode, String summary) {
             this.javaName = javaName;
             this.eventKey = eventKey;
             this.steps = steps;
+            this.sourceCode = sourceCode;
             this.summary = summary;
+        }
+
+        static Proposal blocks(String javaName, String eventKey, List<AiBlockWriter.Step> steps, String summary) {
+            return new Proposal(javaName, eventKey, steps, null, summary);
+        }
+
+        static Proposal source(String javaName, String eventKey, String code) {
+            int lines = code.split("\n", -1).length;
+            String summary = "Raw source code (" + lines + " line(s)) for event " + eventKey;
+            return new Proposal(javaName, eventKey, null, code, summary);
+        }
+
+        public boolean isSource() {
+            return sourceCode != null;
         }
     }
 
@@ -68,7 +90,10 @@ public final class AiChatClient {
                     + "4. Use append_blocks to add blocks. The user must approve before anything is written.\n"
                     + "5. Do not say blocks were written until the user approves.\n"
                     + "6. If a tool returns an error, read it, adjust, and try again or explain to the user.\n"
-                    + "7. Only call tools that are listed to you. If a tool is missing, tell the user.";
+                    + "7. Only call tools that are listed to you. If a tool is missing, tell the user.\n"
+                    + "8. If list_blocks has no block that fits the request, do NOT write code yourself. "
+                    + "Tell the user no matching block exists and ask whether they want raw source code instead. "
+                    + "Only call propose_source_code after the user explicitly says yes.";
 
     private final AiSettingsStore store;
     private final String scId;
@@ -232,8 +257,27 @@ public final class AiChatClient {
                     summary.append(i + 1).append(". ").append(op).append(params).append('\n');
                 }
 
-                proposals.add(new Proposal(javaName, eventKey, steps, summary.toString().trim()));
+                proposals.add(Proposal.blocks(javaName, eventKey, steps, summary.toString().trim()));
                 return "Waiting for user approval. Do not assume the blocks were written.";
+            }
+
+            case "propose_source_code": {
+                String eventKey = args.optString("event_key", "");
+                String code = args.optString("code", "");
+
+                if (code.trim().isEmpty()) {
+                    return "Code is empty. Nothing was proposed.";
+                }
+                if (code.length() > MAX_SOURCE_CHARS) {
+                    return "Code is longer than " + MAX_SOURCE_CHARS + " characters. Split it or shorten it.";
+                }
+                if (!AiBlockWriter.isValidEventKey(scId, javaName, eventKey)) {
+                    return "Event \"" + eventKey + "\" is not valid for this file. Call list_event_keys or list_events.";
+                }
+
+                proposals.add(Proposal.source(javaName, eventKey, code));
+                return "Waiting for user approval. The user will see the full code. "
+                        + "Do not assume it was written.";
             }
 
             default:
@@ -334,6 +378,21 @@ public final class AiChatClient {
                     "Propose blocks to add to the end of an event. The user must approve.",
                     props,
                     new JSONArray().put("event_key").put("steps")));
+        }
+
+        if (store.isToolEnabled("propose_source_code")) {
+            JSONObject props = new JSONObject()
+                    .put("event_key", new JSONObject()
+                            .put("type", "string")
+                            .put("description", "Event key from list_event_keys or list_events"))
+                    .put("code", new JSONObject()
+                            .put("type", "string")
+                            .put("description", "Raw Java source to insert. Shown to the user in full before anything is written."));
+            tools.put(tool("propose_source_code",
+                    "Propose raw source code for an event, only when no block fits and the user has said yes. "
+                            + "The user must approve in full.",
+                    props,
+                    new JSONArray().put("event_key").put("code")));
         }
 
         return tools;
