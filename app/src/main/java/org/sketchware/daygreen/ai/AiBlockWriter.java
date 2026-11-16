@@ -96,6 +96,11 @@ public final class AiBlockWriter {
     /**
      * Appends blocks to an event. The event can be an existing one, a built-in Activity event
      * that has no blocks yet, or a More Block (name_moreBlock).
+     *
+     * Every step is checked before anything is written:
+     * - the opcode must exist in the catalog
+     * - the parameter types must be known (an unknown count is never treated as zero)
+     * - the number of parameters must match the number of placeholders in the block's spec
      */
     public static Result appendBlocks(String scId, String javaName, String eventKey, List<Step> steps) {
         if (steps == null || steps.isEmpty()) {
@@ -107,16 +112,27 @@ public final class AiBlockWriter {
         // 1. Validate every step before touching project data.
         for (int i = 0; i < steps.size(); i++) {
             Step s = steps.get(i);
+            String label = "Step " + (i + 1) + " (" + s.opCode + ")";
+
             AiBlockCatalog.Entry entry = catalog.get(s.opCode);
             if (entry == null) {
-                return fail("Step " + (i + 1) + ": opcode \"" + s.opCode + "\" is not in the catalog.");
+                return fail(label + ": opcode is not in the catalog. Nothing was written.");
             }
             if ("c".equals(entry.type) || "e".equals(entry.type)) {
-                return fail("Step " + (i + 1) + ": C-blocks and if-blocks are not supported by the agent yet.");
+                return fail(label + ": C-blocks and if-blocks are not supported by the agent yet. Nothing was written.");
+            }
+            if (!entry.paramsKnown) {
+                return fail(label + ": parameter info is unavailable, so the block cannot be verified. Nothing was written.");
+            }
+
+            int placeholders = AiBlockCatalog.countPlaceholders(entry.spec);
+            if (entry.paramTypes.size() != placeholders) {
+                return fail(label + ": catalog parameter info does not match the block spec. Nothing was written.");
             }
             if (s.parameters == null || s.parameters.size() != entry.paramTypes.size()) {
-                return fail("Step " + (i + 1) + " (" + s.opCode + "): expects "
-                        + entry.paramTypes.size() + " parameter(s).");
+                return fail(label + ": expects " + entry.paramTypes.size()
+                        + " parameter(s), got " + (s.parameters == null ? 0 : s.parameters.size())
+                        + ". Nothing was written.");
             }
         }
 
