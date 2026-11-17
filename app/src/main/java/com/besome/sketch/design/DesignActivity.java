@@ -1431,6 +1431,10 @@ private String fixPackage(String code, String pkg) {
     void toAidlManager() {
         launchActivity(ManageAidlActivity.class, null, new Pair<>("pkgName", q != null ? q.packageName : ""));
     }
+    
+    void toAppSettings() {
+        launchActivity(AppSettings.class, null);
+    }
 
     @SafeVarargs
     private void launchActivity(Class<? extends Activity> toLaunch, ActivityResultLauncher<Intent> optionalLauncher, Pair<String, String>... extras) {
