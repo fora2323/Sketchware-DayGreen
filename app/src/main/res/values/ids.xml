@@ -27,5 +27,5 @@
     <item name="item_xml_command_manager" type="id" />
     <item name="item_logcat_reader" type="id" />
     <item name="item_collection_manager" type="id" />
-    <item name="app_settings" type="id" />
+    <item name="item_app_settings" type="id" />
 </resources>
