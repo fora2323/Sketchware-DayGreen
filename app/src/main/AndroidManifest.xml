@@ -429,6 +429,11 @@
             android:exported="false"
             android:label="AI" />
 
+        <activity
+            android:name="org.sketchware.daygreen.library.ProjectDependenciesActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="false" />
+
         <meta-data
             android:name="moe.shizuku.client.V3_SUPPORT"
             android:value="true" />

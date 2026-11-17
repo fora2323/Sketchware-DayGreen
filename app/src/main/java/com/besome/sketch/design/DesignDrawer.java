@@ -77,6 +77,8 @@ public class DesignDrawer extends LinearLayout {
             designActivity.toLogReader();
         } else if (id == R.id.item_collection_manager) {
             designActivity.toCollectionManager();
+        } else if (id == R.id.item_dependency_manager) {
+            designActivity.toDependencyManager();
         } else if (id == R.id.item_aidl_manager) {
             designActivity.toAidlManager();
         } else if (id == R.id.item_app_settings) {
@@ -152,6 +154,7 @@ public class DesignDrawer extends LinearLayout {
 
         addDrawerDivider(this);
         addDrawerItem(R.id.item_collection_manager, R.drawable.ic_mtrl_bookmark, R.string.design_drawer_menu_title_collection, R.string.design_drawer_menu_description_collection, this);
+        addDrawerItem(R.id.item_dependency_manager, R.drawable.ic_mtrl_library, "Dependencies", "Manage this project's dependencies", this);
         addDrawerItem(R.id.item_app_settings, R.drawable.ic_mtrl_settings, "Settings", "Sketchware app settings", this);
     }
 

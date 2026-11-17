@@ -4,6 +4,7 @@
 
     <!-- Ids for design right drawer -->
     <item name="item_library_manager" type="id" />
+    <item name="item_dependency_manager" type="id" />
     <item name="item_daydream" type="id" />
     <item name="item_view_manager" type="id" />
     <item name="item_image_manager" type="id" />

@@ -16,6 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import mod.agus.jcoderz.editor.manage.library.locallibrary.ManageLocalLibrary;
 import mod.hey.studios.util.Helper;
 
 public class LocalLibrariesUtil {
@@ -80,13 +81,18 @@ public class LocalLibrariesUtil {
     }
 
     public static HashMap<String, Object> createLibraryMap(String name, String dependency) {
-        String configPath = localLibsPath + name + "/config";
-        String resPath = localLibsPath + name + "/res";
-        String jarPath = localLibsPath + name + "/classes.jar";
-        String dexPath = localLibsPath + name + "/classes.dex";
-        String manifestPath = localLibsPath + name + "/AndroidManifest.xml";
-        String pgRulesPath = localLibsPath + name + "/proguard.txt";
-        String assetsPath = localLibsPath + name + "/assets";
+        return createLibraryMap(name, dependency, localLibsPath);
+    }
+
+    public static HashMap<String, Object> createLibraryMap(String name, String dependency, String baseDir) {
+        String normalizedBase = baseDir.endsWith("/") ? baseDir : baseDir + "/";
+        String configPath = normalizedBase + name + "/config";
+        String resPath = normalizedBase + name + "/res";
+        String jarPath = normalizedBase + name + "/classes.jar";
+        String dexPath = normalizedBase + name + "/classes.dex";
+        String manifestPath = normalizedBase + name + "/AndroidManifest.xml";
+        String pgRulesPath = normalizedBase + name + "/proguard.txt";
+        String assetsPath = normalizedBase + name + "/assets";
 
         HashMap<String, Object> localLibrary = new HashMap<>();
         localLibrary.put("name", name);
@@ -114,6 +120,34 @@ public class LocalLibrariesUtil {
         if (isExistFile(assetsPath)) {
             localLibrary.put("assetsPath", assetsPath);
         }
+        return localLibrary;
+    }
+
+    public static HashMap<String, Object> createPendingLibraryMap(
+            String dependency,
+            String scope,
+            boolean skipDependencies,
+            int minApi
+    ) {
+        String name = dependency;
+        if (dependency != null) {
+            String[] parts = dependency.split(":");
+            if (parts.length >= 3) {
+                name = parts[1].trim() + "-v" + parts[2].trim();
+            }
+        }
+
+        HashMap<String, Object> localLibrary = new HashMap<>();
+        localLibrary.put("name", name);
+        if (dependency != null) {
+            localLibrary.put("dependency", dependency);
+        }
+        localLibrary.put(
+                ManageLocalLibrary.SCOPE_KEY,
+                (scope == null || scope.isEmpty()) ? ManageLocalLibrary.SCOPE_IMPLEMENTATION : scope
+        );
+        localLibrary.put("skipDependencies", skipDependencies);
+        localLibrary.put("minApi", minApi);
         return localLibrary;
     }
 }

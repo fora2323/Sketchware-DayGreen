@@ -18,6 +18,11 @@ import pro.sketchware.utility.SketchwareUtil;
 
 public class ManageLocalLibrary {
 
+    public static final String SCOPE_KEY = "scope";
+    public static final String SCOPE_IMPLEMENTATION = "implementation";
+    public static final String SCOPE_COMPILE_ONLY = "compileOnly";
+    public static final String SCOPE_RUNTIME = "runtime";
+
     private final String projectId;
     public ArrayList<HashMap<String, Object>> list;
 
@@ -47,6 +52,16 @@ public class ManageLocalLibrary {
         list = new ArrayList<>();
     }
 
+    public static String getScope(HashMap<String, Object> lib) {
+        if (lib != null) {
+            Object scope = lib.get(SCOPE_KEY);
+            if (scope instanceof String && !((String) scope).isEmpty()) {
+                return (String) scope;
+            }
+        }
+        return SCOPE_IMPLEMENTATION;
+    }
+
     public ArrayList<String> getAssets() {
         ArrayList<String> assets = new ArrayList<>();
 
@@ -72,6 +87,9 @@ public class ManageLocalLibrary {
 
         for (int i = 0, listSize = list.size(); i < listSize; i++) {
             HashMap<String, Object> localLibrary = list.get(i);
+            if (SCOPE_COMPILE_ONLY.equals(getScope(localLibrary))) {
+                continue;
+            }
             Object dexPath = localLibrary.get("dexPath");
 
             if (dexPath instanceof String) {
@@ -158,6 +176,9 @@ public class ManageLocalLibrary {
 
         for (int i = 0, listSize = list.size(); i < listSize; i++) {
             HashMap<String, Object> localLibrary = list.get(i);
+            if (SCOPE_RUNTIME.equals(getScope(localLibrary))) {
+                continue;
+            }
             Object jarPath = localLibrary.get("jarPath");
 
             if (jarPath instanceof String) {
@@ -169,6 +190,27 @@ public class ManageLocalLibrary {
         }
 
         return classpath.toString();
+    }
+
+    public String getJarLocalLibraryForPackaging() {
+        StringBuilder jars = new StringBuilder();
+
+        for (int i = 0, listSize = list.size(); i < listSize; i++) {
+            HashMap<String, Object> localLibrary = list.get(i);
+            if (SCOPE_COMPILE_ONLY.equals(getScope(localLibrary))) {
+                continue;
+            }
+            Object jarPath = localLibrary.get("jarPath");
+
+            if (jarPath instanceof String) {
+                jars.append(":");
+                jars.append((String) jarPath);
+            } else {
+                SketchwareUtil.toastError("Invalid JAR path of enabled Local library #" + i + "->" + localLibrary.get("name"), Toast.LENGTH_LONG);
+            }
+        }
+
+        return jars.toString();
     }
 
     public ArrayList<String> getNativeLibs() {

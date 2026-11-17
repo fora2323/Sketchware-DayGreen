@@ -1,7 +1,10 @@
 package mod.pranav.dependency.resolver
 
 import android.os.Environment
-
+import com.android.tools.r8.CompilationMode
+import com.android.tools.r8.D8
+import com.android.tools.r8.D8Command
+import com.android.tools.r8.OutputMode
 import com.google.gson.Gson
 import kotlinx.coroutines.runBlocking
 import mod.hey.studios.build.BuildSettings
@@ -15,11 +18,6 @@ import org.cosmic.ide.dependency.resolver.getArtifact
 import org.cosmic.ide.dependency.resolver.repositories
 import org.sketchware.daygreen.FileCheckUtils
 import pro.sketchware.SketchApplication
-import pro.sketchware.utility.FileUtil
-import com.android.tools.r8.CompilationMode
-import com.android.tools.r8.D8
-import com.android.tools.r8.D8Command
-import com.android.tools.r8.OutputMode
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -35,10 +33,12 @@ class DependencyResolver(
     private val version: String,
     private val skipDependencies: Boolean,
     private val buildSettings: BuildSettings,
-    private val minAPILevel: Int
+    private val minAPILevel: Int,
+    private val scope: String,
+    private val downloadBase: String
 ) {
-    private val downloadPath: String =
-        FileUtil.getExternalStorageDir() + "/.sketchware/libs/local_libs"
+    private val isCompileOnly = scope == "compileOnly"
+    private val downloadPath: String = downloadBase
 
     private val repositoriesJson = Paths.get(
         Environment.getExternalStorageDirectory().absolutePath,
@@ -170,15 +170,19 @@ class DependencyResolver(
             downloadPath, "${dependency.artifactId}-v${dependency.version}", "classes.jar"
         )
 
-        // 2. Kalau skip sub-dependency, dex artifact utama sekarang juga & selesai
+        // 2. Kalau skip sub-dependency, dex artifact utama sekarang juga (jika bukan compileOnly) & selesai
         if (skipDependencies) {
-            callback.dexing(dependency)
-            try {
-                compileJar(jar, dependencyClasspath, libraryJars)
+            if (!isCompileOnly) {
+                callback.dexing(dependency)
+                try {
+                    compileJar(jar, dependencyClasspath, libraryJars)
+                    callback.onResolutionComplete(dependency)
+                } catch (e: Exception) {
+                    callback.dexingFailed(dependency, e)
+                    return@runBlocking
+                }
+            } else {
                 callback.onResolutionComplete(dependency)
-            } catch (e: Exception) {
-                callback.dexingFailed(dependency, e)
-                return@runBlocking
             }
             callback.onSkippingResolution(dependency)
             callback.onTaskCompleted(listOf("${dependency.artifactId}-v${dependency.version}"))
@@ -224,28 +228,32 @@ class DependencyResolver(
         }
 
         // 4. BARU SEKARANG dex artifact utama — classpath-nya udah lengkap sama semua sub-dependency
-        callback.dexing(dependency)
-        try {
-            compileJar(jar, dependencyClasspath, libraryJars)
-            callback.onResolutionComplete(dependency)
-        } catch (e: Exception) {
-            callback.dexingFailed(dependency, e)
-            return@runBlocking
+        if (!isCompileOnly) {
+            callback.dexing(dependency)
+            try {
+                compileJar(jar, dependencyClasspath, libraryJars)
+                callback.onResolutionComplete(dependency)
+            } catch (e: Exception) {
+                callback.dexingFailed(dependency, e)
+                return@runBlocking
+            }
         }
 
         // 5. Dex tiap sub-dependency (masing-masing pake classpath dari SEMUA jar lain minus dirinya sendiri)
-        dependency.getAllDependencies().forEach { dep ->
-            val depJar = Paths.get(downloadPath, "${dep.artifactId}-v${dep.version}", "classes.jar")
+        if (!isCompileOnly) {
+            dependency.getAllDependencies().forEach { dep ->
+                val depJar = Paths.get(downloadPath, "${dep.artifactId}-v${dep.version}", "classes.jar")
 
-            callback.dexing(dep)
-            try {
-                compileJar(
-                    depJar, dependencyClasspath.toMutableList().apply { remove(depJar) }, libraryJars
-                )
-                callback.onResolutionComplete(dep)
-            } catch (e: Exception) {
-                callback.dexingFailed(dep, e)
-                return@forEach
+                callback.dexing(dep)
+                try {
+                    compileJar(
+                        depJar, dependencyClasspath.toMutableList().apply { remove(depJar) }, libraryJars
+                    )
+                    callback.onResolutionComplete(dep)
+                } catch (e: Exception) {
+                    callback.dexingFailed(dep, e)
+                    return@forEach
+                }
             }
         }
 

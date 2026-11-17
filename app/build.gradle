@@ -183,7 +183,7 @@ dependencies {
     implementation 'io.github.itsaky:nb-javac-android:17.0.0.3'
     implementation 'com.fasterxml.woodstox:woodstox-core:6.5.1'
     implementation 'javax.xml.stream:stax-api:1.0-2'
-
+    
     implementation "com.github.Cosmic-Ide:DependencyResolver:05ec26af0b"
     implementation 'com.guardsquare:proguard-core:9.0.2'
 

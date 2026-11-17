@@ -135,6 +135,7 @@ import mod.khaled.logcat.LogReaderActivity;
 import org.sketchware.daygreen.FileCheckUtils;
 import org.sketchware.daygreen.builds.BuildCache;
 import org.sketchware.daygreen.ai.AiChatFragment;
+import org.sketchware.daygreen.library.ProjectDependenciesActivity;
 
 import pro.sketchware.R;
 import pro.sketchware.activities.appcompat.ManageAppCompatActivity;
@@ -1286,6 +1287,12 @@ private String fixPackage(String code, String pkg) {
      */
     void toCollectionManager() {
         launchActivity(ManageCollectionActivity.class, openCollectionManager);
+    }
+
+    void toDependencyManager() {
+        Intent intent = new Intent(this, ProjectDependenciesActivity.class);
+        intent.putExtra("sc_id", sc_id);
+        startActivity(intent);
     }
 
     /**
