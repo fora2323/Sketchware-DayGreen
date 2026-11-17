@@ -142,8 +142,8 @@ class ProjectDependenciesActivity : BaseAppCompatActivity() {
 
     private fun showAddDependencyDialog() {
         val container = FrameLayout(this).apply {
-            val horizontalPadding = SketchwareUtil.dpToPx(24)
-            val topPadding = SketchwareUtil.dpToPx(12)
+            val horizontalPadding = SketchwareUtil.dpToPx(24f)
+            val topPadding = SketchwareUtil.dpToPx(12f)
             setPadding(horizontalPadding, topPadding, horizontalPadding, 0)
         }
         val input = EditText(this).apply {
