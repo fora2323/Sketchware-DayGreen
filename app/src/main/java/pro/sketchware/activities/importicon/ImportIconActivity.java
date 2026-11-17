@@ -570,8 +570,9 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
             String fillSuffix = IconDownloader.FILL_FILLED.equals(activeFill) ? "_filled" : "";
             defaultResourceName = "icon_" + iconItem.name + "_" + activeStyle + fillSuffix;
         }
-        dialogBinding.inputText.setText(defaultResourceName);
+        
         iconNameValidator = new WB(getApplicationContext(), dialogBinding.textInputLayout, uq.b, alreadyAddedImageNames);
+        dialogBinding.inputText.setText(makeUniqueResourceName(defaultResourceName));
 
         updatePreviewSizePx(dialogBinding.icon, selectedSaveSizePx);
         if (currentSourceMode == SOURCE_BRAND && "logos".equals(selectedBrandSet)) {
@@ -809,6 +810,17 @@ public class ImportIconActivity extends BaseAppCompatActivity implements IconAda
                     }
             );
         }
+    }
+    
+    private String makeUniqueResourceName(@NonNull String baseName) {
+        if (!alreadyAddedImageNames.contains(baseName)) {
+            return baseName;
+        }
+        int suffix = 2;
+        while (alreadyAddedImageNames.contains(baseName + "_" + suffix)) {
+            suffix++;
+        }
+        return baseName + "_" + suffix;
     }
 
     private void updatePreviewSizePx(@NonNull ImageView previewView, int sizePx) {
