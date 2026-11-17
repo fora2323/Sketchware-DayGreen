@@ -222,7 +222,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         if (result.getResultCode() == RESULT_OK) {
             viewDirty = true;
             refresh();
-            if (viewTabAdapter != null) {
+            if (viewTabAdapter != null && viewTabAdapter.isViewInitialized()) {
                 viewTabAdapter.n();
             }
         }

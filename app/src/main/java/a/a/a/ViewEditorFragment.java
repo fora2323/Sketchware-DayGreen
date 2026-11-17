@@ -447,15 +447,16 @@ public class ViewEditorFragment extends qA {
 	}
 	
 	public void n() {
-		ArrayList<ViewBean> viewBeanArrayList = eC.a(jC.a(sc_id).d(projectFileBean.getXmlName()));
-		ViewBean viewBean;
-		if (projectFileBean.hasActivityOption(ProjectFileBean.OPTION_ACTIVITY_FAB)) {
-			viewBean = jC.a(sc_id).h(projectFileBean.getXmlName());
-		} else {
-			viewBean = null;
-		}
-		viewProperty.addActivityViews(viewBeanArrayList, viewBean);
-	}
+        if (projectFileBean == null || sc_id == null) return;
+        ArrayList<ViewBean> viewBeanArrayList = eC.a(jC.a(sc_id).d(projectFileBean.getXmlName()));
+        ViewBean viewBean;
+        if (projectFileBean.hasActivityOption(ProjectFileBean.OPTION_ACTIVITY_FAB)) {
+            viewBean = jC.a(sc_id).h(projectFileBean.getXmlName());
+        } else {
+            viewBean = null;
+        }
+        viewProperty.addActivityViews(viewBeanArrayList, viewBean);
+    }
 	
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
