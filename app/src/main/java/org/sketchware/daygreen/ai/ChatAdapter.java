@@ -120,13 +120,13 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
 
         switch (item.type) {
             case TYPE_USER:
-                holder.text.setText(item.text);
+                bindText(holder, item.text);
                 break;
             case TYPE_AGENT:
-                holder.text.setText(formatter.format(item.text, onEventClick));
+                bindText(holder, formatter.format(item.text, onEventClick));
                 break;
             case TYPE_STATUS:
-                holder.text.setText(item.text);
+                bindText(holder, item.text);
                 break;
             case TYPE_THINKING:
                 bindThinking(holder, item);
@@ -136,8 +136,22 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
         }
     }
 
+    /**
+     * Sets the message text only if this row has a message view.
+     * Prevents a crash when a layout is missing tv_message.
+     */
+    private void bindText(Holder holder, CharSequence text) {
+        if (holder.text != null) {
+            holder.text.setText(text);
+        }
+    }
+
     private void bindThinking(Holder holder, ChatMessage item) {
-        holder.title.setText((item.expanded ? "▾ " : "▸ ") + "Proses berpikir");
+        if (holder.title == null || holder.body == null) {
+            return;
+        }
+
+        holder.title.setText((item.expanded ? "▾ " : "▸ ") + "Thinking process");
         holder.body.setText(item.text);
         holder.body.setVisibility(item.expanded ? View.VISIBLE : View.GONE);
 
@@ -150,9 +164,9 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
     }
 
     static final class Holder extends RecyclerView.ViewHolder {
-        /** Message text for user, agent and status rows. */
+        /** Message text for user, agent and status rows. Null for thinking rows. */
         final TextView text;
-        /** Thinking rows only. */
+        /** Thinking rows only. Null for other rows. */
         final TextView title;
         final TextView body;
 
