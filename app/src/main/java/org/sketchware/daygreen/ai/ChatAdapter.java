@@ -1,9 +1,14 @@
 package org.sketchware.daygreen.ai;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -11,8 +16,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import pro.sketchware.R;
+import pro.sketchware.utility.SketchwareUtil;
 
 public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> {
 
@@ -20,6 +28,9 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
     private static final int TYPE_AGENT = 1;
     private static final int TYPE_STATUS = 2;
     private static final int TYPE_THINKING = 3;
+
+    private static final Pattern FENCE = Pattern.compile(
+            "```([A-Za-z0-9_+#.\\-]*)[ \\t]*\\n([\\s\\S]*?)```");
 
     public static final class ChatMessage {
         final int type;
@@ -120,13 +131,13 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
 
         switch (item.type) {
             case TYPE_USER:
-                bindText(holder, item.text);
+                holder.text.setText(item.text);
                 break;
             case TYPE_AGENT:
-                bindText(holder, formatter.format(item.text, onEventClick));
+                bindAgent(holder, item);
                 break;
             case TYPE_STATUS:
-                bindText(holder, item.text);
+                holder.text.setText(item.text);
                 break;
             case TYPE_THINKING:
                 bindThinking(holder, item);
@@ -137,21 +148,56 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
     }
 
     /**
-     * Sets the message text only if this row has a message view.
-     * Prevents a crash when a layout is missing tv_message.
+     * Agent reply: plain text becomes one text block, each ```fenced``` part becomes a code block.
      */
-    private void bindText(Holder holder, CharSequence text) {
-        if (holder.text != null) {
-            holder.text.setText(text);
+    private void bindAgent(Holder holder, ChatMessage item) {
+        LinearLayout parts = holder.parts;
+        parts.removeAllViews();
+        LayoutInflater inflater = LayoutInflater.from(parts.getContext());
+
+        for (Segment seg : splitSegments(item.text)) {
+            if (seg.isCode) {
+                parts.addView(buildCodePart(inflater, parts, seg.lang, seg.text));
+            } else {
+                String plain = seg.text.trim();
+                if (!plain.isEmpty()) {
+                    parts.addView(buildTextPart(inflater, parts, plain));
+                }
+            }
         }
     }
 
-    private void bindThinking(Holder holder, ChatMessage item) {
-        if (holder.title == null || holder.body == null) {
-            return;
-        }
+    private View buildTextPart(LayoutInflater inflater, ViewGroup parent, String text) {
+        View view = inflater.inflate(R.layout.item_chat_text, parent, false);
+        TextView tv = view.findViewById(R.id.tv_message);
+        tv.setText(formatter.format(text, onEventClick));
+        tv.setMovementMethod(LinkMovementMethod.getInstance());
+        return view;
+    }
 
-        holder.title.setText((item.expanded ? "▾ " : "▸ ") + "Thinking process");
+    private View buildCodePart(LayoutInflater inflater, ViewGroup parent, String lang, String code) {
+        View view = inflater.inflate(R.layout.item_chat_code, parent, false);
+
+        TextView langTv = view.findViewById(R.id.tv_lang);
+        langTv.setText(lang == null || lang.isEmpty() ? "code" : lang);
+
+        TextView codeTv = view.findViewById(R.id.tv_code);
+        codeTv.setText(ChatCodeHighlighter.highlight(code));
+
+        ImageButton copy = view.findViewById(R.id.btn_copy);
+        copy.setOnClickListener(v -> {
+            Context ctx = v.getContext();
+            ClipboardManager cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+            if (cm != null) {
+                cm.setPrimaryClip(ClipData.newPlainText("code", code));
+                SketchwareUtil.toast("Kode disalin");
+            }
+        });
+        return view;
+    }
+
+    private void bindThinking(Holder holder, ChatMessage item) {
+        holder.title.setText((item.expanded ? "▾ " : "▸ ") + "Proses berpikir");
         holder.body.setText(item.text);
         holder.body.setVisibility(item.expanded ? View.VISIBLE : View.GONE);
 
@@ -163,21 +209,62 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
         });
     }
 
+    /** Splits the reply into plain-text parts and fenced code parts, in order. */
+    static List<Segment> splitSegments(String text) {
+        List<Segment> out = new ArrayList<>();
+        Matcher m = FENCE.matcher(text);
+        int last = 0;
+        while (m.find()) {
+            if (m.start() > last) {
+                out.add(Segment.plain(text.substring(last, m.start())));
+            }
+            String code = m.group(2).replaceAll("\\n+$", "");
+            out.add(Segment.code(m.group(1), code));
+            last = m.end();
+        }
+        if (last < text.length()) {
+            out.add(Segment.plain(text.substring(last)));
+        }
+        return out;
+    }
+
+    static final class Segment {
+        final boolean isCode;
+        final String lang;
+        final String text;
+
+        private Segment(boolean isCode, String lang, String text) {
+            this.isCode = isCode;
+            this.lang = lang;
+            this.text = text;
+        }
+
+        static Segment plain(String text) {
+            return new Segment(false, "", text);
+        }
+
+        static Segment code(String lang, String text) {
+            return new Segment(true, lang, text);
+        }
+    }
+
     static final class Holder extends RecyclerView.ViewHolder {
-        /** Message text for user, agent and status rows. Null for thinking rows. */
+        /** User and status rows. */
         final TextView text;
-        /** Thinking rows only. Null for other rows. */
+        /** Agent rows: holds text and code parts. */
+        final LinearLayout parts;
+        /** Thinking rows only. */
         final TextView title;
         final TextView body;
 
         Holder(View itemView) {
             super(itemView);
             text = itemView.findViewById(R.id.tv_message);
+            parts = itemView.findViewById(R.id.ll_parts);
             title = itemView.findViewById(R.id.tv_thinking_title);
             body = itemView.findViewById(R.id.tv_thinking_body);
 
             if (text != null) {
-                // Makes the event names clickable.
                 text.setMovementMethod(LinkMovementMethod.getInstance());
             }
         }
