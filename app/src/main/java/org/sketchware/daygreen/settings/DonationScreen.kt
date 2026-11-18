@@ -4,12 +4,19 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Coffee
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,7 +29,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -79,11 +88,24 @@ fun DonationScreen(onBack: () -> Unit) {
                         colors = CardDefaults.cardColors(containerColor = colors.surfaceVariant),
                     ) {
                         Column {
-                            DonationRow(title = kofiTitle, onClick = { openUrl(kofiUrl) })
+                            DonationRow(
+                                icon = Icons.Filled.Coffee,
+                                title = kofiTitle,
+                                onClick = { openUrl(kofiUrl) },
+                            )
                             HorizontalDivider(color = colors.outline)
-                            DonationRow(title = saweriaTitle, onClick = { openUrl(saweriaUrl) })
+                            DonationRow(
+                                icon = Icons.Filled.Favorite,
+                                title = saweriaTitle,
+                                onClick = { openUrl(saweriaUrl) },
+                            )
                         }
                     }
+                }
+
+                // Ruang tambahan supaya list bisa di-scroll dan toolbar bisa collapse
+                item {
+                    Spacer(Modifier.height(600.dp))
                 }
             }
         }
@@ -91,14 +113,30 @@ fun DonationScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun DonationRow(title: String, onClick: () -> Unit) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurface,
+private fun DonationRow(icon: ImageVector, title: String, onClick: () -> Unit) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp),
-    )
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
