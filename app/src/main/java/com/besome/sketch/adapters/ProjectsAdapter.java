@@ -12,12 +12,14 @@ import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.core.view.WindowCompat;
 
 import com.besome.sketch.export.ExportProjectActivity;
 import com.besome.sketch.lib.ui.LoadingDialog;
 import com.besome.sketch.projects.MyProjectSettingActivity;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.color.MaterialColors;
 
 import java.io.File;
 import java.util.ArrayList;

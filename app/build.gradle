@@ -30,8 +30,6 @@ android {
         minSdk = 26
         versionCode = 197
         versionName = "v8.0.7-daygreen"
-
-        buildConfigField("String", "SKETCHUB_API_KEY", "\"${System.getenv("SKETCHUB_API_KEY")}\"")
         buildConfigField("String", "GIT_HASH", "\"${gitCommitHash()}\"")
     }
 
