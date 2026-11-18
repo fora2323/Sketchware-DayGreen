@@ -1,8 +1,8 @@
 package org.sketchware.daygreen.settings
 
+import android.content.res.Configuration
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,17 +12,19 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -40,9 +42,20 @@ data class SettingSection(
     val items: List<SettingItem>,
 )
 
+/**
+ * Tema gelap/terang mengikuti pengaturan di dalam aplikasi (AppCompatDelegate),
+ * bukan pengaturan sistem. Nilainya dibaca dari konfigurasi yang sudah dioverride
+ * oleh AppCompat.
+ */
+@Composable
+private fun isAppDarkTheme(): Boolean {
+    val uiMode = LocalConfiguration.current.uiMode
+    return (uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+}
+
 @Composable
 private fun sketchwareColorScheme(): ColorScheme =
-    if (isSystemInDarkTheme()) {
+    if (isAppDarkTheme()) {
         darkColorScheme(
             primary = colorResource(R.color.md_theme_dark_primary),
             onPrimary = colorResource(R.color.md_theme_dark_on_primary),
@@ -88,11 +101,13 @@ fun AppSettingsScreen(
 ) {
     MaterialTheme(colorScheme = sketchwareColorScheme()) {
         val colors = MaterialTheme.colorScheme
+        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
         Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             containerColor = colors.background,
             topBar = {
-                TopAppBar(
+                LargeTopAppBar(
                     title = { Text("Settings") },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
@@ -102,10 +117,12 @@ fun AppSettingsScreen(
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = colors.surface,
-                        titleContentColor = colors.onSurface,
-                        navigationIconContentColor = colors.onSurface,
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.largeTopAppBarColors(
+                        containerColor = colors.background,
+                        scrolledContainerColor = colors.surface,
+                        titleContentColor = colors.onBackground,
+                        navigationIconContentColor = colors.onBackground,
                     ),
                 )
             },
