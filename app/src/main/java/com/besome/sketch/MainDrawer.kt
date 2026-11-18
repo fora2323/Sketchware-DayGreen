@@ -17,6 +17,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 
 import org.sketchware.daygreen.donation.DonationActivity
+import org.sketchware.daygreen.settings.activities.AppSettingsActivity
 
 import com.besome.sketch.help.ProgramInfoActivity
 import com.besome.sketch.tools.NewKeyStoreActivity
@@ -28,8 +29,6 @@ import dev.chrisbanes.insetter.Side
 
 import extensions.anbui.daydream.activity.DayDreamCleanUp
 import extensions.anbui.daydream.activity.project.settings.DayDreamUniversalSettingsActivity
-
-import mod.hilal.saif.activities.tools.AppSettings
 
 import pro.sketchware.R
 import pro.sketchware.utility.UI
@@ -87,7 +86,7 @@ class MainDrawer @JvmOverloads constructor(context: Context, attrs: AttributeSet
                 activity.startActivity(Intent(activity, DayDreamCleanUp::class.java))
             }
             R.id.app_settings -> {
-                val intent = Intent(activity, AppSettings::class.java).apply {
+                val intent = Intent(activity, AppSettingsActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
                 }
                 activity.startActivity(intent)

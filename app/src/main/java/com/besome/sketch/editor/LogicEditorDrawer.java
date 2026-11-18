@@ -13,12 +13,13 @@ import com.besome.sketch.beans.BlockBean;
 import com.besome.sketch.lib.ui.CustomScrollView;
 import com.google.android.material.card.MaterialCardView;
 
+import org.sketchware.daygreen.settings.activities.AppSettingsActivity;
+
 import java.util.ArrayList;
 
 import a.a.a.Us;
 import a.a.a.wB;
 import mod.hey.studios.util.Helper;
-import mod.hilal.saif.activities.tools.AppSettings;
 import pro.sketchware.R;
 
 public class LogicEditorDrawer extends LinearLayout {
@@ -52,7 +53,7 @@ public class LogicEditorDrawer extends LinearLayout {
 
         MaterialCardView tools = findViewById(R.id.new_button);
         tools.setOnClickListener(v -> {
-            Intent intent = new Intent(getContext(), AppSettings.class);
+            Intent intent = new Intent(getContext(), AppSettingsActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             getContext().startActivity(intent);
         });

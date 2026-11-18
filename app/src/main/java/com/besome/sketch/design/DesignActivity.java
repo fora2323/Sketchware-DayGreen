@@ -135,6 +135,7 @@ import mod.khaled.logcat.LogReaderActivity;
 import org.sketchware.daygreen.FileCheckUtils;
 import org.sketchware.daygreen.builds.BuildCache;
 import org.sketchware.daygreen.ai.AiChatFragment;
+import org.sketchware.daygreen.settings.activities.AppSettingsActivity;
 
 import pro.sketchware.R;
 import pro.sketchware.activities.appcompat.ManageAppCompatActivity;
@@ -143,7 +144,6 @@ import pro.sketchware.activities.editor.view.CodeViewerActivity;
 import pro.sketchware.activities.editor.view.ViewCodeEditorActivity;
 import pro.sketchware.activities.resourceseditor.ResourcesEditorActivity;
 import pro.sketchware.dialogs.BuildSettingsBottomSheet;
-import mod.hilal.saif.activities.tools.AppSettings;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.ThemeUtils;
@@ -1430,7 +1430,7 @@ private String fixPackage(String code, String pkg) {
     }
     
     void toAppSettings() {
-        launchActivity(AppSettings.class, null);
+        launchActivity(AppSettingsActivity.class, null);
     }
 
     @SafeVarargs
@@ -1454,7 +1454,7 @@ private String fixPackage(String code, String pkg) {
                 .setTitle("Missing Tools")
                 .setMessage("Required build tools (AAPT/SDK) are not downloaded yet. Please download them in App Settings to run your project.")
                 .setPositiveButton("Open Settings", (dialog, which) -> {
-                    Intent intent = new Intent(this, AppSettings.class);
+                    Intent intent = new Intent(this, AppSettingsActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
                     startActivity(intent);
                 })

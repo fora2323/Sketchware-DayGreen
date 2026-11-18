@@ -39,7 +39,6 @@ import a.a.a.DA;
 import a.a.a.DB;
 import a.a.a.lC;
 import mod.hey.studios.project.ProjectTracker;
-import mod.hilal.saif.activities.tools.AppSettings;
 import pro.sketchware.R;
 import pro.sketchware.activities.main.activities.MainActivity;
 import pro.sketchware.databinding.MyprojectsBinding;
