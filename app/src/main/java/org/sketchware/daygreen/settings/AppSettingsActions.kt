@@ -29,13 +29,13 @@ object AppSettingsActions {
 
     fun openWorkingDirectory(activity: AppCompatActivity) {
         val options = FilePickerOptions().apply {
-            setSelectionMode(SelectionMode.BOTH)
-            setMultipleSelection(true)
-            setTitle("Select an entry to modify")
-            setInitialDirectory(activity.filesDir.parentFile!!.absolutePath)
+            selectionMode = SelectionMode.BOTH
+            multipleSelection = true
+            title = "Select an entry to modify"
+            initialDirectory = activity.filesDir.parentFile!!.absolutePath
         }
 
-        val callback = object : FilePickerCallback {
+        val callback = object : FilePickerCallback() {
             override fun onFilesSelected(files: List<out File>) {
                 val isDirectory = files[0].isDirectory
                 val typeName = if (isDirectory) "folder" else "file"
@@ -100,9 +100,9 @@ object AppSettingsActions {
 
         binding.selectFile.setOnClickListener {
             val options = FilePickerOptions().apply {
-                setExtensions(arrayOf("apk"))
+                extensions = arrayOf("apk")
             }
-            val callback = object : FilePickerCallback {
+            val callback = object : FilePickerCallback() {
                 override fun onFileSelected(file: File) {
                     isApkSelected = true
                     apkPathTxt.text = file.absolutePath
@@ -133,11 +133,11 @@ object AppSettingsActions {
                     .setNegativeButton(Helper.getResString(R.string.common_word_cancel), null)
                     .setPositiveButton("Overwrite") { _, _ ->
                         v.dismiss()
-                        signApkFileWithDialog(activity, inputApkPath, outputApkPath, true, null, null, null, null)
+                        signApkFileWithDialog(activity, inputApkPath, outputApkPath)
                     }
                     .show()
             } else {
-                signApkFileWithDialog(activity, inputApkPath, outputApkPath, true, null, null, null, null)
+                signApkFileWithDialog(activity, inputApkPath, outputApkPath)
             }
         }
 
@@ -151,11 +151,6 @@ object AppSettingsActions {
         activity: AppCompatActivity,
         inputApkPath: String,
         outputApkPath: String,
-        useTestkey: Boolean,
-        keyStorePath: String?,
-        keyStorePassword: String?,
-        keyStoreKeyAlias: String?,
-        keyPassword: String?,
     ) {
         val buildingRoot = activity.layoutInflater.inflate(R.layout.build_progress_msg_box, null, false)
         val layoutQuiz = buildingRoot.findViewById<LinearLayout>(R.id.layout_quiz)
@@ -180,14 +175,7 @@ object AppSettingsActions {
                 }
             }
 
-            if (useTestkey) {
-                signer.signWithTestKey(inputApkPath, outputApkPath, callback)
-            } else {
-                signer.signWithKeyStore(
-                    inputApkPath, outputApkPath,
-                    keyStorePath, keyStorePassword, keyStoreKeyAlias, keyPassword, callback
-                )
-            }
+            signer.signWithTestKey(inputApkPath, outputApkPath, callback)
 
             activity.runOnUiThread {
                 if (ApkSigner.LogCallback.errorCount.get() == 0) {
