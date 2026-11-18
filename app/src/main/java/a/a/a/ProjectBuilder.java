@@ -23,9 +23,8 @@ import com.android.sdklib.build.DuplicateFileException;
 import com.android.sdklib.build.SealedApkException;
 import com.github.megatronking.stringfog.plugin.StringFogClassInjector;
 import com.github.megatronking.stringfog.plugin.StringFogMappingPrinter;
-import com.google.gson.Gson;
 
-import org.cosmic.ide.dependency.resolver.api.Artifact;
+
 import org.xml.sax.SAXException;
 
 import java.io.ByteArrayOutputStream;
@@ -59,7 +58,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import dev.aldi.sayuti.editor.manage.LocalLibrariesUtil;
 import extensions.anbui.daydream.configs.Configs;
 import extensions.anbui.daydream.library.DRFeatureManager;
 import extensions.anbui.daydream.settings.DayDreamProjectSettings;
@@ -92,13 +90,11 @@ import mod.jbk.util.TestkeySignBridge;
 
 import mod.pranav.build.JarBuilder;
 import mod.pranav.build.R8Compiler;
-import mod.pranav.dependency.resolver.DependencyResolver;
 import mod.pranav.viewbinding.ViewBindingBuilder;
 import pro.sketchware.SketchApplication;
 import pro.sketchware.util.library.BuiltInLibraryManager;
 import pro.sketchware.utility.FilePathUtil;
 import pro.sketchware.utility.FileUtil;
-import pro.sketchware.utility.ProjectDependencyCache;
 import pro.sketchware.utility.SketchwareUtil;
 import proguard.Configuration;
 import proguard.ConfigurationParser;
@@ -252,141 +248,7 @@ public class ProjectBuilder {
         return true;
     }
 
-    public void resolvePendingLocalLibraries() throws IOException {
-        if (mll == null || mll.list == null || mll.list.isEmpty()) {
-            return;
-        }
-
-        File cacheDir = ProjectDependencyCache.dirFor(yq.sc_id);
-        boolean modified = false;
-
-        for (int i = 0; i < mll.list.size(); i++) {
-            HashMap<String, Object> lib = mll.list.get(i);
-            if (lib == null) continue;
-
-            Object depObj = lib.get("dependency");
-            if (!(depObj instanceof String dependency) || dependency.trim().isEmpty()) {
-                continue;
-            }
-            if (lib.containsKey("jarPath") && lib.get("jarPath") instanceof String jarStr && !jarStr.isEmpty()) {
-                continue;
-            }
-
-            String[] parts = dependency.trim().split(":");
-            if (parts.length < 3 || parts[0].trim().isEmpty() || parts[1].trim().isEmpty() || parts[2].trim().isEmpty()) {
-                throw new IOException("Invalid dependency coordinate: " + dependency);
-            }
-
-            String groupId = parts[0].trim();
-            String artifactId = parts[1].trim();
-            String version = parts[2].trim();
-            String name = artifactId + "-v" + version;
-
-            String scope = ManageLocalLibrary.getScope(lib);
-            boolean skipDeps = Boolean.TRUE.equals(lib.get("skipDependencies"));
-
-            int minApi = 21;
-            Object minApiObj = lib.get("minApi");
-            if (minApiObj instanceof Number num) {
-                minApi = num.intValue();
-            } else if (minApiObj instanceof String str) {
-                try {
-                    minApi = Integer.parseInt(str.trim());
-                } catch (NumberFormatException ignored) {
-                }
-            }
-
-            File libDir = new File(cacheDir, name);
-            File resolvedMarker = new File(libDir, ".resolved");
-            File jarFile = new File(libDir, "classes.jar");
-            File dexFile = new File(libDir, "classes.dex");
-
-            boolean isCompileOnly = ManageLocalLibrary.SCOPE_COMPILE_ONLY.equals(scope);
-            boolean cached = resolvedMarker.exists()
-                    && jarFile.exists()
-                    && (isCompileOnly || dexFile.exists());
-
-            if (!cached) {
-                if (progressReceiver != null) {
-                    progressReceiver.onProgress("Downloading " + dependency, 5);
-                }
-
-                BuiltInLibraries.maybeExtractCoreLambdaStubsJar();
-
-                final String[] error = new String[1];
-                int finalMinApi = minApi;
-                DependencyResolver resolver = new DependencyResolver(
-                        groupId,
-                        artifactId,
-                        version,
-                        skipDeps,
-                        build_settings,
-                        finalMinApi,
-                        scope,
-                        cacheDir.getAbsolutePath()
-                );
-
-                resolver.resolveDependency(new DependencyResolver.DependencyResolverCallback() {
-                    @Override
-                    public void onArtifactNotFound(Artifact dep) {
-                        error[0] = "Dependency '" + dep + "' not found";
-                    }
-
-                    @Override
-                    public void onVersionNotFound(Artifact dep) {
-                        error[0] = "Version not found for dependency '" + dep + "'";
-                    }
-
-                    @Override
-                    public void onDownloadError(Artifact dep, Throwable e) {
-                        error[0] = "Failed to download '" + dep + "': " + e.getMessage();
-                    }
-
-                    @Override
-                    public void dexingFailed(Artifact dep, Exception e) {
-                        error[0] = "Failed to dex '" + dep + "': " + e.getMessage();
-                    }
-
-                    @Override
-                    public void invalidPackaging(Artifact dep) {
-                        error[0] = "Invalid packaging for dependency '" + dep + "'";
-                    }
-                });
-
-                if (error[0] != null) {
-                    throw new IOException(error[0]);
-                }
-                if (!jarFile.exists()) {
-                    throw new IOException("Resolved dependency missing classes.jar: " + dependency);
-                }
-                if (!libDir.exists()) {
-                    libDir.mkdirs();
-                }
-                if (!resolvedMarker.exists()) {
-                    resolvedMarker.createNewFile();
-                }
-            }
-
-            HashMap<String, Object> resolved = LocalLibrariesUtil.createLibraryMap(
-                    name,
-                    dependency,
-                    cacheDir.getAbsolutePath()
-            );
-            resolved.put(ManageLocalLibrary.SCOPE_KEY, scope);
-            resolved.put("skipDependencies", skipDeps);
-            resolved.put("minApi", minApi);
-
-            mll.list.set(i, resolved);
-            modified = true;
-        }
-
-        if (modified) {
-            FileUtil.writeFile(fpu.getPathLocalLibrary(yq.sc_id), new Gson().toJson(mll.list));
-        }
-    }
-
     public boolean compileResources() throws Exception {
-        resolvePendingLocalLibraries();
         timestampResourceCompilationStarted = System.currentTimeMillis();
 
         String inputHash = BuildCache.combine(
@@ -681,7 +543,8 @@ public class ProjectBuilder {
                 for (Integer typeId : dex.typeIds()) {
                     if (!newDexTypeIds.contains(typeId)) {
                         if (mergedDexTypes.size() + newDexTypeIds.size() + 1 > 0xffff) {
-                            LogUtil.d(TAG, "Can't merge DEX file to " + nextMergedDexFilename + " because it has too many new type IDs. " + nextMergedDexFilename + " will have " + mergedDexTypes.size() + " type IDs");
+                            LogUtil.d(TAG, "Can't merge DEX file to " + nextMergedDexFilename +
+                                    " because it has too many new type IDs. " + nextMergedDexFilename + " will have " + mergedDexTypes.size() + " type IDs");
                             canMerge = false;
                             break bruh;
                         } else {
@@ -1032,7 +895,7 @@ public class ProjectBuilder {
                 apkBuilder.addResourcesFromJar(filterMultiplatformJunkFromJar(BuiltInLibraries.getLibraryClassesJarPath(library.getName())));
             }
 
-            for (String jarPath : mll.getJarLocalLibraryForPackaging().split(":")) {
+            for (String jarPath : mll.getJarLocalLibrary().split(":")) {
                 if (!jarPath.trim().isEmpty()) {
                     apkBuilder.addResourcesFromJar(filterMultiplatformJunkFromJar(new File(jarPath)));
                 }
@@ -1108,19 +971,13 @@ public class ProjectBuilder {
             allDexes.add(BuiltInLibraries.getLibraryDexFile(BuiltInLibraries.HTTP_LEGACY_ANDROID));
         }
 
-        /* 4. Tambahkan DEX dari built-in libraries (AndroidX AppCompat, Material, dll) */
-        /* DEX ini sudah pre-built, tidak di-shrink, dan tidak di-merge di memori (mencegah OOM) */
         for (Jp builtInLibrary : builtInLibraryManager.getLibraries()) {
             allDexes.add(BuiltInLibraries.getLibraryDexFile(builtInLibrary.getName()));
         }
 
-        /* 5. Tambahkan local libraries' DEX */
         ArrayList<HashMap<String, Object>> list = mll.list;
         for (int i1 = 0, listSize = list.size(); i1 < listSize; i1++) {
             HashMap<String, Object> localLibrary = list.get(i1);
-            if (ManageLocalLibrary.SCOPE_COMPILE_ONLY.equals(ManageLocalLibrary.getScope(localLibrary))) {
-                continue;
-            }
             Object localLibraryName = localLibrary.get("name");
 
             if (localLibraryName instanceof String) {
@@ -1155,9 +1012,6 @@ public class ProjectBuilder {
             }
         }
 
-        /* Kemas langsung semua DEX sebagai multi-dex (classes.dex, classes2.dex, classes3.dex, dst).
-         * Mencegah DexMerger yang memakan memori sangat besar dan menyebabkan OOM saat memakai AppCompat/Material,
-         * sekaligus memastikan library AndroidX dari AppCompat tidak kena shrinking dan tetap utuh. */
         dexesToAddButNotMerge = new ArrayList<>(allDexes);
         LogUtil.d(TAG, "Multi-dex packaging ready: " + allDexes.size() + " DEX files (classes.dex=" + (allDexes.isEmpty() ? "none" : allDexes.get(0).getName()) + ")");
         return false;
@@ -1344,10 +1198,6 @@ public class ProjectBuilder {
             }
         }
         
-        // --- PERUBAHAN A1: Filter Memory R8 ---
-        // Alasan: Mengirimkan semua library (termasuk yang tidak terpakai) membuat memori R8 habis saat menguraikan graph.
-        // Solusi: Filter array libs dari `getProguardClasspath()` hanya untuk JAR yang setidaknya
-        // menyediakan satu package yang dirujuk oleh file kelas di project atau file keep.
         Set<String> projectRefs = getProjectReferencedPackages();
         List<String> filteredLibs = new ArrayList<>();
         Set<String> providedPackages = new HashSet<>();

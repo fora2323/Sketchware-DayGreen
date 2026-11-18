@@ -104,6 +104,7 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
             libraryItemView.setData(compatLibraryBean);
         }
         libraryItemView.setTag(type);
+        //noinspection ConstantConditions since the variant if it's nullable handles nulls correctly
         libraryItemView.setOnClickListener(this);
         parent.addLibraryItem(libraryItemView, addDivider);
         libraryItems.add(libraryItemView);
@@ -293,7 +294,6 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
 
                     case ProjectLibraryBean.PROJECT_LIB_TYPE_MATERIAL3:
                         toMaterial3Activity();
-                        break;
                 }
             }
         }
