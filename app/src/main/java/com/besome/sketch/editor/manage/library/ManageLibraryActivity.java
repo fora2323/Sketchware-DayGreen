@@ -25,8 +25,6 @@ import com.besome.sketch.editor.manage.library.material3.Material3LibraryItemVie
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-import org.sketchware.daygreen.library.ProjectDependenciesActivity;
-
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,8 +41,6 @@ import pro.sketchware.R;
 import pro.sketchware.utility.UI;
 
 public class ManageLibraryActivity extends BaseAppCompatActivity implements View.OnClickListener {
-
-    private static final int PROJECT_LIB_TYPE_SCOPE_LIBRARY = 900;
 
     private final int REQUEST_CODE_ADMOB_ACTIVITY = 234;
     private final int REQUEST_CODE_APPCOMPAT_ACTIVITY = 231;
@@ -103,16 +99,11 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
         if (type == ProjectLibraryBean.PROJECT_LIB_TYPE_EXCLUDE_BUILTIN_LIBRARIES) {
             libraryItemView = new ExcludeBuiltInLibrariesLibraryItemView(this, sc_id);
             libraryItemView.setData(null);
-        } else if (type == PROJECT_LIB_TYPE_SCOPE_LIBRARY) {
-            libraryItemView = new ScopeLibraryItemView(this);
-            libraryItemView.setData(null);
-            libraryItemView.setHideEnabled();
         } else {
             libraryItemView = new Material3LibraryItemView(this);
             libraryItemView.setData(compatLibraryBean);
         }
         libraryItemView.setTag(type);
-        //noinspection ConstantConditions since the variant if it's nullable handles nulls correctly
         libraryItemView.setOnClickListener(this);
         parent.addLibraryItem(libraryItemView, addDivider);
         libraryItems.add(libraryItemView);
@@ -303,10 +294,6 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
                     case ProjectLibraryBean.PROJECT_LIB_TYPE_MATERIAL3:
                         toMaterial3Activity();
                         break;
-
-                    case PROJECT_LIB_TYPE_SCOPE_LIBRARY:
-                        launchActivity(ProjectDependenciesActivity.class);
-                        break;
                 }
             }
         }
@@ -392,7 +379,6 @@ public class ManageLibraryActivity extends BaseAppCompatActivity implements View
 
         LibraryCategoryView externalCategory = addCategoryItem("External libraries");
         addLibraryItem(new ProjectLibraryBean(ProjectLibraryBean.PROJECT_LIB_TYPE_LOCAL_LIB), externalCategory);
-        addCustomLibraryItem(PROJECT_LIB_TYPE_SCOPE_LIBRARY, externalCategory);
         addLibraryItem(new ProjectLibraryBean(ProjectLibraryBean.PROJECT_LIB_TYPE_NATIVE_LIB), externalCategory, false);
 
         LibraryCategoryView advancedCategory = addCategoryItem("Advanced");
