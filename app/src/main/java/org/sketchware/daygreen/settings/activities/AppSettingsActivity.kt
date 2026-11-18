@@ -8,6 +8,20 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Android
+import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Commit
+import androidx.compose.material.icons.filled.Construction
+import androidx.compose.material.icons.filled.Extension
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.LocalLibrary
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Widgets
 import dev.aldi.sayuti.editor.manage.ManageLocalLibraryActivity
 import mod.hey.studios.util.Helper
 import mod.hilal.saif.activities.tools.BlocksManager
@@ -30,16 +44,31 @@ class AppSettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Edge-to-edge: konten digambar sampai belakang status bar dan nav bar.
-        // Warna ikon status bar dan nav bar mengikuti tema di dalam aplikasi.
+        // Edge-to-edge. Ikon status bar dan nav bar mengikuti tema di dalam aplikasi.
+        // Nav bar memakai scrim default Android (lapisan semi-transparan untuk kontras),
+        // status bar transparan tanpa scrim.
         val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
             Configuration.UI_MODE_NIGHT_YES
-        val barStyle = if (isDark) {
+
+        val statusBarStyle = if (isDark) {
             SystemBarStyle.dark(Color.TRANSPARENT)
         } else {
             SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
         }
-        enableEdgeToEdge(statusBarStyle = barStyle, navigationBarStyle = barStyle)
+
+        val navigationBarStyle = if (isDark) {
+            SystemBarStyle.dark(scrim = Color.argb(0x80, 0x1b, 0x1b, 0x1b))
+        } else {
+            SystemBarStyle.light(
+                scrim = Color.argb(0xe6, 0xff, 0xff, 0xff),
+                darkScrim = Color.argb(0x80, 0x1b, 0x1b, 0x1b),
+            )
+        }
+
+        enableEdgeToEdge(
+            statusBarStyle = statusBarStyle,
+            navigationBarStyle = navigationBarStyle,
+        )
 
         setContent {
             AppSettingsScreen(
@@ -60,41 +89,41 @@ class AppSettingsActivity : AppCompatActivity() {
         SettingSection(
             header = "Managers",
             items = listOf(
-                SettingItem(R.drawable.ic_mtrl_block, "Block manager", "Manage your own blocks to use in Logic Editor") {
+                SettingItem(Icons.Filled.Extension, "Block manager", "Manage your own blocks to use in Logic Editor") {
                     startActivity(Intent(applicationContext, BlocksManager::class.java))
                 },
-                SettingItem(R.drawable.ic_mtrl_pull_down, "Block selector menu manager", "Manage your own block selector menus") {
+                SettingItem(Icons.Filled.Menu, "Block selector menu manager", "Manage your own block selector menus") {
                     openSettingsFragment(SettingsActivity.BLOCK_SELECTOR_MANAGER_FRAGMENT)
                 },
-                SettingItem(R.drawable.ic_mtrl_component, "Component manager", "Manage your own components") {
+                SettingItem(Icons.Filled.Widgets, "Component manager", "Manage your own components") {
                     startActivity(Intent(applicationContext, ManageCustomComponentActivity::class.java))
                 },
-                SettingItem(R.drawable.ic_mtrl_list, "Event manager", "Manage your own events") {
+                SettingItem(Icons.Filled.Bolt, "Event manager", "Manage your own events") {
                     openSettingsFragment(SettingsActivity.EVENTS_MANAGER_FRAGMENT)
                 },
-                SettingItem(R.drawable.ic_mtrl_box, "Local library manager", "Manage and download local libraries") {
+                SettingItem(Icons.Filled.LocalLibrary, "Local library manager", "Manage and download local libraries") {
                     startActivity(
                         Intent(applicationContext, ManageLocalLibraryActivity::class.java)
                             .putExtra("sc_id", "system")
                     )
                 },
                 SettingItem(
-                    R.drawable.ic_mtrl_article,
+                    Icons.Filled.Article,
                     Helper.getResString(R.string.design_drawer_menu_title_logcat_reader),
                     Helper.getResString(R.string.design_drawer_menu_subtitle_logcat_reader),
                 ) {
                     startActivity(Intent(applicationContext, LogReaderActivity::class.java))
                 },
-                SettingItem(R.drawable.ic_mtrl_settings, "AI", "Configure AI assistant") {
+                SettingItem(Icons.Filled.AutoAwesome, "AI", "Configure AI assistant") {
                     startActivity(Intent(applicationContext, AiSettingsActivity::class.java))
                 },
-                SettingItem(R.drawable.ic_mtrl_version_control, "Git", "Configuration system control version") {
+                SettingItem(Icons.Filled.Commit, "Git", "Configuration system control version") {
                     startActivity(Intent(applicationContext, GitSettingsActivity::class.java))
                 },
-                SettingItem(R.drawable.ic_mtrl_settings, "Build Tools", "Manage and download build tools") {
+                SettingItem(Icons.Filled.Construction, "Build Tools", "Manage and download build tools") {
                     startActivity(Intent(applicationContext, BuildToolsActivity::class.java))
                 },
-                SettingItem(R.drawable.ic_mtrl_folder, "SDK Manager", "Manage and download SDK platforms") {
+                SettingItem(Icons.Filled.Android, "SDK Manager", "Manage and download SDK platforms") {
                     startActivity(Intent(applicationContext, SdkManagerActivity::class.java))
                 },
             ),
@@ -102,21 +131,13 @@ class AppSettingsActivity : AppCompatActivity() {
         SettingSection(
             header = "General",
             items = listOf(
-                SettingItem(R.drawable.ic_mtrl_settings_applications, "App settings", "Change general app settings") {
+                SettingItem(Icons.Filled.Settings, "App settings", "Change general app settings") {
                     startActivity(Intent(applicationContext, ConfigActivity::class.java))
                 },
-                SettingItem(
-                    R.drawable.ic_mtrl_folder,
-                    "Open working directory",
-                    "Open Sketchware Pro's directory and edit files in it",
-                ) {
+                SettingItem(Icons.Filled.FolderOpen, "Open working directory", "Open Sketchware Pro's directory and edit files in it") {
                     AppSettingsActions.openWorkingDirectory(this@AppSettingsActivity)
                 },
-                SettingItem(
-                    R.drawable.ic_mtrl_apk_document,
-                    "Sign an APK file with testkey",
-                    "Sign an already existing APK file with testkey and signature schemes up to V4",
-                ) {
+                SettingItem(Icons.Filled.Key, "Sign an APK file with testkey", "Sign an already existing APK file with testkey and signature schemes up to V4") {
                     AppSettingsActions.signApkFileDialog(this@AppSettingsActivity)
                 },
             ),

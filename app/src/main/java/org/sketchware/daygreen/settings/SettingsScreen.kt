@@ -1,7 +1,6 @@
 package org.sketchware.daygreen.settings
 
 import android.content.res.Configuration
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,15 +22,15 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import pro.sketchware.R
 
 data class SettingItem(
-    @DrawableRes val icon: Int,
+    val icon: ImageVector,
     val title: String,
     val subtitle: String,
     val onClick: () -> Unit,
@@ -143,7 +142,7 @@ fun AppSettingsScreen(
                             supportingContent = { Text(setting.subtitle) },
                             leadingContent = {
                                 Icon(
-                                    painter = painterResource(setting.icon),
+                                    imageVector = setting.icon,
                                     contentDescription = null,
                                     tint = colors.primary,
                                 )
