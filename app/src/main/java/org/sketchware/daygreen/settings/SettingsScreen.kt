@@ -2,7 +2,6 @@ package org.sketchware.daygreen.settings
 
 import android.content.res.Configuration
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -26,7 +25,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.unit.dp
 import pro.sketchware.R
 
 data class SettingItem(
@@ -34,11 +32,6 @@ data class SettingItem(
     val title: String,
     val subtitle: String,
     val onClick: () -> Unit,
-)
-
-data class SettingSection(
-    val header: String,
-    val items: List<SettingItem>,
 )
 
 /**
@@ -95,7 +88,7 @@ private fun sketchwareColorScheme(): ColorScheme =
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppSettingsScreen(
-    sections: List<SettingSection>,
+    settings: List<SettingItem>,
     onBack: () -> Unit,
 ) {
     MaterialTheme(colorScheme = sketchwareColorScheme()) {
@@ -119,7 +112,7 @@ fun AppSettingsScreen(
                     scrollBehavior = scrollBehavior,
                     colors = TopAppBarDefaults.largeTopAppBarColors(
                         containerColor = colors.background,
-                        scrolledContainerColor = colors.surface,
+                        scrolledContainerColor = colors.surfaceVariant,
                         titleContentColor = colors.onBackground,
                         navigationIconContentColor = colors.onBackground,
                     ),
@@ -127,34 +120,24 @@ fun AppSettingsScreen(
             },
         ) { padding ->
             LazyColumn(contentPadding = padding) {
-                sections.forEach { section ->
-                    item {
-                        Text(
-                            text = section.header,
-                            color = colors.primary,
-                            style = MaterialTheme.typography.labelLarge,
-                            modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 8.dp),
-                        )
-                    }
-                    items(section.items) { setting ->
-                        ListItem(
-                            headlineContent = { Text(setting.title) },
-                            supportingContent = { Text(setting.subtitle) },
-                            leadingContent = {
-                                Icon(
-                                    imageVector = setting.icon,
-                                    contentDescription = null,
-                                    tint = colors.primary,
-                                )
-                            },
-                            colors = ListItemDefaults.colors(
-                                containerColor = colors.background,
-                                headlineColor = colors.onBackground,
-                                supportingColor = colors.onSurfaceVariant,
-                            ),
-                            modifier = Modifier.clickable(onClick = setting.onClick),
-                        )
-                    }
+                items(settings) { setting ->
+                    ListItem(
+                        headlineContent = { Text(setting.title) },
+                        supportingContent = { Text(setting.subtitle) },
+                        leadingContent = {
+                            Icon(
+                                imageVector = setting.icon,
+                                contentDescription = null,
+                                tint = colors.primary,
+                            )
+                        },
+                        colors = ListItemDefaults.colors(
+                            containerColor = colors.background,
+                            headlineColor = colors.onBackground,
+                            supportingColor = colors.onSurfaceVariant,
+                        ),
+                        modifier = Modifier.clickable(onClick = setting.onClick),
+                    )
                 }
             }
         }
