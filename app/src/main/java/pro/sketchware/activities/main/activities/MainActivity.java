@@ -22,18 +22,16 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.SystemBarStyle;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.core.app.ActivityCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.activity.EdgeToEdge;
-import androidx.activity.SystemBarStyle;
-import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -55,6 +53,7 @@ import extensions.anbui.daydream.setup.DRSetup;
 import mod.hey.studios.project.backup.BackupFactory;
 import mod.hey.studios.project.backup.BackupRestoreManager;
 import mod.hey.studios.util.Helper;
+import mod.hilal.saif.activities.tools.ConfigActivity;
 import mod.tyron.backup.SingleCopyTask;
 import pro.sketchware.R;
 import pro.sketchware.activities.main.fragments.projects.ProjectsFragment;
@@ -68,24 +67,11 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
     private static final String PROJECTS_FRAGMENT_TAG = "projects_fragment";
 
-    private ActionBarDrawerToggle drawerToggle;
     private DB u;
     private Snackbar storageAccessDenied;
     private MainBinding binding;
 
     private boolean isFabMenuOpen = false;
-
-    private final OnBackPressedCallback closeDrawer = new OnBackPressedCallback(true) {
-        @Override
-        public void handleOnBackPressed() {
-            if (isFabMenuOpen) {
-                closeFabMenu();
-                return;
-            }
-            setEnabled(false);
-            binding.drawerLayout.closeDrawers();
-        }
-    };
 
     private ProjectsFragment projectsFragment;
     private Fragment activeFragment;
@@ -159,20 +145,23 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     }
 
     @Override
-    public void onConfigurationChanged(@NonNull Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        if (drawerToggle != null) {
-            drawerToggle.onConfigurationChanged(newConfig);
-        }
-    }
-
-    @Override
     public void onCreate(Bundle savedInstanceState) {
         SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
-        boolean isDark = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-        SystemBarStyle statusBarStyle = isDark ? SystemBarStyle.dark(Color.TRANSPARENT) : SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT);
-        SystemBarStyle navigationBarStyle = isDark ? SystemBarStyle.dark(Color.argb(0x80, 0x1b, 0x1b, 0x1b)) : SystemBarStyle.light(Color.argb(0xe6, 0xff, 0xff, 0xff), Color.argb(0x80, 0x1b, 0x1b, 0x1b));
+
+        // Edge-to-edge dengan scrim nav bar, mengikuti tema di dalam aplikasi
+        boolean isDark = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                == Configuration.UI_MODE_NIGHT_YES;
+
+        SystemBarStyle statusBarStyle = isDark
+                ? SystemBarStyle.dark(Color.TRANSPARENT)
+                : SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT);
+
+        SystemBarStyle navigationBarStyle = isDark
+                ? SystemBarStyle.dark(Color.argb(0x80, 0x1b, 0x1b, 0x1b))
+                : SystemBarStyle.light(
+                        Color.argb(0xe6, 0xff, 0xff, 0xff),
+                        Color.argb(0x80, 0x1b, 0x1b, 0x1b));
 
         EdgeToEdge.enable(this, statusBarStyle, navigationBarStyle);
 
@@ -201,65 +190,37 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(null);
 
-        // Drawer Toggle Setup
-        drawerToggle = new ActionBarDrawerToggle(
-                this,
-                binding.drawerLayout,
-                R.string.app_name,
-                R.string.app_name
-        );
-        drawerToggle.setDrawerIndicatorEnabled(false);
-
         binding.toolbar.setNavigationIcon(null);
         binding.toolbar.setNavigationOnClickListener(null);
-        
-        // Custom Drawer Button Listener
+
+        // Tombol Settings: langsung membuka ConfigActivity
         binding.drawerToggleBtn.setOnClickListener(v -> {
             clearSearchFocus();
-            if (binding.drawerLayout.isDrawerOpen(binding.leftDrawer)) {
-                binding.drawerLayout.closeDrawer(binding.leftDrawer);
-            } else {
-                binding.drawerLayout.openDrawer(binding.leftDrawer);
+            startActivity(new Intent(this, ConfigActivity.class));
+        });
+
+        // Back: tutup menu FAB dulu jika terbuka
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (isFabMenuOpen) {
+                    closeFabMenu();
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
             }
         });
 
-        // Drawer Listener
-        binding.drawerLayout.addDrawerListener(drawerToggle);
-        binding.drawerLayout.setScrimColor(Color.TRANSPARENT);
-        binding.drawerLayout.setDrawerElevation(0f);
-
-        binding.drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
-            @Override
-            public void onDrawerSlide(@NonNull View drawerView, float slideOffset) {
-                float moveFactor = drawerView.getWidth() * slideOffset;
-                binding.layoutCoordinator.setTranslationX(moveFactor);
-            }
-
-            @Override
-            public void onDrawerOpened(@NonNull View drawerView) {
-                closeDrawer.setEnabled(true);
-                getOnBackPressedDispatcher().addCallback(closeDrawer);
-            }
-
-            @Override
-            public void onDrawerClosed(@NonNull View drawerView) {
-                binding.layoutCoordinator.setTranslationX(0f);
-            }
-
-            @Override
-            public void onDrawerStateChanged(int newState) {
-            }
-        });
-        
-        // Setup drawer button dengan oval drawable
-GradientDrawable drawerCircle = new GradientDrawable();
-drawerCircle.setShape(GradientDrawable.OVAL);
-drawerCircle.setColor(MaterialColors.getColor(
-        this,
-        R.attr.colorSurfaceContainer,
-        Color.TRANSPARENT
-));
-binding.drawerToggleBtn.setBackground(drawerCircle);
+        // Setup tombol settings dengan oval drawable
+        GradientDrawable drawerCircle = new GradientDrawable();
+        drawerCircle.setShape(GradientDrawable.OVAL);
+        drawerCircle.setColor(MaterialColors.getColor(
+                this,
+                R.attr.colorSurfaceContainer,
+                Color.TRANSPARENT
+        ));
+        binding.drawerToggleBtn.setBackground(drawerCircle);
 
         // FAB Setup
         setupFabMenu();
@@ -557,17 +518,12 @@ binding.drawerToggleBtn.setBackground(drawerCircle);
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (drawerToggle.onOptionsItemSelected(item)) {
-            return true;
-        } else {
-            return super.onOptionsItemSelected(item);
-        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
     public void onPostCreate(Bundle savedInstanceState) {
         super.onPostCreate(savedInstanceState);
-        drawerToggle.syncState();
         binding.toolbar.setNavigationIcon(null);
     }
 
@@ -601,7 +557,7 @@ binding.drawerToggleBtn.setBackground(drawerCircle);
     public void onPause() {
         super.onPause();
     }
-    
+
     private void allFilesAccessCheck() {
         if (Build.VERSION.SDK_INT > 29) {
             File optOutFile = new File(getFilesDir(), ".skip_all_files_access_notice");
