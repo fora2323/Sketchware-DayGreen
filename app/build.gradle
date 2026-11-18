@@ -1,6 +1,15 @@
 def secrets = System.getenv("GOOGLE_SERVICES_JSON")
 def analyticsEnabled = secrets != null
 
+def gitCommitHash() {
+    try {
+        def hash = "git rev-parse --short HEAD".execute(null, rootDir).text.trim()
+        return hash.isEmpty() ? "unknown" : hash
+    } catch (ignored) {
+        return "unknown"
+    }
+}
+
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "org.jetbrains.kotlin.plugin.compose"
@@ -23,6 +32,7 @@ android {
         versionName = "v8.0.7-daygreen"
 
         buildConfigField("String", "SKETCHUB_API_KEY", "\"${System.getenv("SKETCHUB_API_KEY")}\"")
+        buildConfigField("String", "GIT_HASH", "\"${gitCommitHash()}\"")
     }
 
     signingConfigs {

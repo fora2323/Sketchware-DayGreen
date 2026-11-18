@@ -30,11 +30,15 @@ import mod.hilal.saif.activities.tools.BuildToolsActivity
 import mod.hilal.saif.activities.tools.ConfigActivity
 import mod.hilal.saif.activities.tools.SdkManagerActivity
 import mod.khaled.logcat.LogReaderActivity
+
 import org.sketchware.daygreen.ai.activities.AiSettingsActivity
 import org.sketchware.daygreen.git.activities.GitSettingsActivity
+import org.sketchware.daygreen.settings.activities.AboutActivity
+import org.sketchware.daygreen.donation.DonationActivity
 import org.sketchware.daygreen.settings.AppSettingsActions
 import org.sketchware.daygreen.settings.AppSettingsScreen
 import org.sketchware.daygreen.settings.SettingItem
+
 import pro.sketchware.R
 import pro.sketchware.activities.editor.component.ManageCustomComponentActivity
 import pro.sketchware.activities.settings.SettingsActivity
@@ -86,11 +90,11 @@ class AppSettingsActivity : AppCompatActivity() {
     }
 
     private fun buildSettings(): List<SettingItem> = listOf(
-        SettingItem(Icons.Filled.Extension, "Block manager", "Manage your own blocks to use in Logic Editor") {
-            startActivity(Intent(applicationContext, BlocksManager::class.java))
-        },
         SettingItem(Icons.Filled.Apps, "Application", "General applications settings") {
             startActivity(Intent(applicationContext, ConfigActivity::class.java))
+        },
+        SettingItem(Icons.Filled.Extension, "Block manager", "Manage your own blocks to use in Logic Editor") {
+            startActivity(Intent(applicationContext, BlocksManager::class.java))
         },
         SettingItem(Icons.Filled.Menu, "Block selector menu manager", "Manage your own block selector menus") {
             openSettingsFragment(SettingsActivity.BLOCK_SELECTOR_MANAGER_FRAGMENT)
@@ -102,10 +106,7 @@ class AppSettingsActivity : AppCompatActivity() {
             openSettingsFragment(SettingsActivity.EVENTS_MANAGER_FRAGMENT)
         },
         SettingItem(Icons.Filled.LocalLibrary, "Local library manager", "Manage and download local libraries") {
-            startActivity(
-                Intent(applicationContext, ManageLocalLibraryActivity::class.java)
-                    .putExtra("sc_id", "system")
-            )
+            startActivity(Intent(applicationContext, ManageLocalLibraryActivity::class.java).putExtra("sc_id", "system"))
         },
         SettingItem(
             Icons.Filled.Article,
@@ -130,10 +131,10 @@ class AppSettingsActivity : AppCompatActivity() {
             AppSettingsActions.openWorkingDirectory(this@AppSettingsActivity)
         },
         SettingItem(Icons.Filled.Info, "About", "About Sketchware DayGreen") {
-            // TODO: isi target About
+            startActivity(Intent(applicationContext, AboutActivity::class.java))
         },
         SettingItem(Icons.Filled.Favorite, "Support", "Support developer") {
-            // TODO: isi target Support
+            startActivity(Intent(applicationContext, DonationActivity::class.java))
         },
     )
 }

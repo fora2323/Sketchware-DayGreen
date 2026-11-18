@@ -1,25 +1,20 @@
 package com.besome.sketch
 
-import a.a.a.mB
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
-import android.net.Uri
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewParent
 import androidx.annotation.IdRes
-import androidx.annotation.StringRes
 import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 
-import org.sketchware.daygreen.donation.DonationActivity
 import org.sketchware.daygreen.settings.activities.AppSettingsActivity
 
-import com.besome.sketch.help.ProgramInfoActivity
 import com.besome.sketch.tools.NewKeyStoreActivity
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.theme.overlay.MaterialThemeOverlay
@@ -51,37 +46,15 @@ class MainDrawer @JvmOverloads constructor(context: Context, attrs: AttributeSet
         addHeaderView(headerView)
         inflateMenu(R.menu.main_drawer_menu)
         setNavigationItemSelectedListener { item ->
-            initializeSocialLinks(item.itemId)
             initializeDrawerItems(item.itemId)
             close()
             false
         }
     }
 
-    private fun initializeSocialLinks(@IdRes id: Int) {
-        if (!mB.a()) {
-            @StringRes val url = when (id) {
-                R.id.social_discord -> R.string.link_discord_invite
-                R.id.social_github -> R.string.link_github_url
-                R.id.social_telegram -> R.string.link_telegram_invite
-                else -> -1
-            }
-
-            if (url != -1) {
-                openUrl(context.getString(url))
-            }
-        }
-    }
-
     private fun initializeDrawerItems(@IdRes id: Int) {
         val activity = unwrap(context) ?: return
         when (id) {
-            R.id.program_info -> {
-                val intent = Intent(activity, ProgramInfoActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
-                }
-                activity.startActivityForResult(intent, 105)
-            }
             R.id.daydream_cleanup -> {
                 activity.startActivity(Intent(activity, DayDreamCleanUp::class.java))
             }
@@ -103,16 +76,7 @@ class MainDrawer @JvmOverloads constructor(context: Context, attrs: AttributeSet
                 }
                 activity.startActivity(intent)
             }
-            R.id.donation -> {
-                activity.startActivity(Intent(activity, DonationActivity::class.java))
-            }
         }
-    }
-
-    private fun openUrl(url: String) {
-        val activity = unwrap(context) ?: return
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-        activity.startActivity(intent)
     }
 
     private fun unwrap(context: Context): Activity? {

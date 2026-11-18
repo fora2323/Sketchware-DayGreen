@@ -433,6 +433,10 @@
             android:name="org.sketchware.daygreen.settings.activities.AppSettingsActivity"
             android:theme="@style/Theme.DayGreen.Settings2027" />            
 
+        <activity
+            android:name="org.sketchware.daygreen.settings.activities.AboutActivity"
+            android:theme="@style/Theme.DayGreen.Settings2027" />
+
         <meta-data
             android:name="moe.shizuku.client.V3_SUPPORT"
             android:value="true" />

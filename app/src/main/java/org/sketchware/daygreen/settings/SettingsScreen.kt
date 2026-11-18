@@ -40,13 +40,13 @@ data class SettingItem(
  * oleh AppCompat.
  */
 @Composable
-private fun isAppDarkTheme(): Boolean {
+internal fun isAppDarkTheme(): Boolean {
     val uiMode = LocalConfiguration.current.uiMode
     return (uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 }
 
 @Composable
-private fun sketchwareColorScheme(): ColorScheme =
+internal fun sketchwareColorScheme(): ColorScheme =
     if (isAppDarkTheme()) {
         darkColorScheme(
             primary = colorResource(R.color.md_theme_dark_primary),
