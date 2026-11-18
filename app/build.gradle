@@ -121,7 +121,7 @@ androidComponents {
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
     
-    implementation platform("androidx.compose:compose-bom:<versi BOM yang cocok dengan Kotlin 2.1.21>")
+    implementation platform("androidx.compose:compose-bom:2026.09.00")
     implementation "androidx.compose.material3:material3"
     implementation "androidx.compose.material:material-icons-core"
     implementation "androidx.activity:activity-compose:1.13.0"
