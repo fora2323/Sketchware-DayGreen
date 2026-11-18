@@ -67,11 +67,7 @@
             android:configChanges="orientation|screenSize"
             android:exported="false"
             android:theme="@style/DayDreamTheme" />
-        <activity
-            android:name="extensions.anbui.daydream.activity.DayDreamCleanUp"
-            android:configChanges="orientation|screenSize"
-            android:exported="false"
-            android:theme="@style/DayDreamTheme" />
+            
         <activity
             android:name="extensions.anbui.daydream.activity.project.settings.GoogleSettings"
             android:configChanges="orientation|screenSize"

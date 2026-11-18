@@ -56,14 +56,6 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <!-- ========================= -->
-                    <!-- DRAWER BUTTON              -->
-                    <!-- ========================= -->
-
-                    <!-- ========================= -->
-                    <!-- SEARCH                     -->
-                    <!-- ========================= -->
-
                     <ImageButton
                         android:id="@+id/drawerToggleBtn"
                         android:layout_width="60dp"
@@ -131,20 +123,12 @@
         </com.google.android.material.appbar.AppBarLayout>
 
 
-        <!-- ========================= -->
-        <!-- MAIN CONTENT               -->
-        <!-- ========================= -->
-
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-
-        <!-- ========================= -->
-        <!-- FAB OVERLAY                -->
-        <!-- ========================= -->
 
         <View
             android:id="@+id/fab_overlay"
@@ -156,11 +140,7 @@
             android:visibility="gone" />
 
 
-      <!-- ========================= -->
-        <!-- FAB SPEED DIAL CONTAINER   -->
-        <!-- ========================= -->
-
-        <LinearLayout
+      <LinearLayout
             android:id="@+id/fab_menu_container"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -172,10 +152,6 @@
             android:gravity="end"
             android:orientation="vertical">
 
-
-            <!-- ========================= -->
-            <!-- CLONE FAB                  -->
-            <!-- ========================= -->
 
             <LinearLayout
                 android:id="@+id/layout_fab_clone"
@@ -224,10 +200,6 @@
             </LinearLayout>
 
 
-            <!-- ========================= -->
-            <!-- RESTORE FAB                -->
-            <!-- ========================= -->
-
             <LinearLayout
                 android:id="@+id/layout_fab_restore"
                 android:layout_width="wrap_content"
@@ -274,10 +246,6 @@
 
             </LinearLayout>
 
-
-            <!-- ========================= -->
-            <!-- CREATE FAB                 -->
-            <!-- ========================= -->
 
             <LinearLayout
                 android:id="@+id/layout_fab_create"
@@ -326,10 +294,6 @@
             </LinearLayout>
 
 
-            <!-- ========================= -->
-            <!-- MAIN FAB                   -->
-            <!-- ========================= -->
-
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/create_new_project"
                 android:layout_width="wrap_content"
@@ -339,16 +303,5 @@
 
         </LinearLayout>
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
-
-
-    <!-- ========================= -->
-    <!-- LEFT DRAWER                -->
-    <!-- ========================= -->
-
-    <com.besome.sketch.MainDrawer
-        android:id="@+id/left_drawer"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:layout_gravity="start" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

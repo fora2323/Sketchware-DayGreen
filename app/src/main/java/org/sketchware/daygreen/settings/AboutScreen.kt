@@ -5,7 +5,6 @@ import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -72,6 +71,9 @@ fun AboutScreen(onBack: () -> Unit) {
     MaterialTheme(colorScheme = sketchwareColorScheme()) {
         val colors = MaterialTheme.colorScheme
         val context = LocalContext.current
+        val discordUrl = stringResource(R.string.link_discord_invite)
+        val telegramUrl = stringResource(R.string.link_telegram_invite)
+        val whatsappUrl = stringResource(R.string.link_whatsapp_channel)
         val starCount by produceState<Int?>(initialValue = null) {
             value = fetchStarCount()
         }
@@ -81,6 +83,10 @@ fun AboutScreen(onBack: () -> Unit) {
                 ?.asImageBitmap()
         }
         val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+        fun openUrl(url: String) {
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        }
 
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -170,9 +176,25 @@ fun AboutScreen(onBack: () -> Unit) {
                         LinkRow(
                             title = "GitHub",
                             subtitle = "Star it on GitHub ⭐",
-                            onClick = {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(REPO_URL)))
-                            },
+                            onClick = { openUrl(REPO_URL) },
+                        )
+                        HorizontalDivider(color = colors.outline)
+                        LinkRow(
+                            title = "Discord",
+                            subtitle = "Join the community",
+                            onClick = { openUrl(discordUrl) },
+                        )
+                        HorizontalDivider(color = colors.outline)
+                        LinkRow(
+                            title = "Telegram",
+                            subtitle = "Report issues, feature requests etc.",
+                            onClick = { openUrl(telegramUrl) },
+                        )
+                        HorizontalDivider(color = colors.outline)
+                        LinkRow(
+                            title = "WhatsApp",
+                            subtitle = "Join the channel",
+                            onClick = { openUrl(whatsappUrl) },
                         )
                     }
                 }
@@ -217,29 +239,21 @@ private fun InfoRow(title: String, value: String) {
 
 @Composable
 private fun LinkRow(title: String, subtitle: String, onClick: () -> Unit) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

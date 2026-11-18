@@ -10,6 +10,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.view.LayoutInflater;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -34,6 +36,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import extensions.anbui.daydream.settings.DRSettings;
+import extensions.anbui.daydream.configs.Configs;
+import extensions.anbui.daydream.file.FileUtils;
+import extensions.anbui.daydream.tools.ToolCore;
+import extensions.anbui.daydream.ui.DialogUtils;
 
 import mod.hey.studios.util.Helper;
 import mod.jbk.util.LogUtil;
@@ -312,6 +320,11 @@ public class ConfigActivity extends BaseAppCompatActivity {
         backupCategory.setTitle("Backup");
         preferences.add(backupCategory);
 
+        LibraryItemView backupToolPref = createDayGreenSwitchPreference(R.drawable.restore_page_24px, "Backup tool", "Use DayGreen's new backup tool instead of the old one.");
+        DRSettings.getUseBackupTool(this, value -> backupToolPref.sw_enable.setChecked(value));
+        backupToolPref.sw_enable.setOnCheckedChangeListener((buttonView, isChecked) -> DRSettings.setUseBackupTool(this, isChecked));
+        backupCategory.addLibraryItem(backupToolPref, true);
+
         backupCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_folder, "Backup directory", "The default directory is /Internal storage" + getBackupPath(), v -> {
             DialogCreateNewFileLayoutBinding binding = DialogCreateNewFileLayoutBinding.inflate(getLayoutInflater());
             binding.inputText.setText(getBackupPath());
@@ -377,7 +390,16 @@ public class ConfigActivity extends BaseAppCompatActivity {
                 binding.inputText.requestFocus();
             });
             dialog.show();
-        }), false);
+        }), true);
+        
+        backupCategory.addLibraryItem(createPreference(R.drawable.cleaning_services_24px, "Temporary files", "Files generated during the build process.", v -> cleanUpTemporaryFiles()), true);
+        backupCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_box, "Local library", "Scan and move unused local libraries to recycle bin.", v -> cleanUpLocalLib()), true);
+        backupCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_delete, "Recycle bin", "Delete all in recycle bin.", v -> cleanOutTheRecyclingBin()), true);
+
+        LibraryItemView cleanPref = createDayGreenSwitchPreference(R.drawable.cleaning_services_24px, "Auto clean up after building", "Temporary files will be cleaned up after the build is complete.");
+        DRSettings.getAutoCleanUpAfterBuild(this, value -> cleanPref.sw_enable.setChecked(value));
+        cleanPref.sw_enable.setOnCheckedChangeListener((buttonView, isChecked) -> DRSettings.setAutoCleanUpAfterBuild(this, isChecked));
+        backupCategory.addLibraryItem(cleanPref, false);
 
         LibraryCategoryView appearanceCategory = new LibraryCategoryView(this);
         appearanceCategory.setTitle(Helper.getResString(R.string.settings_appearance));
@@ -481,6 +503,142 @@ public class ConfigActivity extends BaseAppCompatActivity {
         });
         preference.setOnClickListener(v -> preference.sw_enable.toggle());
         return preference;
+    }
+    
+    private LibraryItemView createDayGreenSwitchPreference(int icon, String title, String desc) {
+        LibraryItemView preference = new LibraryItemView(this);
+        preference.setHideEnabled();
+        preference.icon.setImageResource(icon);
+        preference.title.setText(title);
+        preference.description.setText(desc);
+        preference.sw_enable.setVisibility(View.VISIBLE);
+        preference.sw_enable.setClickable(true);
+        preference.setOnClickListener(v -> preference.sw_enable.toggle());
+        return preference;
+    }
+    
+    private void cleanUpTemporaryFiles() {
+        DialogUtils.twoDialog(this,
+                "Clean up temporary files",
+                "Clean up temporary files generated during build in all projects to free up storage space.",
+                "Clean up",
+                "Cancel",
+                true,
+                R.drawable.ic_mtrl_android,
+                true,
+                this::startCleanUpTemporaryFiles, null, null);
+    }
+
+    private void startCleanUpTemporaryFiles() {
+        View progressView = LayoutInflater.from(this).inflate(R.layout.progress_msg_box, null);
+        TextView progressText = progressView.findViewById(R.id.tv_progress);
+        progressText.setText("Cleaning up...");
+        AlertDialog progressDialog = new MaterialAlertDialogBuilder(this)
+                .setView(progressView)
+                .setCancelable(false)
+                .create();
+        progressDialog.show();
+
+        new Thread(() -> {
+            String message;
+            int cleared = ToolCore.cleanUpTemporaryFiles();
+            if (cleared > 0)
+                message = "Cleaned up temporary files in " + cleared + " projects.";
+            else
+                message = "There is nothing to clean up.";
+            runOnUiThread(() -> {
+                progressDialog.dismiss();
+                DialogUtils.oneDialog(this,
+                        "Done",
+                        message,
+                        "OK",
+                        true,
+                        R.drawable.ic_mtrl_check,
+                        true, null, null);
+            });
+        }).start();
+    }
+
+    private void cleanUpLocalLib() {
+        DialogUtils.twoDialog(this,
+                "Clean up local library",
+                "Find and move unused local libraries to the recycle bin.",
+                "Clean up",
+                "Cancel",
+                true,
+                R.drawable.ic_mtrl_box,
+                true,
+                this::startCleanUpLocalLib, null, null);
+    }
+
+    private void startCleanUpLocalLib() {
+        View progressView = LayoutInflater.from(this).inflate(R.layout.progress_msg_box, null);
+        TextView progressText = progressView.findViewById(R.id.tv_progress);
+        progressText.setText("Cleaning up...");
+        AlertDialog progressDialog = new MaterialAlertDialogBuilder(this)
+                .setView(progressView)
+                .setCancelable(false)
+                .create();
+        progressDialog.show();
+
+        new Thread(() -> {
+            String message;
+            int cleared = ToolCore.cleanupLocalLib();
+            if (cleared > 0)
+                message = "Cleaned up " + cleared + " local libraries. And those libraries have been moved to"
+                        + FileUtils.getInternalStorageDir() + Configs.recycleBinDayDreamFolderDir + "local_libs.";
+            else
+                message = "No libraries need to be cleaned.";
+
+            runOnUiThread(() -> {
+                progressDialog.dismiss();
+                DialogUtils.oneDialog(this,
+                        "Done",
+                        message,
+                        "OK",
+                        true,
+                        R.drawable.ic_mtrl_check,
+                        true, null, null);
+            });
+        }).start();
+    }
+
+    private void cleanOutTheRecyclingBin() {
+        DialogUtils.twoDialog(this,
+                "Clean up the recycle bin",
+                "All files in the recycle bin will be permanently deleted.",
+                "Clean up",
+                "Cancel",
+                true,
+                R.drawable.ic_mtrl_delete,
+                true,
+                this::startCleanOutTheRecyclingBin, null, null);
+    }
+
+    private void startCleanOutTheRecyclingBin() {
+        View progressView = LayoutInflater.from(this).inflate(R.layout.progress_msg_box, null);
+        TextView progressText = progressView.findViewById(R.id.tv_progress);
+        progressText.setText("Cleaning up...");
+        AlertDialog progressDialog = new MaterialAlertDialogBuilder(this)
+                .setView(progressView)
+                .setCancelable(false)
+                .create();
+        progressDialog.show();
+
+        new Thread(() -> {
+            ToolCore.cleanOutTheRecyclingBin();
+
+            runOnUiThread(() -> {
+                progressDialog.dismiss();
+                DialogUtils.oneDialog(this,
+                        "Done",
+                        "Cleaned the recycle bin.",
+                        "OK",
+                        true,
+                        R.drawable.ic_mtrl_check,
+                        true, null, null);
+            });
+        }).start();
     }
 
     /**
