@@ -30,12 +30,15 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -72,6 +75,11 @@ fun AboutScreen(onBack: () -> Unit) {
         val starCount by produceState<Int?>(initialValue = null) {
             value = fetchStarCount()
         }
+        val logo = remember {
+            ContextCompat.getDrawable(context, R.mipmap.ic_launcher)
+                ?.toBitmap(256, 256)
+                ?.asImageBitmap()
+        }
         val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
         Scaffold(
@@ -106,11 +114,13 @@ fun AboutScreen(onBack: () -> Unit) {
                             .padding(top = 8.dp, bottom = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Image(
-                            painter = painterResource(R.mipmap.ic_launcher),
-                            contentDescription = null,
-                            modifier = Modifier.size(96.dp),
-                        )
+                        logo?.let {
+                            Image(
+                                bitmap = it,
+                                contentDescription = null,
+                                modifier = Modifier.size(96.dp),
+                            )
+                        }
                         Spacer(Modifier.height(12.dp))
                         Text(
                             text = "Sketchware DayGreen",
