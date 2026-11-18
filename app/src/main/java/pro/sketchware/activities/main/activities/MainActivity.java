@@ -31,6 +31,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.activity.EdgeToEdge;
+import androidx.activity.SystemBarStyle;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -168,7 +170,11 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
-        enableEdgeToEdgeNoContrast();
+        boolean isDark = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        SystemBarStyle statusBarStyle = isDark ? SystemBarStyle.dark(Color.TRANSPARENT) : SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT);
+        SystemBarStyle navigationBarStyle = isDark ? SystemBarStyle.dark(Color.argb(0x80, 0x1b, 0x1b, 0x1b)) : SystemBarStyle.light(Color.argb(0xe6, 0xff, 0xff, 0xff), Color.argb(0x80, 0x1b, 0x1b, 0x1b));
+
+        EdgeToEdge.enable(this, statusBarStyle, navigationBarStyle);
 
         binding = MainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
