@@ -34,7 +34,7 @@ import mod.khaled.logcat.LogReaderActivity
 import org.sketchware.daygreen.ai.activities.AiSettingsActivity
 import org.sketchware.daygreen.git.activities.GitSettingsActivity
 import org.sketchware.daygreen.settings.activities.AboutActivity
-import org.sketchware.daygreen.donation.DonationActivity
+import org.sketchware.daygreen.settings.activities.DonationActivity
 import org.sketchware.daygreen.settings.AppSettingsActions
 import org.sketchware.daygreen.settings.AppSettingsScreen
 import org.sketchware.daygreen.settings.SettingItem

@@ -411,9 +411,9 @@
             android:configChanges="orientation|screenSize" />
 
         <activity
-            android:name="org.sketchware.daygreen.donation.DonationActivity"
+            android:name="org.sketchware.daygreen.settings.activities.DonationActivity"
             android:exported="false"
-            android:label="Support" />
+            android:theme="@style/Theme.DayGreen.Settings2027" />
 
         <activity
             android:name="org.sketchware.daygreen.ai.activities.AiSettingsActivity"

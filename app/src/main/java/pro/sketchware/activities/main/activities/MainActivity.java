@@ -46,6 +46,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
 
+import org.sketchware.daygreen.settings.activities.AppSettingsActivity;
+
 import a.a.a.DB;
 import a.a.a.GB;
 import extensions.anbui.daydream.configs.Configs;
@@ -53,7 +55,6 @@ import extensions.anbui.daydream.setup.DRSetup;
 import mod.hey.studios.project.backup.BackupFactory;
 import mod.hey.studios.project.backup.BackupRestoreManager;
 import mod.hey.studios.util.Helper;
-import mod.hilal.saif.activities.tools.ConfigActivity;
 import mod.tyron.backup.SingleCopyTask;
 import pro.sketchware.R;
 import pro.sketchware.activities.main.fragments.projects.ProjectsFragment;
@@ -196,7 +197,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         // Tombol Settings: langsung membuka ConfigActivity
         binding.drawerToggleBtn.setOnClickListener(v -> {
             clearSearchFocus();
-            startActivity(new Intent(this, ConfigActivity.class));
+            startActivity(new Intent(this, AppSettingsActivity.class));
         });
 
         // Back: tutup menu FAB dulu jika terbuka
