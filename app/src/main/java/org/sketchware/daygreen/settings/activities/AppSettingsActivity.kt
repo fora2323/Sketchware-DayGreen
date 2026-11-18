@@ -83,10 +83,7 @@ class AppSettingsActivity : AppCompatActivity() {
     }
 
     private fun openSettingsFragment(fragmentTag: String) {
-        startActivity(
-            Intent(this, SettingsActivity::class.java)
-                .putExtra(SettingsActivity.FRAGMENT_TAG_EXTRA, fragmentTag)
-        )
+        startActivity(Intent(this, SettingsActivity::class.java).putExtra(SettingsActivity.FRAGMENT_TAG_EXTRA, fragmentTag))
     }
 
     private fun buildSettings(): List<SettingItem> = listOf(

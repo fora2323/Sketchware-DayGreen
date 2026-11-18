@@ -140,7 +140,6 @@
             android:configChanges="orientation|screenSize"
             android:windowSoftInputMode="stateHidden" />
         <activity android:name="com.besome.sketch.help.LicenseActivity" />
-        <activity android:name="com.besome.sketch.help.ProgramInfoActivity" />
         <activity android:name="com.besome.sketch.help.SystemInfoActivity" />
         <activity
             android:name="com.besome.sketch.editor.LogicEditorActivity"
@@ -350,9 +349,6 @@
             android:configChanges="orientation|screenSize" />
         <activity
             android:name="mod.hilal.saif.activities.tools.ConfigActivity"
-            android:configChanges="orientation|screenSize" />
-        <activity
-            android:name="mod.hilal.saif.activities.tools.AppSettings"
             android:configChanges="orientation|screenSize" />
 
         <activity
