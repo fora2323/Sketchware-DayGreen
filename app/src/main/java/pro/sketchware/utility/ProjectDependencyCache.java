@@ -8,7 +8,7 @@ public final class ProjectDependencyCache {
     }
 
     public static File dirFor(String scId) {
-        return new File(FileUtil.getExternalStorageDir(), ".sketchware/data/" + scId + "/files/library/cache");
+        return new File(FileUtil.getExternalStorageDir(), ".sketchware/data/" + scId + "/build_cache/library");
     }
 
     public static void clear(String scId) {
