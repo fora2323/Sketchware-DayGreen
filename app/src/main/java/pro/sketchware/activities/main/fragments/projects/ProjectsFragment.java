@@ -213,8 +213,6 @@ public class ProjectsFragment extends DA {
 
             diffResult.dispatchUpdatesTo(projectsAdapter);
 
-            // WAJIB agar project langsung muncul
-            // tanpa harus mengetik search terlebih dahulu.
             projectsAdapter.filterData("");
         });
     });

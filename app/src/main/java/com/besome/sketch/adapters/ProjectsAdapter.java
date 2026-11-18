@@ -348,6 +348,14 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
             binding.pinText.setText("Pin");
         }
 
+        projectOptionsBSD.setOnShowListener(d -> {
+            Window w = projectOptionsBSD.getWindow();
+            if (w != null) {
+                w.setNavigationBarColor(MaterialColors.getColor(w.getDecorView(), com.google.android.material.R.attr.colorSurface));
+                WindowCompat.setDecorFitsSystemWindows(w, false);
+            }
+        });        
+
         projectOptionsBSD.show();
     }
 
