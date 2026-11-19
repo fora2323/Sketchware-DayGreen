@@ -3,6 +3,7 @@ package <?package_name?>;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import androidx.annotation.NonNull;
+
 import rikka.shizuku.Shizuku;
 
 public final class IDShizuku {
@@ -29,9 +30,5 @@ public final class IDShizuku {
 
 	public void addRequestPermissionResultListener(@NonNull Shizuku.OnRequestPermissionResultListener listener) {
 		Shizuku.addRequestPermissionResultListener(listener);
-	}
-
-	public void removeRequestPermissionResultListener(@NonNull Shizuku.OnRequestPermissionResultListener listener) {
-		Shizuku.removeRequestPermissionResultListener(listener);
 	}
 }
