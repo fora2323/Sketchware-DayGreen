@@ -741,6 +741,7 @@ public class Jx {
 			.replaceAll("SpeechRecognizer.createSpeechRecognizer\\(this\\);", "SpeechRecognizer.createSpeechRecognizer(getContext());")
 			.replaceAll("new RequestNetwork\\(this\\);", "new RequestNetwork((Activity) getContext());")
 			.replaceAll("new BluetoothConnect\\(this\\);", "new BluetoothConnect((Activity) getContext());")
+			.replaceAll("new IDShizuku\\(this\\);", "new IDShizuku(getContext());")            
 			.replaceAll("MobileAds.getRewardedVideoAdInstance\\(this\\);", "MobileAds.getRewardedVideoAdInstance(getContext());")
 			.replaceAll("runOnUiThread\\(new", "getActivity().runOnUiThread(new")
 			.replaceAll(".setLayoutManager\\(new LinearLayoutManager\\(this", ".setLayoutManager(new LinearLayoutManager(getContext()")

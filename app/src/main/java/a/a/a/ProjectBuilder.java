@@ -1229,15 +1229,12 @@ public class ProjectBuilder {
             }
         }
 
-        // Tambahkan -dontwarn untuk class-class yang dirujuk project tapi tidak ada di library
         for (String ref : projectRefs) {
             if (!providedPackages.contains(ref) && !ref.isEmpty()) {
                 rules.add("-dontwarn " + ref + ".**");
             }
         }
         
-        // Mencegah R8 gagal karena dependency antar library (seperti superclass library lain) 
-        // yang ikut di-drop dan tak ditemukan
         rules.add("-dontwarn **");
 
         System.gc();
@@ -1432,13 +1429,11 @@ public class ProjectBuilder {
         signApk(keystorePath, alias, storePass, keyPass, yq.unsignedUnalignedApkPath, yq.finalToInstallApkPath);
     }
     
-    // --- Helper A1: Mendapatkan daftar rujukan packages dari class dan konfigurasi project
     private Set<String> getProjectReferencedPackages() {
         Set<String> refs = new HashSet<>();
         File compiledDir = new File(yq.compiledClassesPath);
         extractFromDir(compiledDir, refs);
 
-        // Ekstrak rujukan dari rule aapt2 (XML/Manifest class inflations)
         File aaptRules = new File(yq.proguardAaptRules);
         if (aaptRules.exists()) {
             try {
@@ -1453,7 +1448,6 @@ public class ProjectBuilder {
             } catch (Exception e) {}
         }
 
-        // Ekstrak rujukan dari custom proguard rules yang ditetapkan oleh user
         File customRules = new File(proguard.getCustomProguardRules());
         if (customRules.exists()) {
             try {
