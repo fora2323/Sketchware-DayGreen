@@ -1,5 +1,6 @@
 package org.sketchware.daygreen.blocks
 
+import a.a.a.xB
 import com.besome.sketch.editor.LogicEditorActivity
 import pro.sketchware.R
 import pro.sketchware.utility.ThemeUtils
@@ -42,10 +43,24 @@ object IDBlockShizuku {
 
     @JvmStatic
     fun addPaletteBlocks(logicEditor: LogicEditorActivity) {
+        registerLabels(logicEditor)
         logicEditor.a("Shizuku", getTitleBgColor(logicEditor))
-        // Argumen pertama = teks block (spec), harus sama dengan spec di addBlocks
-        logicEditor.a("Shizuku pingBinder", "b", "shizukuPingBinder")
-        logicEditor.a("Shizuku checkSelfPermission", "b", "shizukuCheckPermission")
-        logicEditor.a("Shizuku requestPermission requestCode %d", " ", "shizukuRequestPermission")
+        logicEditor.a("b", "shizukuPingBinder")
+        logicEditor.a("b", "shizukuCheckPermission")
+        logicEditor.a(" ", "shizukuRequestPermission")
+    }
+
+    /**
+     * Label block bawaan diambil dari map xB.c berdasarkan opCode.
+     * Block Shizuku tidak ada di map itu, jadi labelnya kosong.
+     * Map diisi ulang setelah inisialisasi bawaan supaya tidak tertimpa.
+     */
+    private fun registerLabels(logicEditor: LogicEditorActivity) {
+        val xb = xB.b()
+        // Paksa inisialisasi tabel bawaan dulu (a(Context, String) akan mengisi map jika kosong)
+        xb.a(logicEditor, "shizukuPingBinder")
+        xb.c["shizukuPingBinder"] = "Shizuku pingBinder"
+        xb.c["shizukuCheckPermission"] = "Shizuku checkSelfPermission"
+        xb.c["shizukuRequestPermission"] = "Shizuku requestPermission requestCode %d"
     }
 }
