@@ -203,7 +203,6 @@ public class AddViewActivity extends BaseAppCompatActivity {
             binding.swImportmedia3.setChecked(DayDreamProjectSettings.isImportAndroidXMedia3(Configs.currentProjectID, projectFileBean.fileName));
             binding.swImportandroixbrowser.setChecked(DayDreamProjectSettings.isImportAndroidXBrowser(Configs.currentProjectID, projectFileBean.fileName));
             binding.swImportandroixcredentialmanager.setChecked(DayDreamProjectSettings.isImportAndroidXCredentialManager(Configs.currentProjectID, projectFileBean.fileName));
-            binding.swImportshizuku.setChecked(DayDreamProjectSettings.isImportShizuku(Configs.currentProjectID, projectFileBean.fileName));
             binding.swImportglidetransformations.setChecked(DayDreamProjectSettings.isImportGlideTransformations(Configs.currentProjectID, projectFileBean.fileName));
             binding.swImportandroidbilling.setChecked(DayDreamProjectSettings.isImportAndroidBilling(Configs.currentProjectID, projectFileBean.fileName));
             binding.swImportretrofit2.setChecked(DayDreamProjectSettings.isImportRetrofit2(Configs.currentProjectID, projectFileBean.fileName));
@@ -217,7 +216,6 @@ public class AddViewActivity extends BaseAppCompatActivity {
         binding.lnImportmedia3.setOnClickListener(v -> binding.swImportmedia3.toggle());
         binding.lnImportandroixbrowser.setOnClickListener(v -> binding.swImportandroixbrowser.toggle());
         binding.lnImportandroixcredentialmanager.setOnClickListener(v -> binding.swImportandroixcredentialmanager.toggle());
-        binding.lnImportshizuku.setOnClickListener(v -> binding.swImportshizuku.toggle());
         binding.lnImportglidetransformations.setOnClickListener(v -> binding.swImportglidetransformations.toggle());
         binding.lnImportandroidbilling.setOnClickListener(v -> binding.swImportandroidbilling.toggle());
         binding.lnImportretrofit2.setOnClickListener(v -> binding.swImportretrofit2.toggle());
@@ -286,12 +284,6 @@ public class AddViewActivity extends BaseAppCompatActivity {
         }
 
         if (!(DayDreamProjectSettings.isEnableDayDream(Configs.currentProjectID)
-                && DayDreamProjectSettings.isUseShizuku(Configs.currentProjectID)
-                && LibraryUtils.isAllowUseShizuku(Configs.currentProjectID))) {
-            binding.lnImportshizuku.setVisibility(View.GONE);
-        }
-
-        if (!(DayDreamProjectSettings.isEnableDayDream(Configs.currentProjectID)
                 && DayDreamProjectSettings.isGlideTransformations(Configs.currentProjectID))) {
             binding.lnImportglidetransformations.setVisibility(View.GONE);
         }
@@ -337,7 +329,6 @@ public class AddViewActivity extends BaseAppCompatActivity {
         DayDreamProjectSettings.setImportAndroidXMedia3(Configs.currentProjectID, filename, binding.swImportmedia3.isChecked());
         DayDreamProjectSettings.setImportAndroidXBrowser(Configs.currentProjectID, filename, binding.swImportandroixbrowser.isChecked());
         DayDreamProjectSettings.setImportAndroidXCredentialManager(Configs.currentProjectID, filename, binding.swImportandroixcredentialmanager.isChecked());
-        DayDreamProjectSettings.setImportShizuku(Configs.currentProjectID, filename, binding.swImportshizuku.isChecked());
         DayDreamProjectSettings.setImportGlideTransformations(Configs.currentProjectID, filename, binding.swImportglidetransformations.isChecked());
         DayDreamProjectSettings.setImportAndroidBilling(Configs.currentProjectID, filename, binding.swImportandroidbilling.isChecked());
         DayDreamProjectSettings.setImportRetrofit2(Configs.currentProjectID, filename, binding.swImportretrofit2.isChecked());

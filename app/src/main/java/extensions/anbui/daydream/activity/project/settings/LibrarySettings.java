@@ -58,7 +58,6 @@ public class LibrarySettings extends AppCompatActivity {
         binding.swForceaddworkmanager.setOnCheckedChangeListener((buttonView, isChecked) -> DayDreamProjectSettings.setForceAddWorkManager(projectID, isChecked));
         binding.swUseandroixbrowser.setChecked(DayDreamProjectSettings.isUniversalUseAndroidXBrowser(projectID));
         binding.swUseandroixcredentialmanager.setChecked(DayDreamProjectSettings.isUniversalUseAndroidXCredentialManager(projectID));
-        binding.swUseshizuku.setChecked(DayDreamProjectSettings.isUseShizuku(projectID));
         binding.swGlidetransformations.setChecked(DayDreamProjectSettings.isGlideTransformations(projectID));
         binding.swUseandroidbilling.setChecked(DayDreamProjectSettings.isUseAndroidBilling(projectID));
         binding.swUseretrofit2.setChecked(DayDreamProjectSettings.isUseRetrofit2(projectID));
@@ -67,7 +66,6 @@ public class LibrarySettings extends AppCompatActivity {
         binding.swUsemedia3.setOnCheckedChangeListener((buttonView, isChecked) -> DayDreamProjectSettings.setUniversalUseMedia3(projectID, isChecked));
         binding.swUseandroixbrowser.setOnCheckedChangeListener((buttonView, isChecked) -> DayDreamProjectSettings.setUniversalUseAndroidXBrowser(projectID, isChecked));
         binding.swUseandroixcredentialmanager.setOnCheckedChangeListener((buttonView, isChecked) -> DayDreamProjectSettings.setUniversalUseAndroidXCredentialManager(projectID, isChecked));
-        binding.swUseshizuku.setOnCheckedChangeListener((buttonView, isChecked) -> DayDreamProjectSettings.setUseShizuku(projectID, isChecked));
         binding.swGlidetransformations.setOnCheckedChangeListener((buttonView, isChecked) -> DayDreamProjectSettings.setGlideTransformations(projectID, isChecked));
         binding.swUseandroidbilling.setOnCheckedChangeListener((buttonView, isChecked) -> DayDreamProjectSettings.setUseAndroidBilling(projectID, isChecked));
         binding.swUseretrofit2.setOnCheckedChangeListener((buttonView, isChecked) -> DayDreamProjectSettings.setUseRetrofit2(projectID, isChecked));
@@ -76,7 +74,6 @@ public class LibrarySettings extends AppCompatActivity {
         binding.lnUsemedia3.setOnClickListener(v -> binding.swUsemedia3.toggle());
         binding.lnUseandroixbrowser.setOnClickListener(v -> binding.swUseandroixbrowser.toggle());
         binding.lnUseandroixcredentialmanager.setOnClickListener(v -> binding.swUseandroixcredentialmanager.toggle());
-        binding.lnUseshizuku.setOnClickListener(v -> binding.swUseshizuku.toggle());
         binding.lnGlidetransformations.setOnClickListener(v -> binding.swGlidetransformations.toggle());
         binding.lnUseandroidbilling.setOnClickListener(v -> binding.swUseandroidbilling.toggle());
         binding.lnUseretrofit2.setOnClickListener(v -> binding.swUseretrofit2.toggle());
@@ -87,7 +84,6 @@ public class LibrarySettings extends AppCompatActivity {
         initializeUseMedia3();
         initializeUseAndroidXBrowser();
         initializeUseAndroidXCredentialManager();
-        initializeUseShizuku();
         initializeUseAndroidBilling();
         initializeUseOneSignal();
     }
@@ -140,22 +136,6 @@ public class LibrarySettings extends AppCompatActivity {
 
         binding.lnUseandroixcredentialmanager.setEnabled(finalstatus);
         binding.lnUseandroixcredentialmanager.setAlpha(finalstatus ? 1 : 0.5f);
-    }
-
-    private void initializeUseShizuku() {
-        boolean finalstatus = true;
-        if (!ProjectConfigs.isMinSDKNewerThan23(projectID)) {
-            finalstatus = false;
-            binding.tvUseshizukunote.setText("To use, min SDK required is 24 or newer (Android 7+). " + binding.tvUseshizukunote.getText().toString());
-        } else if (!ProjectLibrary.isEnabledAppCompat(projectID)) {
-            finalstatus = false;
-            binding.tvUseshizukunote.setText("To use, enable AppCompat. " + binding.tvUseshizukunote.getText().toString());
-        }
-
-        if (!finalstatus) {
-            binding.lnUseshizuku.setEnabled(false);
-            binding.lnUseshizuku.setAlpha(0.5f);
-        }
     }
 
     private void initializeUseAndroidBilling() {
