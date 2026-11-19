@@ -28,6 +28,14 @@ public final class IDShizuku {
 		}
 	}
 
+	public int getVersion() {
+		return Shizuku.getVersion();
+	}
+
+	public int getUid() {
+		return Shizuku.getUid();
+	}    
+
 	public void addRequestPermissionResultListener(@NonNull Shizuku.OnRequestPermissionResultListener listener) {
 		Shizuku.addRequestPermissionResultListener(listener);
 	}

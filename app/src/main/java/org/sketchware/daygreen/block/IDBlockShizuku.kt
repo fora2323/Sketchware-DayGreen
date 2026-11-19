@@ -36,6 +36,24 @@ object IDBlockShizuku {
         arrayList.add(hashMap)
 
         hashMap = HashMap()
+        hashMap["name"] = "shizukuGetVersion"
+        hashMap["type"] = "d"
+        hashMap["code"] = "%s.getVersion()"
+        hashMap["color"] = "#00A9D0"
+        hashMap["palette"] = "-1"
+        hashMap["spec"] = "%m.shizuku getVersion"
+        arrayList.add(hashMap)
+
+        hashMap = HashMap()
+        hashMap["name"] = "shizukuGetUid"
+        hashMap["type"] = "d"
+        hashMap["code"] = "%s.getUid()"
+        hashMap["color"] = "#00A9D0"
+        hashMap["palette"] = "-1"
+        hashMap["spec"] = "%m.shizuku getUid"
+        arrayList.add(hashMap)
+
+        hashMap = HashMap()
         hashMap["name"] = "shizukuRequestPermission"
         hashMap["type"] = " "
         hashMap["code"] = "%s.requestPermission((int)%s);"
@@ -51,6 +69,8 @@ object IDBlockShizuku {
         logicEditor.a("Shizuku", getTitleBgColor(logicEditor))
         logicEditor.a("b", "shizukuPingBinder")
         logicEditor.a("b", "shizukuCheckPermission")
+        logicEditor.a("d", "shizukuGetVersion")
+        logicEditor.a("d", "shizukuGetUid")        
         logicEditor.a(" ", "shizukuRequestPermission")
     }
 
@@ -63,6 +83,8 @@ object IDBlockShizuku {
         xb.a(context, "shizukuPingBinder")
         xb.c["shizukuPingBinder"] = "%m.shizuku pingBinder"
         xb.c["shizukuCheckPermission"] = "%m.shizuku checkSelfPermission"
+        xb.c["shizukuGetVersion"] = "%m.shizuku getVersion"
+        xb.c["shizukuGetUid"] = "%m.shizuku getUid"        
         xb.c["shizukuRequestPermission"] = "%m.shizuku requestPermission requestCode %d"
     }
 }
