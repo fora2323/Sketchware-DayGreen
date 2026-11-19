@@ -591,6 +591,10 @@ public class Lx {
                     "final double _acc = _param1.getAccuracy();\r\n" +
                     eventLogic + "\r\n" +
                     "}";
+            case "onRequestPermissionResult" -> "@Override\r\n" +
+                    "public void onRequestPermissionResult(int requestCode, int grantResult) {\r\n" +
+                    eventLogic + "\r\n" +
+                    "}";                    
             default -> ManageEvent.f(targetId, eventName, eventLogic);
         };
     }
@@ -1801,6 +1805,10 @@ public class Lx {
                         "};\r\n"
                         + componentName + ".addChildEventListener(" + childEventListenerName + ");";
             }
+            case "shizukuPermissionListener" ->
+                    componentName + ".addRequestPermissionResultListener(new Shizuku.OnRequestPermissionResultListener() {\r\n" +
+                            eventLogic + "\r\n" +
+                            "});";            
             default -> ManageEvent.g(eventName, componentName, eventLogic);
         };
     }

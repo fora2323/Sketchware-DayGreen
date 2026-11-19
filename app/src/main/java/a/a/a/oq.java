@@ -22,9 +22,7 @@ public class oq {
     @DrawableRes
     public static int getEventIconResource(String eventName) {
         return switch (eventName) {
-            case "initializeLogic", "onBackPressed", "onPostCreate", "onStart", "onStop",
-                 "onDestroy", "onResume", "onPause", "moreBlock" ->
-                    R.drawable.bg_event_type_activity;
+            case "initializeLogic", "onBackPressed", "onPostCreate", "onStart", "onStop", "onDestroy", "onResume", "onPause", "moreBlock" -> R.drawable.bg_event_type_activity;
             case "onBannerAdClicked", "onClick" -> R.drawable.ic_mtrl_touch;
             case "onCheckedChange" -> R.drawable.ic_mtrl_checkbox;
             case "onItemSelected" -> R.drawable.ic_mtrl_pull_down;
@@ -32,8 +30,7 @@ public class oq {
             case "onItemLongClicked" -> R.drawable.ic_mtrl_touch_long;
             case "onTextChanged" -> R.drawable.ic_mtrl_text_change;
             case "onPageStarted" -> R.drawable.ic_mtrl_progress;
-            case "onPageFinished", "onAdShowedFullScreenContent", "onBannerAdOpened" ->
-                    R.drawable.ic_mtrl_preview;
+            case "onPageFinished", "onAdShowedFullScreenContent", "onBannerAdOpened" -> R.drawable.ic_mtrl_preview;
             case "onProgressChanged" -> R.drawable.ic_mtrl_progress_check;
             case "onStartTrackingTouch" -> R.drawable.ic_mtrl_track_started;
             case "onStopTrackingTouch" -> R.drawable.ic_mtrl_target;
@@ -53,13 +50,9 @@ public class oq {
             case "onResetPasswordEmailSent" -> R.drawable.ic_mtrl_reset;
             case "onSensorChanged", "onResponse" -> R.drawable.ic_mtrl_sensor;
             case "onAccuracyChanged" -> R.drawable.ic_mtrl_center;
-            case "onInterstitialAdLoaded", "onBannerAdLoaded", "onRewardAdLoaded" ->
-                    R.drawable.ic_mtrl_loaded;
-            case "onBannerAdFailedToLoad", "onInterstitialAdFailedToLoad",
-                 "onAdFailedToShowFullScreenContent", "onRewardAdFailedToLoad", "onFailure" ->
-                    R.drawable.ic_mtrl_load_failed;
-            case "onAdDismissedFullScreenContent", "onBannerAdClosed" ->
-                    R.drawable.ic_mtrl_preview_off;
+            case "onInterstitialAdLoaded", "onBannerAdLoaded", "onRewardAdLoaded" -> R.drawable.ic_mtrl_loaded;
+            case "onBannerAdFailedToLoad", "onInterstitialAdFailedToLoad", "onAdFailedToShowFullScreenContent", "onRewardAdFailedToLoad", "onFailure" -> R.drawable.ic_mtrl_load_failed;
+            case "onAdDismissedFullScreenContent", "onBannerAdClosed" -> R.drawable.ic_mtrl_preview_off;
             case "onUploadProgress" -> R.drawable.ic_mtrl_uploading;
             case "onDownloadProgress" -> R.drawable.ic_mtrl_downloading;
             case "onUploadSuccess" -> R.drawable.ic_mtrl_uploaded;
@@ -117,11 +110,9 @@ public class oq {
             case "onSensorChanged" -> Helper.getResString(R.string.event_onsensorchanged);
             case "onCreateUserComplete" -> Helper.getResString(R.string.event_oncreateusercomplete);
             case "onSignInUserComplete" -> Helper.getResString(R.string.event_onsigninusercomplete);
-            case "onResetPasswordEmailSent" ->
-                    Helper.getResString(R.string.event_onresetpasswordemailsent);
+            case "onResetPasswordEmailSent" -> Helper.getResString(R.string.event_onresetpasswordemailsent);
             case "onInterstitialAdLoaded" -> Helper.getResString(R.string.event_onadloaded);
-            case "onInterstitialAdFailedToLoad" ->
-                    Helper.getResString(R.string.event_onadfailedtoload);
+            case "onInterstitialAdFailedToLoad" -> Helper.getResString(R.string.event_onadfailedtoload);
             case "onBannerAdOpened" -> Helper.getResString(R.string.event_onadopened);
             case "onBannerAdClosed" -> Helper.getResString(R.string.event_onadclosed);
             case "onUploadProgress" -> Helper.getResString(R.string.event_onuploadprogress);
@@ -229,6 +220,10 @@ public class oq {
             eventList.add("onLocationChanged");
         }
 
+        if (classInfo.a("Shizuku")) {
+            eventList.add("shizukuPermissionListener");
+        }
+
         return eventList.toArray(new String[0]);
     }
 
@@ -326,6 +321,10 @@ public class oq {
             eventList.add("locationListener");
         }
 
+        if (classInfo.a("Shizuku")) {
+            eventList.add("shizukuPermissionListener");
+        }
+
         return eventList.toArray(new String[0]);
     }
 
@@ -417,6 +416,7 @@ public class oq {
             case "onMapReadyCallback" -> eventList.add("onMapReady");
             case "onMapMarkerClickListener" -> eventList.add("onMarkerClicked");
             case "locationListener" -> eventList.add("onLocationChanged");
+            case "shizukuPermissionListener" -> eventList.add("onRequestPermissionResult");            
         }
 
         return eventList.toArray(new String[0]);

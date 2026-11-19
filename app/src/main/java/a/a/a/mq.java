@@ -751,6 +751,10 @@ public class mq {
                 importList.add("com.google.android.gms.ads.rewarded.RewardedAdLoadCallback");
                 return importList;
 
+            case "shizukuPermissionListener":
+                importList.add("rikka.shizuku.Shizuku");
+                return importList;
+
             case "onSeekBarChangeListener":
             case "onDateChangeListener":
             default:

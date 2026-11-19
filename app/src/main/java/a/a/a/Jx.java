@@ -121,11 +121,6 @@ public class Jx {
 		return Lx.j(new Fx(projectFileBean.getActivityName(), buildConfig, blocks, isViewBindingEnabled).a(), false);
 	}
 	
-	public String shizukuOnRequestPermissionResult() {
-		ArrayList<BlockBean> blocks = jC.a(projectDataManager.a).a(projectFileBean.getJavaName(), "shizukuOnRequestPermissionResult_shizukuOnRequestPermissionResult");
-		return Lx.j(new Fx(projectFileBean.getActivityName(), buildConfig, blocks, isViewBindingEnabled).a(), false);
-	}
-	
 	public String initializeLogic() {
 		ArrayList<BlockBean> blocks = jC.a(projectDataManager.a).a(projectFileBean.getJavaName(), "initializeLogic_initializeLogic");
 		return Lx.j(new Fx(projectFileBean.getActivityName(), buildConfig, blocks, isViewBindingEnabled).a(), false);
@@ -640,18 +635,6 @@ public class Jx {
 						sb.append("// We recommend removing this method after testing and instead use In-App Messages to prompt for notification permission.").append(EOL);
 						sb.append("OneSignal.getNotifications().requestPermission(false, Continue.none());").append(EOL);
 						
-					}
-				}
-				
-				if (DRFeatureManager.isShizukuEnabled(sc_id, projectFileBean.fileName)) {
-					String shizukuListenerLogic = shizukuOnRequestPermissionResult();
-					if (!shizukuListenerLogic.isEmpty()) {
-						sb.append("Shizuku.addRequestPermissionResultListener(new Shizuku.OnRequestPermissionResultListener() {").append(EOL);
-						sb.append("@Override").append(EOL);
-						sb.append("public void onRequestPermissionResult(int requestCode, int grantResult) {").append(EOL);
-						sb.append(shizukuListenerLogic).append(EOL);
-						sb.append("}").append(EOL);
-						sb.append("});").append(EOL);
 					}
 				}
 			}

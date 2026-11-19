@@ -108,9 +108,6 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 		eventsToAdd.clear();
 		
 		for (var activityEvent : oq.getAllActivityEvents()) {
-			if (activityEvent.equals("shizukuOnRequestPermissionResult") && !DRFeatureManager.isShizukuEnabled(sc_id, projectFile.fileName)) {
-				continue;
-			}
 			boolean exists = false;
 			for (var existingEvent : jC.a(sc_id).g(projectFile.getJavaName())) {
 				if (existingEvent.eventType == EventBean.EVENT_TYPE_ACTIVITY && activityEvent.equals(existingEvent.eventName)) {
