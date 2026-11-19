@@ -27,8 +27,8 @@ object DRGradleManager {
             content.append("implementation 'jp.wasabeef:glide-transformations:4.3.0'\r\n")
 
         if (DRFeatureManager.isShizukuEnabled(DRProjectTracker.currentprojectID, null)) {
-            content.append("implementation 'dev.rikka.shizuku:api:13.0.0\r\n")
-            content.append("implementation 'dev.rikka.shizuku:provider:13.0.0\r\n")
+            content.append("implementation 'dev.rikka.shizuku:api:13.0.0'\r\n")
+            content.append("implementation 'dev.rikka.shizuku:provider:13.0.0'\r\n")
         }
 
         if (DRFeatureManager.isAndroidBillingEnabled(DRProjectTracker.currentprojectID, null))

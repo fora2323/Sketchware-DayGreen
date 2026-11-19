@@ -1063,9 +1063,6 @@ public class ProjectBuilder {
                 if (DRFeatureManager.isGoogleAnalyticsEnabled(Configs.currentProjectID))
                     builtInLibraryManager.addLibrary(BuiltInLibraries.COM_GOOGLE_ANDROID_GMS_PLAY_SERVICES_MEASUREMENT_API);
 
-                if (DRFeatureManager.isShizukuEnabled(Configs.currentProjectID, null))
-                    builtInLibraryManager.addLibrary(BuiltInLibraries.DEV_RIKKA_SHIZUKU_PROVIDER);
-
                 if (DRFeatureManager.isAndroidBillingEnabled(Configs.currentProjectID, null))
                     builtInLibraryManager.addLibrary(BuiltInLibraries.ANDROID_BILLING);
 
@@ -1080,6 +1077,11 @@ public class ProjectBuilder {
 
                 }
             }
+        }
+
+        if (DRFeatureManager.isShizukuEnabled(Configs.currentProjectID, null)) {
+            builtInLibraryManager.addLibrary(BuiltInLibraries.DEV_RIKKA_SHIZUKU_API);
+            builtInLibraryManager.addLibrary(BuiltInLibraries.DEV_RIKKA_SHIZUKU_PROVIDER);
         }
 
         if (DRFeatureManager.isGlidetransformationsEnabled(Configs.currentProjectID, null))

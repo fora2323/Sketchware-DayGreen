@@ -1208,6 +1208,9 @@ public class Lx {
 
             case "BluetoothConnect":
                 return componentName + " = new BluetoothConnect(this);";
+                
+            case "IDShizuku":
+                return componentName + " = new IDShizuku(this);";
 
             case "LocationManager":
                 return componentName + " = (LocationManager) getSystemService(Context.LOCATION_SERVICE);";
