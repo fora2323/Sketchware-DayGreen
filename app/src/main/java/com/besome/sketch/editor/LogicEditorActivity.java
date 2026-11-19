@@ -230,6 +230,9 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                         runOnUiThread(() -> block.b(nextBlock));
                     }
                     for (int i = 0; i < next2.parameters.size(); i++) {
+                        if (i >= block.V.size()) {
+                            break;
+                        }
                         String parameter = next2.parameters.get(i);
                         if (parameter != null && !parameter.isEmpty()) {
                             if (parameter.charAt(0) == '@') {

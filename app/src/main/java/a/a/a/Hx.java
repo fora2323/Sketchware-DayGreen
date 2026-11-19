@@ -406,6 +406,15 @@ public class Hx {
                     }
                 }
 
+                // Event yang tersimpan dengan nama listener (mis. shizukuPermissionListener)
+                if (listener.listenerName.equals(eventName)) {
+                    for (ActivityEvent activityEvent : listener.activityEvents) {
+                        activityEvent.setLogic(eventLogic);
+                        activityEvent.setTargetId(targetId);
+                    }
+                    listener.isInitialized = true;
+                }
+
                 if (listener.isInitialized) {
                     hx.imports.addAll(mq.d(listener.listenerName));
                 }
