@@ -1,4 +1,4 @@
-package extensions.fora2323.daygreen.blocks
+package org.sketchware.daygreen.blocks
 
 import com.besome.sketch.editor.LogicEditorActivity
 import pro.sketchware.R
@@ -43,8 +43,9 @@ object IDBlockShizuku {
     @JvmStatic
     fun addPaletteBlocks(logicEditor: LogicEditorActivity) {
         logicEditor.a("Shizuku", getTitleBgColor(logicEditor))
-        logicEditor.a("b", "shizukuPingBinder")
-        logicEditor.a("b", "shizukuCheckPermission")
-        logicEditor.a(" ", "shizukuRequestPermission")
+        // Argumen pertama = teks block (spec), harus sama dengan spec di addBlocks
+        logicEditor.a("Shizuku pingBinder", "b", "shizukuPingBinder")
+        logicEditor.a("Shizuku checkSelfPermission", "b", "shizukuCheckPermission")
+        logicEditor.a("Shizuku requestPermission requestCode %d", " ", "shizukuRequestPermission")
     }
 }

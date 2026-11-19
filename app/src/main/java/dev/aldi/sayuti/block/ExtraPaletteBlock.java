@@ -25,7 +25,7 @@ import a.a.a.kq;
 import extensions.anbui.daydream.blocks.DRPaletteBlock;
 import extensions.anbui.daydream.library.DRFeatureManager;
 
-import extensions.fora2323.daygreen.blocks.IDBlockShizuku;
+import org.sketchware.daygreen.blocks.IDBlockShizuku;
 
 import mod.agus.jcoderz.beans.ViewBeans;
 import mod.hey.studios.editor.view.IdGenerator;

@@ -1,6 +1,6 @@
 package extensions.anbui.daydream.blocks
 
-import extensions.fora2323.daygreen.blocks.IDBlockShizuku
+import org.sketchware.daygreen.blocks.IDBlockShizuku
 
 object DRBlockHandler {
     @JvmStatic
