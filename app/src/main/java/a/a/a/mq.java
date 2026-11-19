@@ -85,10 +85,10 @@ public class mq {
             case ComponentBean.COMPONENT_TYPE_TIME_PICKER_DIALOG -> "TimePickerDialog";
             case ComponentBean.COMPONENT_TYPE_NOTIFICATION -> "Notification";
             case ComponentBean.COMPONENT_TYPE_FRAGMENT_ADAPTER -> "FragmentStatePagerAdapter";
-            case ComponentBean.COMPONENT_TYPE_FIREBASE_AUTH_PHONE ->
-                    "PhoneAuthProvider.OnVerificationStateChangedCallbacks";
+            case ComponentBean.COMPONENT_TYPE_FIREBASE_AUTH_PHONE -> "PhoneAuthProvider.OnVerificationStateChangedCallbacks";
             case ComponentBean.COMPONENT_TYPE_FIREBASE_CLOUD_MESSAGE -> "FirebaseCloudMessage";
             case ComponentBean.COMPONENT_TYPE_FIREBASE_AUTH_GOOGLE_LOGIN -> "GoogleSignInClient";
+            case ComponentBean.COMPONENT_TYPE_SHIZUKU -> "IDShizuku";
             default -> ComponentsHandler.var(componentId);
         };
     }
@@ -220,6 +220,7 @@ public class mq {
             case "signinbutton" -> "SignInButton";
             case "materialButton" -> "MaterialButton";
             case "fragmentAdapter" -> "FragmentAdapter";
+            case "Shizuku", "shizuku" -> "IDShizuku";            
             default -> DefaultExtraMenuBean.getName(name);
         };
     }
