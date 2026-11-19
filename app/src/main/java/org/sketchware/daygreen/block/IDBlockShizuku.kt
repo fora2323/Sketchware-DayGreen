@@ -20,28 +20,28 @@ object IDBlockShizuku {
         var hashMap: HashMap<String, Any> = HashMap()
         hashMap["name"] = "shizukuPingBinder"
         hashMap["type"] = "b"
-        hashMap["code"] = "Shizuku.pingBinder()"
+        hashMap["code"] = "%s.pingBinder()"
         hashMap["color"] = "#00A9D0"
         hashMap["palette"] = "-1"
-        hashMap["spec"] = "Shizuku pingBinder"
+        hashMap["spec"] = "%m.shizuku pingBinder"
         arrayList.add(hashMap)
 
         hashMap = HashMap()
         hashMap["name"] = "shizukuCheckPermission"
         hashMap["type"] = "b"
-        hashMap["code"] = "Shizuku.checkSelfPermission()"
+        hashMap["code"] = "%s.checkSelfPermission()"
         hashMap["color"] = "#00A9D0"
         hashMap["palette"] = "-1"
-        hashMap["spec"] = "Shizuku checkSelfPermission"
+        hashMap["spec"] = "%m.shizuku checkSelfPermission"
         arrayList.add(hashMap)
 
         hashMap = HashMap()
         hashMap["name"] = "shizukuRequestPermission"
         hashMap["type"] = " "
-        hashMap["code"] = "Shizuku.requestPermission((int)%s);"
+        hashMap["code"] = "%s.requestPermission((int)%s);"
         hashMap["color"] = "#00A9D0"
         hashMap["palette"] = "-1"
-        hashMap["spec"] = "Shizuku requestPermission requestCode %d"
+        hashMap["spec"] = "%m.shizuku requestPermission requestCode %d"
         arrayList.add(hashMap)
     }
 
@@ -55,14 +55,14 @@ object IDBlockShizuku {
     }
 
     /**
-     * Label diambil dari map xB.c berdasarkan opCode. Block Shizuku tidak ada di map bawaan,
-     * jadi didaftarkan manual. Panggil xB.a dulu supaya tabel bawaan terisi sebelum ditambah.
+     * Label diambil dari map xB.c berdasarkan opCode. Token %m.shizuku membuat dropdown
+     * pemilih component, sama seperti %m.intent pada block Intent.
      */
     private fun registerLabels(context: Context) {
         val xb = xB.b()
         xb.a(context, "shizukuPingBinder")
-        xb.c["shizukuPingBinder"] = "Shizuku pingBinder"
-        xb.c["shizukuCheckPermission"] = "Shizuku checkSelfPermission"
-        xb.c["shizukuRequestPermission"] = "Shizuku requestPermission requestCode %d"
+        xb.c["shizukuPingBinder"] = "%m.shizuku pingBinder"
+        xb.c["shizukuCheckPermission"] = "%m.shizuku checkSelfPermission"
+        xb.c["shizukuRequestPermission"] = "%m.shizuku requestPermission requestCode %d"
     }
 }

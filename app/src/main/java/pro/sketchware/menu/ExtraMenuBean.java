@@ -305,6 +305,11 @@ public class ExtraMenuBean {
                 menus = new ArrayList<>(Arrays.asList(uq.b()));
                 break;
 
+            case "shizuku":
+                title = "Select a Shizuku Component";
+                menus = getComponentMenus(ComponentBean.COMPONENT_TYPE_SHIZUKU);
+                break;
+
             case "intentFlags":
                 title = logicEditor.getString(R.string.logic_editor_title_select_component_intent_flags);
                 menus = new ArrayList<>(Arrays.asList(uq.c()));
