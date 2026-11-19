@@ -361,6 +361,7 @@ public class ManageEvent {
             case "onCompleteRegister" -> R.drawable.ic_mtrl_user_register_complete;
             case "onUpdatePasswordComplete" -> R.drawable.ic_mtrl_password;
             case "onUserEarnedReward" -> R.drawable.ic_mtrl_payment;
+            case "shizukuPermissionListener" -> R.drawable.ic_mtrl_add;
             default -> EventsHandler.getIcon(str);
         };
     }
