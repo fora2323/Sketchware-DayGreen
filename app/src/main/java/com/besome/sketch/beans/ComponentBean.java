@@ -51,6 +51,7 @@ public class ComponentBean extends CollapsibleBean implements Parcelable {
     public static final int COMPONENT_TYPE_NOTIFICATION = 26;
     public static final int COMPONENT_TYPE_FRAGMENT_ADAPTER = 27;
     public static final int COMPONENT_TYPE_FIREBASE_AUTH_PHONE = 28;
+    public static final int COMPONENT_TYPE_SHIZUKU = 29;    
     public static final int COMPONENT_TYPE_FIREBASE_CLOUD_MESSAGE = 30;
     public static final int COMPONENT_TYPE_FIREBASE_AUTH_GOOGLE_LOGIN = 31;
 
@@ -139,8 +140,9 @@ public class ComponentBean extends CollapsibleBean implements Parcelable {
             case COMPONENT_TYPE_INTERSTITIAL_AD, COMPONENT_TYPE_REQUEST_NETWORK,
                  COMPONENT_TYPE_TEXT_TO_SPEECH, COMPONENT_TYPE_SPEECH_TO_TEXT,
                  COMPONENT_TYPE_BLUETOOTH_CONNECT, COMPONENT_TYPE_LOCATION_MANAGER ->
-                // sad :c
                     "";
+            case COMPONENT_TYPE_SHIZUKU ->
+                    "";                 
             case COMPONENT_TYPE_FIREBASE_STORAGE ->
                     "https://docs.sketchware.io/docs/component-firebase-storage.html";
             case COMPONENT_TYPE_CAMERA -> "https://docs.sketchware.io/docs/component-camera.html";
@@ -185,6 +187,7 @@ public class ComponentBean extends CollapsibleBean implements Parcelable {
             case COMPONENT_TYPE_FIREBASE_AUTH_PHONE -> "PhoneAuth";
             case COMPONENT_TYPE_FIREBASE_CLOUD_MESSAGE -> "Cloud Message";
             case COMPONENT_TYPE_FIREBASE_AUTH_GOOGLE_LOGIN -> "Google Login";
+            case COMPONENT_TYPE_SHIZUKU -> "Shizuku";            
             default -> ComponentsHandler.name(type);
         };
     }
@@ -221,6 +224,7 @@ public class ComponentBean extends CollapsibleBean implements Parcelable {
             case "FirebasePhoneAuth" -> COMPONENT_TYPE_FIREBASE_AUTH_PHONE;
             case "FirebaseCloudMessage" -> COMPONENT_TYPE_FIREBASE_CLOUD_MESSAGE;
             case "FirebaseGoogleLogin" -> COMPONENT_TYPE_FIREBASE_AUTH_GOOGLE_LOGIN;
+            case "Shizuku" -> COMPONENT_TYPE_SHIZUKU;            
             default -> ComponentsHandler.id(typeName);
         };
     }
@@ -257,6 +261,7 @@ public class ComponentBean extends CollapsibleBean implements Parcelable {
             case COMPONENT_TYPE_FIREBASE_AUTH_PHONE -> "FirebasePhoneAuth";
             case COMPONENT_TYPE_FIREBASE_CLOUD_MESSAGE -> "FirebaseCloudMessage";
             case COMPONENT_TYPE_FIREBASE_AUTH_GOOGLE_LOGIN -> "FirebaseGoogleLogin";
+            case COMPONENT_TYPE_SHIZUKU -> "Shizuku";            
             default -> ComponentsHandler.typeName(type);
         };
     }
@@ -272,8 +277,7 @@ public class ComponentBean extends CollapsibleBean implements Parcelable {
             case COMPONENT_TYPE_CALENDAR -> R.string.component_description_calendar;
             case COMPONENT_TYPE_VIBRATOR -> R.string.component_description_vibrator;
             case COMPONENT_TYPE_TIMERTASK -> R.string.component_description_timer;
-            case COMPONENT_TYPE_FIREBASE ->
-                    R.string.design_library_firebase_description_about_firebase;
+            case COMPONENT_TYPE_FIREBASE -> R.string.design_library_firebase_description_about_firebase;
             case COMPONENT_TYPE_DIALOG -> R.string.component_description_dialog;
             case COMPONENT_TYPE_MEDIAPLAYER -> R.string.component_description_mediaplayer;
             case COMPONENT_TYPE_SOUNDPOOL -> R.string.component_description_soundpool;
@@ -287,21 +291,18 @@ public class ComponentBean extends CollapsibleBean implements Parcelable {
             case COMPONENT_TYPE_REQUEST_NETWORK -> R.string.component_description_request_network;
             case COMPONENT_TYPE_TEXT_TO_SPEECH -> R.string.component_description_text_to_speech;
             case COMPONENT_TYPE_SPEECH_TO_TEXT -> R.string.component_description_speech_to_text;
-            case COMPONENT_TYPE_BLUETOOTH_CONNECT ->
-                    R.string.component_description_bluetooth_connect;
+            case COMPONENT_TYPE_BLUETOOTH_CONNECT -> R.string.component_description_bluetooth_connect;
             case COMPONENT_TYPE_LOCATION_MANAGER -> R.string.component_description_location_manager;
             case COMPONENT_TYPE_REWARDED_VIDEO_AD -> R.string.component_description_video_ad;
             case COMPONENT_TYPE_PROGRESS_DIALOG -> R.string.component_description_progress_dialog;
-            case COMPONENT_TYPE_DATE_PICKER_DIALOG ->
-                    R.string.component_description_date_picker_dialog;
-            case COMPONENT_TYPE_TIME_PICKER_DIALOG ->
-                    R.string.component_description_time_picker_dialog;
+            case COMPONENT_TYPE_DATE_PICKER_DIALOG -> R.string.component_description_date_picker_dialog;
+            case COMPONENT_TYPE_TIME_PICKER_DIALOG -> R.string.component_description_time_picker_dialog;
             case COMPONENT_TYPE_NOTIFICATION -> R.string.component_description_notification;
             case COMPONENT_TYPE_FRAGMENT_ADAPTER -> R.string.component_description_fragment_adapter;
             case COMPONENT_TYPE_FIREBASE_AUTH_PHONE -> R.string.component_description_fb_phone_auth;
             case COMPONENT_TYPE_FIREBASE_CLOUD_MESSAGE -> R.string.component_description_fb_fcm;
-            case COMPONENT_TYPE_FIREBASE_AUTH_GOOGLE_LOGIN ->
-                    R.string.component_description_fb_google;
+            case COMPONENT_TYPE_FIREBASE_AUTH_GOOGLE_LOGIN -> R.string.component_description_fb_google;
+            case COMPONENT_TYPE_SHIZUKU -> R.string.component_description_shizuku;            
             default -> 0;
         };
     }
@@ -338,6 +339,7 @@ public class ComponentBean extends CollapsibleBean implements Parcelable {
             case COMPONENT_TYPE_FIREBASE_AUTH_PHONE -> R.drawable.ic_mtrl_firebase_sms;
             case COMPONENT_TYPE_FIREBASE_CLOUD_MESSAGE -> R.drawable.ic_mtrl_firebase_cloud;
             case COMPONENT_TYPE_FIREBASE_AUTH_GOOGLE_LOGIN -> R.drawable.ic_mtrl_firebase_google;
+            case COMPONENT_TYPE_SHIZUKU -> R.drawable.ic_shizuku;            
             case 36 -> R.drawable.ic_mtrl_sync;
 
             default -> ComponentsHandler.icon(type);
@@ -376,6 +378,7 @@ public class ComponentBean extends CollapsibleBean implements Parcelable {
             case COMPONENT_TYPE_FIREBASE_AUTH_PHONE -> "FirebasePhoneAuth";
             case COMPONENT_TYPE_FIREBASE_CLOUD_MESSAGE -> "FirebaseCloudMessage";
             case COMPONENT_TYPE_FIREBASE_AUTH_GOOGLE_LOGIN -> "FirebaseGoogleLogin";
+            case COMPONENT_TYPE_SHIZUKU -> "Shizuku";            
             default -> ComponentsHandler.getBuildClassById(type);
         };
         classInfo = new Gx(typeName);

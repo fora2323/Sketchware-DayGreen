@@ -17,6 +17,7 @@
     <string name="design_tabs_empty_error">Select at least one tab</string>
     <string name="donation_title">Support</string>
     <string name="donation_subtitle">Help support the developer.</string>
+    <string name="component_description_shizuku">Shizuku lets apps use system APIs with elevated privileges. Requires AppCompat and min SDK 24 or newer.</string>    
     <!--link new-->
     <string name="link_github_release">https://github.com/fora2323/Sketchware-DayGreen/releases</string>
     <string name="link_whatsapp_channel">https://whatsapp.com/channel/0029VbB9HaBCnA7s3RCXsR1o</string>

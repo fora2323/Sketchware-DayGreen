@@ -1194,7 +1194,7 @@ public class ExtraPaletteBlock {
                     logicEditor.a(" ", "progressdialogShow");
                     logicEditor.a(" ", "progressdialogDismiss");
                 }
-                if (DRFeatureManager.isShizukuEnabled(sc_id, projectFile.fileName)) {
+                if (extraBlocks.isComponentUsed(ComponentBean.COMPONENT_TYPE_SHIZUKU)) {
                     IDBlockShizuku.addPaletteBlocks(logicEditor);
                 }
                 return;

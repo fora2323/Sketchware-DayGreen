@@ -92,6 +92,9 @@ public class AddComponentBottomSheet extends BottomSheetDialogFragment {
         componentList.add(new ComponentBean(ComponentBean.COMPONENT_TYPE_FIREBASE_AUTH_PHONE));
         componentList.add(new ComponentBean(ComponentBean.COMPONENT_TYPE_FIREBASE_CLOUD_MESSAGE));
         componentList.add(new ComponentBean(ComponentBean.COMPONENT_TYPE_FIREBASE_AUTH_GOOGLE_LOGIN));
+        
+        // Shizuku
+        componentList.add(new ComponentBean(ComponentBean.COMPONENT_TYPE_SHIZUKU));        
 
         ComponentsHandler.add(componentList);
     }

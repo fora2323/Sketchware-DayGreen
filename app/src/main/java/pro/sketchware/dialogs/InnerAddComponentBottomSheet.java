@@ -28,6 +28,9 @@ import a.a.a.bB;
 import a.a.a.jC;
 import a.a.a.mB;
 import a.a.a.uq;
+import extensions.anbui.daydream.project.ProjectConfigs;
+import extensions.anbui.daydream.project.ProjectLibrary;
+
 import mod.hey.studios.util.Helper;
 import mod.hilal.saif.components.ComponentsHandler;
 import pro.sketchware.R;
@@ -251,6 +254,14 @@ public class InnerAddComponentBottomSheet extends BottomSheetDialogFragment {
                     return false;
                 }
                 jC.a(scId).a(projectFileBean.getJavaName(), componentType, componentId, Helper.getText(binding.edInputFilePicker));
+                break;
+
+            case ComponentBean.COMPONENT_TYPE_SHIZUKU:
+                if (!ProjectLibrary.isEnabledAppCompat(scId) || !ProjectConfigs.isMinSDKNewerThan23(scId)) {
+                    bB.b(getContext(), "Shizuku requires AppCompat enabled and min SDK 24 or newer.", bB.TOAST_WARNING).show();
+                    return false;
+                }
+                jC.a(scId).a(projectFileBean.getJavaName(), componentType, componentId);
                 break;
 
             default:
