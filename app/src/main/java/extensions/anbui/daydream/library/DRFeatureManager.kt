@@ -1,5 +1,7 @@
 package extensions.anbui.daydream.library
 
+import a.a.a.jC
+import com.besome.sketch.beans.ComponentBean
 import extensions.anbui.daydream.project.ProjectLogic
 import extensions.anbui.daydream.settings.DayDreamProjectSettings
 
@@ -216,16 +218,18 @@ object DRFeatureManager {
 
     @JvmStatic
     fun isShizukuEnabled(projectID: String, activityName: String?): Boolean {
-        if (DayDreamProjectSettings.isEnableDayDream(projectID)) {
-            return DayDreamProjectSettings.isUseShizuku(projectID)
-                    && LibraryUtils.isAllowUseShizuku(projectID)
-                    && if (activityName.isNullOrEmpty())
-                true
-            else
-                DayDreamProjectSettings.isImportShizuku(projectID, activityName)
-        }
+        if (!LibraryUtils.isAllowUseShizuku(projectID)) return false
+        return hasShizukuComponent(projectID, activityName)
+    }
 
-        return false
+    private fun hasShizukuComponent(projectID: String, activityName: String?): Boolean {
+        val files = jC.b(projectID).b()
+        val targets = if (activityName.isNullOrEmpty()) files else files.filter { 
+            it.fileName == activityName 
+        }
+        return targets.any { file ->
+            jC.a(projectID).e(file.javaName).any { it.type == ComponentBean.COMPONENT_TYPE_SHIZUKU }
+        }
     }
 
     @JvmStatic
