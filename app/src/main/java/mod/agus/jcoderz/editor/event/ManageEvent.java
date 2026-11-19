@@ -402,6 +402,7 @@ public class ManageEvent {
                  "onCodeSent", "onTimeChanged", "onUpdatePasswordComplete",
                  "onAdDismissedFullScreenContent", "onAdFailedToShowFullScreenContent",
                  "onAdShowedFullScreenContent", "onUserEarnedReward" -> eventName;
+            case "onRequestPermissionResult", "shizukuPermissionListener" -> "Shizuku onRequestPermissionResult";                 
             default -> EventsHandler.getDesc(eventName);
         };
     }
@@ -868,6 +869,7 @@ public class ManageEvent {
             case "onScrollChanged" -> "%d.scrollState";
             case "onBannerAdFailedToLoad", "onRewardAdFailedToLoad", "onInterstitialAdFailedToLoad",
                  "onAdFailedToShowFullScreenContent" -> "%d.errorCode %d.errorMessage";
+            case "onRequestPermissionResult", "shizukuPermissionListener" -> "%d.requestCode %d.grantResult";                 
             default -> EventsHandler.getBlocks(eventName);
         };
     }
@@ -974,6 +976,7 @@ public class ManageEvent {
             case "onBannerAdOpened" -> targetId + ": onAdOpened";
             case "onBannerAdClicked" -> targetId + ": onAdClicked";
             case "onBannerAdClosed" -> targetId + ": onAdClosed";
+            case "onRequestPermissionResult", "shizukuPermissionListener" -> targetId + " onRequestPermissionResult requestCode %d.requestCode grantResult %d.grantResult";            
             default -> EventsHandler.getSpec(targetId, eventName);
         };
     }
