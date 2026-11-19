@@ -479,6 +479,34 @@ public class yq {
             }
         }
     }
+    
+    /**
+     * Generates IDShizuku.java from assets/class/java/shizuku/ while any activity uses a Shizuku component.
+     * Removes the generated file once no activity uses it anymore. Custom user files are never removed.
+     */
+    public void generateShizukuFiles(Context context) {
+        String javaDir = FileUtil.getExternalStorageDir() + "/.sketchware/data/" + sc_id + "/files/java/";
+        String outPath = javaFilesPath + File.separator + packageNameAsFolders + File.separator + "IDShizuku.java";
+
+        String template = fileUtil.b(context, "class" + File.separator + "java" + File.separator + "shizuku" + File.separator + "IDShizuku.java");
+        String generatedContent = PACKAGE_PLACEHOLDER_PATTERN.matcher(template).replaceAll(packageName);
+        File outFile = new File(outPath);
+
+        if (!DRFeatureManager.isShizukuEnabled(sc_id, null)) {
+            // Tidak ada lagi component Shizuku: hapus hanya file hasil generator, bukan file custom
+            if (outFile.exists() && generatedContent.equals(FileUtil.readFile(outPath))) {
+                outFile.delete();
+            }
+            return;
+        }
+
+        if (isCustomJavaClassExist(javaDir, packageName, "IDShizuku")) {
+            mod.jbk.util.LogUtil.d("yq", "Skipping generation of " + packageName + ".IDShizuku (custom file exists)");
+            return;
+        }
+
+        fileUtil.b(outPath, generatedContent);
+    }
 
     /**
      * Writes a project file to its correct location. Java files, for example, get saved to
@@ -774,6 +802,7 @@ public class yq {
      */
     public ArrayList<SrcCodeBean> a(hC projectFileManager, eC projectDataManager, BuiltInLibraryManager builtInLibraryManager) {
         generateDebugFiles(SketchApplication.getContext());
+        generateShizukuFiles(SketchApplication.getContext());
         CommandBlock.x();
 
         String javaDir = FileUtil.getExternalStorageDir() + "/.sketchware/data/" + sc_id + "/files/java/";
