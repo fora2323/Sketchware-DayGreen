@@ -61,6 +61,24 @@ object IDBlockShizuku {
         hashMap["palette"] = "-1"
         hashMap["spec"] = "%m.shizuku requestPermission requestCode %d"
         arrayList.add(hashMap)
+
+        hashMap = HashMap()
+        hashMap["name"] = "shizukuSetCopyFromAsset"
+        hashMap["type"] = " "
+        hashMap["code"] = "%s.setCopyFromAsset(%s, %s, %s);"
+        hashMap["color"] = "#00A9D0"
+        hashMap["palette"] = "-1"
+        hashMap["spec"] = "%m.shizuku setCopyFromAsset %s %s %s"
+        arrayList.add(hashMap)
+
+        hashMap = HashMap()
+        hashMap["name"] = "shizukuSetDeletePath"
+        hashMap["type"] = " "
+        hashMap["code"] = "%s.setDeletePath(%s);"
+        hashMap["color"] = "#00A9D0"
+        hashMap["palette"] = "-1"
+        hashMap["spec"] = "%m.shizuku setDeletePath %s"
+        arrayList.add(hashMap)
     }
 
     @JvmStatic
@@ -72,6 +90,7 @@ object IDBlockShizuku {
         logicEditor.a("d", "shizukuGetVersion")
         logicEditor.a("d", "shizukuGetUid")        
         logicEditor.a(" ", "shizukuRequestPermission")
+        logicEditor.a(" ", "shizukuSetCopyFromAsset")
     }
 
     /**
@@ -86,5 +105,6 @@ object IDBlockShizuku {
         xb.c["shizukuGetVersion"] = "%m.shizuku getVersion"
         xb.c["shizukuGetUid"] = "%m.shizuku getUid"        
         xb.c["shizukuRequestPermission"] = "%m.shizuku requestPermission requestCode %d"
+        xb.c["shizukuSetCopyFromAsset"] = "%m.shizuku setCopyFromAsset %s %s %s"
     }
 }
