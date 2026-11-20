@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="28dp"
+    android:layout_marginEnd="6dp"
+    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+    app:cardCornerRadius="6dp"
+    app:cardElevation="0dp"
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp">
+
+        <ImageView
+            android:id="@+id/iv_attachment_preview"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="6dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_mtrl_folder" />
+
+        <TextView
+            android:id="@+id/tv_attachment_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="middle"
+            android:fontFamily="sans-serif"
+            android:includeFontPadding="false"
+            android:maxWidth="140dp"
+            android:singleLine="true"
+            android:text="File.kt"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="12sp" />
+
+        <ImageView
+            android:id="@+id/btn_attachment_remove"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="6dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="Remove attachment"
+            android:focusable="true"
+            android:padding="2dp"
+            android:src="@drawable/ic_mtrl_close"
+            app:tint="?attr/colorOnSurfaceVariant" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

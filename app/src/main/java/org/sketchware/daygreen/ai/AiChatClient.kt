@@ -2,6 +2,7 @@ package org.sketchware.daygreen.ai
 
 import android.content.Context
 import android.util.Log
+import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -13,20 +14,31 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 class AiChatClient(
-    context: Context,
+    private val context: Context,
     private val scId: String,
-    javaName: String?,
-    xmlName: String? = "main.xml"
+    private val javaName: String,
+    private val xmlName: String
 ) {
-    private val store: AiSettingsStore = AiSettingsStore(context)
-    val javaName: String = javaName ?: "MainActivity"
-    val xmlName: String = xmlName ?: "main.xml"
+
+    private val store = AiSettingsStore(context)
     private val messages = JSONArray()
 
-    class Proposal private constructor(
+    @Volatile
+    private var isCancelled = false
+    @Volatile
+    private var currentCall: Call? = null
+
+    fun cancel() {
+        isCancelled = true
+        try {
+            currentCall?.cancel()
+        } catch (_: Exception) {}
+    }
+
+    class Proposal(
+        val steps: List<AiBlockWriter.Step>?,
         val javaName: String?,
         val eventKey: String?,
-        val steps: List<AiBlockWriter.Step>?,
         val sourceCode: String?,
         val xmlName: String?,
         val layoutXml: String?,
@@ -39,24 +51,22 @@ class AiChatClient(
         val widgetOrientation: String?,
         val summary: String
     ) {
-        val isSource: Boolean get() = sourceCode != null
         val isLayout: Boolean get() = layoutXml != null
+        val isSource: Boolean get() = sourceCode != null
         val isWidget: Boolean get() = widgetType != null
 
         companion object {
             fun blocks(javaName: String, eventKey: String, steps: List<AiBlockWriter.Step>, summary: String): Proposal {
-                return Proposal(javaName, eventKey, steps, null, null, null, null, null, null, null, null, null, null, summary)
+                return Proposal(steps, javaName, eventKey, null, null, null, null, null, null, null, null, null, null, summary)
             }
 
             fun source(javaName: String, eventKey: String, code: String): Proposal {
-                val lines = code.split("\n").size
-                val summary = "Kode sumber langsung ($lines baris) untuk event $eventKey"
-                return Proposal(javaName, eventKey, null, code, null, null, null, null, null, null, null, null, null, summary)
+                val summary = "Write source code to event $eventKey in $javaName"
+                return Proposal(null, javaName, eventKey, code, null, null, null, null, null, null, null, null, null, summary)
             }
 
             fun layout(xmlName: String, xmlContent: String): Proposal {
-                val lines = xmlContent.split("\n").size
-                val summary = "Layout XML ($lines baris) untuk $xmlName"
+                val summary = "Apply layout XML to $xmlName"
                 return Proposal(null, null, null, null, xmlName, xmlContent, null, null, null, null, null, null, null, summary)
             }
 
@@ -64,7 +74,7 @@ class AiChatClient(
                 xmlName: String, widgetType: String, id: String, parentId: String,
                 text: String, width: String, height: String, orientation: String
             ): Proposal {
-                val summary = "Tambah widget $widgetType (id: $id) ke layout $xmlName"
+                val summary = "Add widget $widgetType (id: $id) to layout $xmlName"
                 return Proposal(null, null, null, null, xmlName, null, widgetType, id, parentId, text, width, height, orientation, summary)
             }
         }
@@ -89,39 +99,40 @@ class AiChatClient(
             .build()
 
         private const val DEFAULT_PROMPT =
-            "Anda adalah asisten pengembang aplikasi Android & Sketchware AI di dalam Sketchware DayGreen. " +
-            "Tugas Anda adalah membantu pengguna membuat, merancang layout, menulis kode logic, dan memperbaiki error project. " +
-            "SELALU JAWAB DALAM BAHASA INDONESIA YANG RAMAH DAN JELAS."
+            "You are an expert Android & Sketchware AI developer assistant inside Sketchware DayGreen. " +
+            "Your task is to assist the user in designing layouts, writing logic code, adding blocks, and debugging project errors. " +
+            "ALWAYS RESPOND IN CLEAR, CONCISE ENGLISH."
 
         private const val RULES =
-            "\n\nAturan & Kemampuan Agent:\n" +
+            "\n\nAgent Rules & Capabilities:\n" +
             "1. LOGIC BLOCKS:\n" +
-            "   - Panggil list_event_keys untuk melihat event yang sudah ada block.\n" +
-            "   - Panggil list_events untuk daftar event Activity bawaan.\n" +
-            "   - Panggil read_event_blocks untuk membaca block dalam event sebelum mengubahnya.\n" +
-            "   - Panggil list_blocks untuk mencari opcode dan parameter yang tepat.\n" +
-            "   - Panggil append_blocks untuk menambahkan block ke suatu event.\n" +
-            "   - Jika tidak ada block yang cocok, minta izin pengguna untuk menggunakan 'addSourceDirectly' (propose_source_code).\n" +
+            "   - Call list_event_keys to inspect events that already have blocks.\n" +
+            "   - Call list_events to see available Activity lifecycle events.\n" +
+            "   - Call read_event_blocks to inspect existing blocks before modifying them.\n" +
+            "   - Call list_blocks to search for valid opcodes and parameter types.\n" +
+            "   - Call append_blocks to add blocks to an event.\n" +
+            "   - If no suitable block exists, ask user permission to use 'addSourceDirectly' (propose_source_code).\n" +
             "2. LAYOUT:\n" +
-            "   - Panggil read_layout untuk melihat tampilan dan kode XML layout.\n" +
-            "   - Panggil add_widget untuk menambahkan widget ke layout screen (main.xml).\n" +
-            "   - Panggil apply_layout_xml untuk membuat atau memperbarui seluruh layout XML.\n" +
-            "3. DIAGNOSIS ERROR:\n" +
-            "   - Panggil get_compile_error untuk membaca log error compile terakhir dari compiler.\n" +
-            "   - Panggil analyze_code_bug untuk mendeteksi potensi bug antara kode Java dan layout XML.\n" +
-            "4. Persetujuan pengguna: Semua operasi penulisan (append_blocks, propose_source_code, add_widget, apply_layout_xml) membutuhkan konfirmasi pengguna.\n" +
-            "5. Jawablah selalu dalam bahasa Indonesia."
+            "   - Call read_layout to view the screen layout XML and widget hierarchy.\n" +
+            "   - Call add_widget to insert widgets into the layout screen.\n" +
+            "   - Call apply_layout_xml to create or replace the entire layout XML.\n" +
+            "3. ERROR DIAGNOSIS & FIXING:\n" +
+            "   - Call get_compile_error to read the latest compilation error log from the compiler.\n" +
+            "   - Call analyze_code_bug to detect potential bugs between Java code and layout XML.\n" +
+            "4. User approval: All modification actions (append_blocks, propose_source_code, add_widget, apply_layout_xml) require user confirmation.\n" +
+            "5. Always respond in English."
     }
 
     init {
         try {
             messages.put(message("system", store.getSystemPrompt(DEFAULT_PROMPT) + RULES))
         } catch (e: JSONException) {
-            Log.e(TAG, "Gagal membuat pesan sistem", e)
+            Log.e(TAG, "Failed to initialize system message", e)
         }
     }
 
     fun ask(userText: String, callback: Callback) {
+        isCancelled = false
         Thread { run(userText, callback) }.start()
     }
 
@@ -130,13 +141,13 @@ class AiChatClient(
             val providerIndex = store.providerIndex
             val provider = AiProviders.ALL[providerIndex]
             if (!provider.openAiCompatible) {
-                callback.onError("Provider ${provider.name} belum didukung untuk chat agent.")
+                callback.onError("Provider ${provider.name} is not supported for agent chat.")
                 return
             }
 
             val apiKey = store.getApiKey(providerIndex)
             if (apiKey.isEmpty()) {
-                callback.onError("API key belum diatur. Silakan atur di pengaturan agent.")
+                callback.onError("API key not configured. Please set it in agent settings.")
                 return
             }
 
@@ -148,9 +159,19 @@ class AiChatClient(
 
             val proposals = mutableListOf<Proposal>()
             for (round in 0 until MAX_ROUNDS) {
-                callback.onStatus(if (round == 0) "Sedang berpikir..." else "Lanjut memproses...")
+                if (isCancelled) {
+                    callback.onError("Request canceled.")
+                    return
+                }
+
+                callback.onStatus(if (round == 0) "Thinking..." else "Continuing...")
 
                 val reply = post(provider, apiKey, model)
+                if (isCancelled) {
+                    callback.onError("Request canceled.")
+                    return
+                }
+
                 val assistant = reply.getJSONArray("choices")
                     .getJSONObject(0)
                     .getJSONObject("message")
@@ -170,6 +191,11 @@ class AiChatClient(
                 }
 
                 for (i in 0 until calls.length()) {
+                    if (isCancelled) {
+                        callback.onError("Request canceled.")
+                        return
+                    }
+
                     val call = calls.getJSONObject(i)
                     val fn = call.getJSONObject("function")
                     val name = fn.getString("name")
@@ -178,15 +204,19 @@ class AiChatClient(
                     val result = try {
                         execute(name, JSONObject(fn.getString("arguments")), proposals)
                     } catch (e: Exception) {
-                        Log.e(TAG, "Tool '$name' gagal", e)
-                        "Tool $name gagal: ${e.message}. Periksa argument dan coba lagi."
+                        Log.e(TAG, "Tool '$name' failed", e)
+                        "Tool $name failed: ${e.message}. Check arguments and try again."
                     }
                     messages.put(toolMessage(call.getString("id"), result))
                 }
             }
-            callback.onResult("(Batas langkah tercapai. Coba ajukan pertanyaan lebih spesifik.)", proposals)
+            callback.onResult("(Step limit reached. Please try asking a more specific question.)", proposals)
         } catch (e: Exception) {
-            Log.e(TAG, "Permintaan chat gagal", e)
+            if (isCancelled) {
+                callback.onError("Request canceled.")
+                return
+            }
+            Log.e(TAG, "Chat request failed", e)
             callback.onError(e.message ?: e.toString())
         }
     }
@@ -208,15 +238,15 @@ class AiChatClient(
                     }
                     out.put(o)
                 }
-                if (out.length() == 0) "Tidak ada block yang cocok dengan kata kunci." else out.toString()
+                if (out.length() == 0) "No blocks match the query." else out.toString()
             }
 
             "list_event_keys" -> {
                 if (scId.isEmpty()) {
-                    "ID Project tidak ada."
+                    "Project ID is missing."
                 } else {
                     val keys = AiBlockWriter.listEventKeys(scId, javaName)
-                    if (keys.isEmpty()) "Tidak ada event dengan block di $javaName." else JSONArray(keys).toString()
+                    if (keys.isEmpty()) "No events with blocks in $javaName." else JSONArray(keys).toString()
                 }
             }
 
@@ -230,10 +260,10 @@ class AiChatClient(
 
             "read_event_blocks" -> {
                 if (scId.isEmpty()) {
-                    "ID Project tidak ada."
+                    "Project ID is missing."
                 } else {
                     val eventKey = args.optString("event_key", "")
-                    if (eventKey.isEmpty()) "event_key wajib diisi." else AiBlockWriter.readEventBlocks(scId, javaName, eventKey)
+                    if (eventKey.isEmpty()) "event_key is required." else AiBlockWriter.readEventBlocks(scId, javaName, eventKey)
                 }
             }
 
@@ -258,7 +288,7 @@ class AiChatClient(
                 }
 
                 proposals.add(Proposal.blocks(javaName, eventKey, steps, summary.toString().trim()))
-                "Menunggu persetujuan pengguna."
+                "Pending user approval."
             }
 
             "clear_event_blocks" -> {
@@ -275,12 +305,12 @@ class AiChatClient(
             "propose_source_code" -> {
                 val eventKey = args.optString("event_key", "")
                 val code = args.optString("code", "")
-                if (code.trim().isEmpty()) return "Kode kosong."
-                if (code.length > MAX_SOURCE_CHARS) return "Kode terlalu panjang (maksimal $MAX_SOURCE_CHARS karakter)."
-                if (!AiBlockWriter.isValidEventKey(scId, javaName, eventKey)) return "Event '$eventKey' tidak valid."
+                if (code.trim().isEmpty()) return "Code is empty."
+                if (code.length > MAX_SOURCE_CHARS) return "Code too long (max $MAX_SOURCE_CHARS characters)."
+                if (!AiBlockWriter.isValidEventKey(scId, javaName, eventKey)) return "Event '$eventKey' is invalid."
 
                 proposals.add(Proposal.source(javaName, eventKey, code))
-                "Menunggu persetujuan pengguna untuk memasukkan source code."
+                "Pending user approval to insert source code."
             }
 
             "read_layout" -> {
@@ -299,14 +329,14 @@ class AiChatClient(
                 val orientation = args.optString("orientation", "vertical")
 
                 proposals.add(Proposal.widget(targetXml, widgetType, id, parent, text, width, height, orientation))
-                "Menunggu persetujuan pengguna untuk menambah widget $widgetType ($id)."
+                "Pending user approval to add widget $widgetType ($id)."
             }
 
             "apply_layout_xml" -> {
                 val targetXml = args.optString("xml_name", xmlName)
                 val content = args.getString("xml_content")
                 proposals.add(Proposal.layout(targetXml, content))
-                "Menunggu persetujuan pengguna untuk menerapkan layout XML ke $targetXml."
+                "Pending user approval to apply layout XML to $targetXml."
             }
 
             "get_compile_error" -> {
@@ -317,12 +347,12 @@ class AiChatClient(
                 AiDiagnosticHelper.diagnoseProject(scId, javaName, xmlName)
             }
 
-            else -> "Tool tidak dikenal: $name"
+            else -> "Unknown tool: $name"
         }
     }
 
     private fun disabled(tool: String): String {
-        return "Tool $tool dinonaktifkan di pengaturan agent."
+        return "Tool $tool is disabled in agent settings."
     }
 
     private fun post(provider: AiProviders.Provider, apiKey: String, model: String): JSONObject {
@@ -342,12 +372,18 @@ class AiChatClient(
             .post(body.toString().toRequestBody(JSON_TYPE))
             .build()
 
-        HTTP.newCall(request).execute().use { response ->
-            val text = response.body?.string() ?: ""
-            if (!response.isSuccessful) {
-                throw IOException("HTTP ${response.code}: $text")
+        val call = HTTP.newCall(request)
+        currentCall = call
+        try {
+            call.execute().use { response ->
+                val text = response.body?.string() ?: ""
+                if (!response.isSuccessful) {
+                    throw IOException("HTTP ${response.code}: $text")
+                }
+                return JSONObject(text)
             }
-            return JSONObject(text)
+        } finally {
+            currentCall = null
         }
     }
 
@@ -355,21 +391,21 @@ class AiChatClient(
         val tools = JSONArray()
 
         if (store.isToolEnabled("list_blocks")) {
-            val props = JSONObject().put("query", JSONObject().put("type", "string").put("description", "Kata kunci opcode atau teks block"))
-            tools.put(tool("list_blocks", "Cari block yang tersedia.", props, JSONArray()))
+            val props = JSONObject().put("query", JSONObject().put("type", "string").put("description", "Opcode keyword or block text"))
+            tools.put(tool("list_blocks", "Search available blocks.", props, JSONArray()))
         }
 
         if (store.isToolEnabled("list_event_keys")) {
-            tools.put(tool("list_event_keys", "Daftar event yang sudah berisi block.", JSONObject(), JSONArray()))
+            tools.put(tool("list_event_keys", "List events that contain blocks.", JSONObject(), JSONArray()))
         }
 
         if (store.isToolEnabled("list_events")) {
-            tools.put(tool("list_events", "Daftar event Activity bawaan.", JSONObject(), JSONArray()))
+            tools.put(tool("list_events", "List standard Activity lifecycle events.", JSONObject(), JSONArray()))
         }
 
         if (store.isToolEnabled("read_event_blocks")) {
             val props = JSONObject().put("event_key", JSONObject().put("type", "string").put("description", "Event key"))
-            tools.put(tool("read_event_blocks", "Baca block dalam suatu event.", props, JSONArray().put("event_key")))
+            tools.put(tool("read_event_blocks", "Read blocks within an event.", props, JSONArray().put("event_key")))
         }
 
         if (store.isToolEnabled("append_blocks")) {
@@ -379,27 +415,27 @@ class AiChatClient(
                 .put("required", JSONArray().put("op").put("params"))
 
             val props = JSONObject().put("event_key", JSONObject().put("type", "string")).put("steps", JSONObject().put("type", "array").put("items", stepItem))
-            tools.put(tool("append_blocks", "Tambahkan block ke event.", props, JSONArray().put("event_key").put("steps")))
+            tools.put(tool("append_blocks", "Add blocks to an event.", props, JSONArray().put("event_key").put("steps")))
         }
 
         if (store.isToolEnabled("clear_event_blocks")) {
             val props = JSONObject().put("event_key", JSONObject().put("type", "string").put("description", "Event key"))
-            tools.put(tool("clear_event_blocks", "Hapus semua block di event.", props, JSONArray().put("event_key")))
+            tools.put(tool("clear_event_blocks", "Clear all blocks in an event.", props, JSONArray().put("event_key")))
         }
 
         if (store.isToolEnabled("create_more_block")) {
             val props = JSONObject().put("name", JSONObject().put("type", "string")).put("spec", JSONObject().put("type", "string"))
-            tools.put(tool("create_more_block", "Buat More Block baru.", props, JSONArray().put("name").put("spec")))
+            tools.put(tool("create_more_block", "Create a new More Block.", props, JSONArray().put("name").put("spec")))
         }
 
         if (store.isToolEnabled("propose_source_code")) {
             val props = JSONObject().put("event_key", JSONObject().put("type", "string")).put("code", JSONObject().put("type", "string"))
-            tools.put(tool("propose_source_code", "Ajukan source code langsung (addSourceDirectly).", props, JSONArray().put("event_key").put("code")))
+            tools.put(tool("propose_source_code", "Propose direct source code (addSourceDirectly).", props, JSONArray().put("event_key").put("code")))
         }
 
         if (store.isToolEnabled("read_layout")) {
             val props = JSONObject().put("xml_name", JSONObject().put("type", "string"))
-            tools.put(tool("read_layout", "Baca hirarki widget dan XML layout.", props, JSONArray()))
+            tools.put(tool("read_layout", "Read widget hierarchy and layout XML.", props, JSONArray()))
         }
 
         if (store.isToolEnabled("add_widget")) {
@@ -412,20 +448,20 @@ class AiChatClient(
                 .put("width", JSONObject().put("type", "string"))
                 .put("height", JSONObject().put("type", "string"))
                 .put("orientation", JSONObject().put("type", "string"))
-            tools.put(tool("add_widget", "Tambah widget baru ke layout.", props, JSONArray().put("widget_type")))
+            tools.put(tool("add_widget", "Add a new widget to layout.", props, JSONArray().put("widget_type")))
         }
 
         if (store.isToolEnabled("apply_layout_xml")) {
             val props = JSONObject().put("xml_name", JSONObject().put("type", "string")).put("xml_content", JSONObject().put("type", "string"))
-            tools.put(tool("apply_layout_xml", "Ganti atau buat layout XML.", props, JSONArray().put("xml_content")))
+            tools.put(tool("apply_layout_xml", "Replace or create layout XML.", props, JSONArray().put("xml_content")))
         }
 
         if (store.isToolEnabled("get_compile_error")) {
-            tools.put(tool("get_compile_error", "Dapatkan log error compile terbaru.", JSONObject(), JSONArray()))
+            tools.put(tool("get_compile_error", "Get the latest compile error log.", JSONObject(), JSONArray()))
         }
 
         if (store.isToolEnabled("analyze_code_bug")) {
-            tools.put(tool("analyze_code_bug", "Analisis potensi bug pada project.", JSONObject(), JSONArray()))
+            tools.put(tool("analyze_code_bug", "Analyze potential bugs in project.", JSONObject(), JSONArray()))
         }
 
         return tools

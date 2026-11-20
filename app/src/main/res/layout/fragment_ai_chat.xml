@@ -5,28 +5,27 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Chat messages scroll behind the floating input box -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_chat"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/cv_input"
         android:clipToPadding="false"
         android:paddingStart="12dp"
         android:paddingTop="8dp"
         android:paddingEnd="12dp"
-        android:paddingBottom="8dp" />
+        android:paddingBottom="130dp" />
 
     <ScrollView
         android:id="@+id/ll_empty_state"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@+id/cv_input"
         android:clipToPadding="false"
         android:fillViewport="true"
         android:paddingStart="24dp"
         android:paddingTop="36dp"
         android:paddingEnd="24dp"
-        android:paddingBottom="16dp">
+        android:paddingBottom="130dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -121,7 +120,47 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Bottom Input Container matching Studio Bot screenshot -->
+    <!-- Scroll to bottom pill button matching Image 1 -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btn_scroll_to_bottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/cv_input"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="3dp"
+        app:strokeColor="?attr/colorOutlineVariant"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Scroll to bottom"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_arrow_drop_down_24px"
+                app:tint="?attr/colorOnSurface" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Floating Bottom Input Container -->
     <LinearLayout
         android:id="@+id/cv_input"
         android:layout_width="match_parent"
@@ -161,6 +200,24 @@
                 android:paddingTop="12dp"
                 android:paddingEnd="12dp"
                 android:paddingBottom="10dp">
+
+                <!-- Attachment chips container -->
+                <HorizontalScrollView
+                    android:id="@+id/hsv_attachments"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:overScrollMode="never"
+                    android:scrollbars="none"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:id="@+id/ll_attachments"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal" />
+                </HorizontalScrollView>
 
                 <EditText
                     android:id="@+id/et_input"
@@ -212,7 +269,7 @@
                             app:tint="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
 
-                    <!-- Right: Model Selector & Send Button -->
+                    <!-- Right: Model Selector & Send/Stop Button -->
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -221,23 +278,35 @@
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <com.google.android.material.button.MaterialButton
+                        <!-- Model Selector (no text clipping) -->
+                        <LinearLayout
                             android:id="@+id/btn_model"
-                            style="@style/Widget.Material3.Button.TextButton"
                             android:layout_width="wrap_content"
                             android:layout_height="32dp"
-                            android:minWidth="0dp"
-                            android:paddingStart="8dp"
-                            android:paddingEnd="4dp"
-                            android:text="Gemini 3.5 Flash"
-                            android:textAllCaps="false"
-                            android:textColor="?attr/colorOnSurfaceVariant"
-                            android:textSize="12sp"
-                            app:icon="@drawable/ic_arrow_drop_down_24px"
-                            app:iconGravity="textEnd"
-                            app:iconPadding="2dp"
-                            app:iconSize="16dp"
-                            app:iconTint="?attr/colorOnSurfaceVariant" />
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingStart="6dp"
+                            android:paddingEnd="4dp">
+
+                            <TextView
+                                android:id="@+id/tv_model_name"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:includeFontPadding="false"
+                                android:text="Gemini 3.5 Flash"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:textSize="12sp" />
+
+                            <ImageView
+                                android:layout_width="16dp"
+                                android:layout_height="16dp"
+                                android:layout_marginStart="2dp"
+                                android:src="@drawable/ic_arrow_drop_down_24px"
+                                app:tint="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
 
                         <com.google.android.material.card.MaterialCardView
                             android:layout_width="32dp"

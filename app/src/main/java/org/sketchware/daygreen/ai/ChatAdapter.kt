@@ -118,49 +118,24 @@ class ChatAdapter(
     private fun buildCodePart(inflater: LayoutInflater, parent: ViewGroup, rawLang: String?, code: String): View {
         val view = inflater.inflate(R.layout.item_chat_code, parent, false)
         var lang = rawLang?.trim() ?: ""
-        var fileName = ""
-
         if (lang.contains(" ") || lang.contains(":")) {
             val parts = lang.split(Regex("[:\\s]+"), 2)
             lang = parts[0].trim()
-            if (parts.size > 1) {
-                fileName = parts[1].trim()
-            }
         }
-
-        if (fileName.isEmpty()) {
-            fileName = when (lang.lowercase(Locale.ROOT)) {
-                "kt", "kotlin" -> "Config.kt"
-                "java" -> "MainActivity.java"
-                "xml" -> "activity_main.xml"
-                "json" -> "config.json"
-                "gradle" -> "build.gradle"
-                "log" -> "compile.log"
-                else -> if (lang.isEmpty()) "Code" else lang
-            }
-        }
-
-        val fileTitleTv = view.findViewById<TextView>(R.id.tv_file_title)
-        fileTitleTv?.text = fileName
-
-        val iconView = view.findViewById<ImageView>(R.id.iv_file_icon)
-        iconView?.setImageResource(
-            if (lang.equals("log", ignoreCase = true)) R.drawable.ic_mtrl_bug_report else R.drawable.ic_mtrl_code
-        )
+        val displayLang = if (lang.isEmpty()) "code" else lang.lowercase(Locale.ROOT)
 
         val langTv = view.findViewById<TextView>(R.id.tv_lang)
-        langTv?.text = if (lang.isEmpty()) "code" else lang
+        langTv?.text = displayLang
 
         val codeTv = view.findViewById<TextView>(R.id.tv_code)
         codeTv.text = ChatCodeHighlighter.highlight(code)
 
         val copy = view.findViewById<ImageButton>(R.id.btn_copy)
-        val finalFileName = fileName
         copy.setOnClickListener { v ->
             val ctx = v.context
             val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
             if (cm != null) {
-                cm.setPrimaryClip(ClipData.newPlainText(finalFileName, code))
+                cm.setPrimaryClip(ClipData.newPlainText(displayLang, code))
                 SketchwareUtil.toast("Code copied to clipboard")
             }
         }

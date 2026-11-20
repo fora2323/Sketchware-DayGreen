@@ -6,88 +6,48 @@
     android:layout_marginTop="8dp"
     android:layout_marginBottom="8dp"
     app:cardBackgroundColor="?attr/colorSurfaceContainerHighest"
-    app:cardCornerRadius="10dp"
+    app:cardCornerRadius="8dp"
     app:cardElevation="0dp"
-    app:strokeColor="?attr/colorPrimary"
-    app:strokeWidth="1.5dp">
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Android Studio style Tab Bar Header -->
-        <LinearLayout
+        <!-- Code Block Header matching Image 1 -->
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="36dp"
             android:background="?attr/colorSurfaceContainerHigh"
             android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="8dp"
-            android:paddingEnd="4dp">
-
-            <!-- Active File Tab (pill matching user screenshot) -->
-            <LinearLayout
-                android:id="@+id/ll_tab_pill"
-                android:layout_width="wrap_content"
-                android:layout_height="28dp"
-                android:background="@drawable/bg_editor_tab_chip"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp">
-
-                <ImageView
-                    android:id="@+id/iv_file_icon"
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_marginEnd="6dp"
-                    android:src="@drawable/ic_mtrl_code"
-                    app:tint="?attr/colorPrimary" />
-
-                <TextView
-                    android:id="@+id/tv_file_title"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:text="Code"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:text="×"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
+            android:paddingStart="12dp"
+            android:paddingEnd="6dp">
 
             <TextView
                 android:id="@+id/tv_lang"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:fontFamily="sans-serif-medium"
+                android:text="kotlin"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                android:textSize="11sp" />
+                android:textSize="12sp" />
 
             <ImageButton
                 android:id="@+id/btn_copy"
                 android:layout_width="28dp"
                 android:layout_height="28dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Salin kode"
+                android:contentDescription="Copy code"
                 android:padding="4dp"
                 android:src="@drawable/ic_copy"
                 app:tint="?attr/colorOnSurfaceVariant" />
-        </LinearLayout>
+        </RelativeLayout>
 
         <View
             android:layout_width="match_parent"
