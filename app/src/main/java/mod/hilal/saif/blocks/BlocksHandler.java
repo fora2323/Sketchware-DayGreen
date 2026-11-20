@@ -13,6 +13,7 @@ import mod.hilal.saif.activities.tools.ConfigActivity;
 import pro.sketchware.R;
 import pro.sketchware.blocks.ExtraBlocks;
 import pro.sketchware.utility.ThemeUtils;
+import org.sketchware.daygreen.blocks.IDOperator;
 
 public class BlocksHandler {
 
@@ -2795,6 +2796,7 @@ public class BlocksHandler {
         logicEditorActivity.a("b", "false");
         logicEditorActivity.a("b", "<");
         logicEditorActivity.a("b", "=");
+        IDOperator.addPaletteBlocks(logicEditorActivity);
         logicEditorActivity.a("b", ">");
         logicEditorActivity.a("b", "&&");
         logicEditorActivity.a("b", "||");
@@ -2845,12 +2847,6 @@ public class BlocksHandler {
             logicEditorActivity.a("s", "GsonListTojsonString");
             logicEditorActivity.a(" ", "stringSplitToList");
         }
-        logicEditorActivity.a("add source directly", getTitleBgColor(logicEditorActivity));
-        logicEditorActivity.a(" ", "addSourceDirectly");
-        logicEditorActivity.a("b", "asdBoolean");
-        logicEditorActivity.a("d", "asdNumber");
-        logicEditorActivity.a("s", "asdString");
-        logicEditorActivity.a("c", "addSourceDirectlyIf");
     }
 
     private static @ColorInt int getTitleBgColor(LogicEditorActivity logicEditorActivity) {
