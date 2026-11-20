@@ -68,7 +68,7 @@ object IDBlockShizuku {
         hashMap["code"] = "%s.setCopyFromAsset(%s, %s, %s);"
         hashMap["color"] = "#00A9D0"
         hashMap["palette"] = "-1"
-        hashMap["spec"] = "%m.shizuku setCopyFromAsset %s %s %s"
+        hashMap["spec"] = "%m.shizuku setCopyFromAsset %s path %s realname %s"
         arrayList.add(hashMap)
 
         hashMap = HashMap()
@@ -91,6 +91,7 @@ object IDBlockShizuku {
         logicEditor.a("d", "shizukuGetUid")        
         logicEditor.a(" ", "shizukuRequestPermission")
         logicEditor.a(" ", "shizukuSetCopyFromAsset")
+        logicEditor.a(" ", "shizukuSetDeletePath")
     }
 
     /**
@@ -105,6 +106,7 @@ object IDBlockShizuku {
         xb.c["shizukuGetVersion"] = "%m.shizuku getVersion"
         xb.c["shizukuGetUid"] = "%m.shizuku getUid"        
         xb.c["shizukuRequestPermission"] = "%m.shizuku requestPermission requestCode %d"
-        xb.c["shizukuSetCopyFromAsset"] = "%m.shizuku setCopyFromAsset %s %s %s"
+        xb.c["shizukuSetCopyFromAsset"] = "%m.shizuku setCopyFromAsset %s path %s realname %s"
+        xb.c["shizukuSetDeletePath"] = "%m.shizuku setDeletePath %s"
     }
 }
