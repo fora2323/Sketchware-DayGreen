@@ -79,44 +79,24 @@ public class ManageCustomComponentActivity extends BaseAppCompatActivity {
                 startActivity(new Intent(getApplicationContext(), AddCustomComponentActivity.class)));
 
         {
-            View view = findViewById(R.id.content);
-            int left = view.getPaddingLeft();
-            int top = view.getPaddingTop();
-            int right = view.getPaddingRight();
-            int bottom = view.getPaddingBottom();
+            View content = findViewById(R.id.content);
+            View appBar = findViewById(R.id.app_bar_layout);
+            View fab = findViewById(R.id.fab);
 
-            ViewCompat.setOnApplyWindowInsetsListener(view, (v, i) -> {
-                Insets insets = i.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime() | WindowInsetsCompat.Type.displayCutout());
-                v.setPadding(left + insets.left, top, right + insets.right, bottom + insets.bottom);
-                return i;
-            });
-        }
+            ViewGroup.MarginLayoutParams fabLp = (ViewGroup.MarginLayoutParams) fab.getLayoutParams();
+            int fabEnd = fabLp.getMarginEnd();
+            int fabBottom = fabLp.bottomMargin;
 
-        {
-            View view = findViewById(R.id.app_bar_layout);
-            int left = view.getPaddingLeft();
-            int top = view.getPaddingTop();
-            int right = view.getPaddingRight();
-            int bottom = view.getPaddingBottom();
+            ViewCompat.setOnApplyWindowInsetsListener(content.getRootView(), (v, i) -> {
+                Insets sysInsets = i.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
 
-            ViewCompat.setOnApplyWindowInsetsListener(view, (v, i) -> {
-                Insets insets = i.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-                v.setPadding(left + insets.left, top + insets.top, right + insets.right, bottom + insets.bottom);
-                return i;
-            });
-        }
+                appBar.setPadding(sysInsets.left, sysInsets.top, sysInsets.right, 0);
+                content.setPadding(sysInsets.left, 0, sysInsets.right, sysInsets.bottom);
 
-        {
-            View view = findViewById(R.id.fab);
-            ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) view.getLayoutParams();
-            int end = lp.getMarginEnd();
-            int bottom = lp.bottomMargin;
+                fabLp.setMarginEnd(fabEnd + sysInsets.right);
+                fabLp.bottomMargin = fabBottom + sysInsets.bottom;
+                fab.setLayoutParams(fabLp);
 
-            ViewCompat.setOnApplyWindowInsetsListener(view, (v, i) -> {
-                Insets insets = i.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-                lp.setMarginEnd(end + insets.right);
-                lp.bottomMargin = bottom + insets.bottom;
-                v.setLayoutParams(lp);
                 return i;
             });
         }

@@ -53,7 +53,14 @@ public class AiSettingsActivity extends BaseAppCompatActivity {
             new Tool("list_events", "Read", "runs freely"),
             new Tool("read_event_blocks", "Read", "runs freely"),
             new Tool("append_blocks", "Write", "asks first"),
-            new Tool("propose_source_code", "Write", "asks first")
+            new Tool("clear_event_blocks", "Write", "runs freely"),
+            new Tool("create_more_block", "Write", "asks first"),
+            new Tool("propose_source_code", "Write", "asks first"),
+            new Tool("read_layout", "Layout", "runs freely"),
+            new Tool("add_widget", "Layout", "asks first"),
+            new Tool("apply_layout_xml", "Layout", "asks first"),
+            new Tool("get_compile_error", "Diagnostic", "runs freely"),
+            new Tool("analyze_code_bug", "Diagnostic", "runs freely")
     };
 
     private static final String DEFAULT_SYSTEM_PROMPT =

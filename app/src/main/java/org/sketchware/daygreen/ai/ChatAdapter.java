@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -16,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,7 +32,7 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
     private static final int TYPE_THINKING = 3;
 
     private static final Pattern FENCE = Pattern.compile(
-            "```([A-Za-z0-9_+#.\\-]*)[ \\t]*\\n([\\s\\S]*?)```");
+            "```([A-Za-z0-9_+#.\\-:\\s]*?)\\n([\\s\\S]*?)```");
 
     public static final class ChatMessage {
         final int type;
@@ -175,21 +177,76 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
         return view;
     }
 
-    private View buildCodePart(LayoutInflater inflater, ViewGroup parent, String lang, String code) {
+    private View buildCodePart(LayoutInflater inflater, ViewGroup parent, String rawLang, String code) {
         View view = inflater.inflate(R.layout.item_chat_code, parent, false);
 
+        String lang = rawLang == null ? "" : rawLang.trim();
+        String fileName = "";
+        if (lang.contains(" ") || lang.contains(":")) {
+            String[] parts = lang.split("[:\\s]+", 2);
+            lang = parts[0].trim();
+            if (parts.length > 1) {
+                fileName = parts[1].trim();
+            }
+        }
+
+        if (fileName.isEmpty()) {
+            String l = lang.toLowerCase(Locale.ROOT);
+            switch (l) {
+                case "kt":
+                case "kotlin":
+                    fileName = "Config.kt";
+                    break;
+                case "java":
+                    fileName = "MainActivity.java";
+                    break;
+                case "xml":
+                    fileName = "activity_main.xml";
+                    break;
+                case "json":
+                    fileName = "config.json";
+                    break;
+                case "gradle":
+                    fileName = "build.gradle";
+                    break;
+                case "log":
+                    fileName = "compile.log";
+                    break;
+                default:
+                    fileName = lang.isEmpty() ? "Code" : lang;
+                    break;
+            }
+        }
+
+        TextView fileTitleTv = view.findViewById(R.id.tv_file_title);
+        if (fileTitleTv != null) {
+            fileTitleTv.setText(fileName);
+        }
+
+        ImageView iconView = view.findViewById(R.id.iv_file_icon);
+        if (iconView != null) {
+            if (lang.equalsIgnoreCase("log")) {
+                iconView.setImageResource(R.drawable.ic_mtrl_bug_report);
+            } else {
+                iconView.setImageResource(R.drawable.ic_mtrl_code);
+            }
+        }
+
         TextView langTv = view.findViewById(R.id.tv_lang);
-        langTv.setText(lang == null || lang.isEmpty() ? "code" : lang);
+        if (langTv != null) {
+            langTv.setText(lang.isEmpty() ? "code" : lang);
+        }
 
         TextView codeTv = view.findViewById(R.id.tv_code);
         codeTv.setText(ChatCodeHighlighter.highlight(code));
 
         ImageButton copy = view.findViewById(R.id.btn_copy);
+        final String finalFileName = fileName;
         copy.setOnClickListener(v -> {
             Context ctx = v.getContext();
             ClipboardManager cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
             if (cm != null) {
-                cm.setPrimaryClip(ClipData.newPlainText("code", code));
+                cm.setPrimaryClip(ClipData.newPlainText(finalFileName, code));
                 SketchwareUtil.toast("Kode disalin");
             }
         });
@@ -197,16 +254,29 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
     }
 
     private void bindThinking(Holder holder, ChatMessage item) {
-        holder.title.setText((item.expanded ? "▾ " : "▸ ") + "Proses berpikir");
-        holder.body.setText(item.text);
-        holder.body.setVisibility(item.expanded ? View.VISIBLE : View.GONE);
+        if (holder.title != null) {
+            holder.title.setText("Reasoning (" + (item.expanded ? "sembunyikan" : "tampilkan") + ")");
+        }
+        if (holder.chevron != null) {
+            holder.chevron.setRotation(item.expanded ? 180f : 0f);
+        }
+        if (holder.body != null) {
+            holder.body.setText(item.text);
+            holder.body.setVisibility(item.expanded ? View.VISIBLE : View.GONE);
+        }
 
-        holder.title.setOnClickListener(v -> {
+        View.OnClickListener toggle = v -> {
             int pos = holder.getAdapterPosition();
             if (pos == RecyclerView.NO_POSITION) return;
             item.expanded = !item.expanded;
             notifyItemChanged(pos);
-        });
+        };
+
+        if (holder.thinkingHeader != null) {
+            holder.thinkingHeader.setOnClickListener(toggle);
+        } else if (holder.title != null) {
+            holder.title.setOnClickListener(toggle);
+        }
     }
 
     /** Splits the reply into plain-text parts and fenced code parts, in order. */
@@ -254,6 +324,8 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
         /** Agent rows: holds text and code parts. */
         final LinearLayout parts;
         /** Thinking rows only. */
+        final View thinkingHeader;
+        final ImageView chevron;
         final TextView title;
         final TextView body;
 
@@ -261,6 +333,8 @@ public final class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> 
             super(itemView);
             text = itemView.findViewById(R.id.tv_message);
             parts = itemView.findViewById(R.id.ll_parts);
+            thinkingHeader = itemView.findViewById(R.id.ll_thinking_header);
+            chevron = itemView.findViewById(R.id.iv_thinking_chevron);
             title = itemView.findViewById(R.id.tv_thinking_title);
             body = itemView.findViewById(R.id.tv_thinking_body);
 

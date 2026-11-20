@@ -155,7 +155,7 @@
         <activity android:name="com.besome.sketch.tools.CompileLogActivity" />
         <activity android:name="com.besome.sketch.tools.CollectErrorActivity" />
         <activity
-            android:name="com.besome.sketch.tools.NewKeyStoreActivity"
+            android:name="org.sketchware.daygreen.settings.activities.NewKeyStoreActivity"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name="com.besome.sketch.export.ExportProjectActivity"
@@ -164,7 +164,7 @@
             android:name="com.besome.sketch.design.DesignActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard"
             android:theme="@style/Theme.SketchwarePro.SmallToolbar"
-            android:windowSoftInputMode="stateHidden" />
+            android:windowSoftInputMode="adjustResize|stateHidden" />
         <activity
             android:name=".activities.main.activities.MainActivity"
             android:configChanges="orientation|screenSize"
@@ -353,13 +353,13 @@
             android:label="Git" />
 
         <activity
-            android:name="mod.hilal.saif.activities.tools.BuildToolsActivity"
+            android:name="org.sketchware.daygreen.settings.activities.BuildToolsActivity"
             android:configChanges="orientation|screenSize"
             android:label="Build Tools"
             android:theme="@style/Theme.SketchwarePro" />
 
         <activity
-            android:name="mod.hilal.saif.activities.tools.SdkManagerActivity"
+            android:name="org.sketchware.daygreen.settings.activities.SdkManagerActivity"
             android:configChanges="orientation|screenSize"
             android:label="SDK Manager"
             android:theme="@style/Theme.SketchwarePro" />

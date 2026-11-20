@@ -22,13 +22,12 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalLibrary
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material.icons.filled.Widgets
 import dev.aldi.sayuti.editor.manage.ManageLocalLibraryActivity
 import mod.hey.studios.util.Helper
 import mod.hilal.saif.activities.tools.BlocksManager
-import mod.hilal.saif.activities.tools.BuildToolsActivity
 import mod.hilal.saif.activities.tools.ConfigActivity
-import mod.hilal.saif.activities.tools.SdkManagerActivity
 import mod.khaled.logcat.LogReaderActivity
 
 import org.sketchware.daygreen.ai.activities.AiSettingsActivity
@@ -126,6 +125,9 @@ class AppSettingsActivity : AppCompatActivity() {
         },
         SettingItem(Icons.Filled.FolderOpen, "Open working directory", "Open Sketchware Pro's directory and edit files in it") {
             AppSettingsActions.openWorkingDirectory(this@AppSettingsActivity)
+        },
+        SettingItem(Icons.Filled.VpnKey, "Create KeyStore", "Create a new KeyStore file to sign APKs") {
+            startActivity(Intent(applicationContext, NewKeyStoreActivity::class.java))
         },
         SettingItem(Icons.Filled.Info, "About", "About Sketchware DayGreen") {
             startActivity(Intent(applicationContext, AboutActivity::class.java))

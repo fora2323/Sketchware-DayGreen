@@ -189,10 +189,7 @@ public final class AiBlockWriter {
     }
 
     /**
-     * Writes raw source code for an event. Only called after the user approved the full code.
-     *
-     * NOT CONNECTED YET: the storage format for raw code in a Sketchware event has not been
-     * verified. Until it is, this refuses to write, so nothing is saved by mistake.
+     * Writes raw source code for an event using Sketchware's addSourceDirectly block.
      */
     public static Result writeSourceCode(String scId, String javaName, String eventKey, String code) {
         if (code == null || code.trim().isEmpty()) {
@@ -201,8 +198,67 @@ public final class AiBlockWriter {
         if (!isValidEventKey(scId, javaName, eventKey)) {
             return fail("Event \"" + eventKey + "\" is not a valid event for this file.");
         }
-        return fail("Writing raw source code is not connected to project storage yet. "
-                + "Nothing was written. The storage format needs to be checked first.");
+
+        eC data = jC.a(scId);
+        if (data == null) {
+            return fail("Project data is not loaded. Close the project and open it again.");
+        }
+
+        Map<String, ArrayList<BlockBean>> fileBlocks = data.b(javaName);
+        ArrayList<BlockBean> current = new ArrayList<>();
+        if (fileBlocks != null && fileBlocks.get(eventKey) != null) {
+            current.addAll(fileBlocks.get(eventKey));
+        }
+
+        BlockBean tail = current.isEmpty() ? null : findTail(current);
+        File logic = new File(wq.a(scId), "logic");
+        File backup = backup(logic);
+
+        try {
+            int nextId = maxId(fileBlocks) + 1;
+            BlockBean block = new BlockBean(String.valueOf(nextId), "%s", " ", "", "addSourceDirectly");
+            block.color = Color.parseColor("#5cb722");
+            block.parameters.clear();
+            block.parameters.add(code);
+            block.nextBlock = -1;
+
+            if (tail != null) {
+                tail.nextBlock = nextId;
+            }
+            current.add(block);
+
+            data.a(javaName, eventKey, current);
+            data.k();
+            deleteBackup(backup);
+            return ok("Source code inserted into \"" + eventKey + "\".");
+        } catch (Exception e) {
+            restore(backup, logic);
+            return fail("Failed to write source code, changes were reverted: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Clears all blocks in an event.
+     */
+    public static Result clearEventBlocks(String scId, String javaName, String eventKey) {
+        if (!isValidEventKey(scId, javaName, eventKey)) {
+            return fail("Event \"" + eventKey + "\" is not valid.");
+        }
+        eC data = jC.a(scId);
+        if (data == null) {
+            return fail("Project data is not loaded.");
+        }
+        File logic = new File(wq.a(scId), "logic");
+        File backup = backup(logic);
+        try {
+            data.a(javaName, eventKey, new ArrayList<>());
+            data.k();
+            deleteBackup(backup);
+            return ok("Cleared blocks in event \"" + eventKey + "\".");
+        } catch (Exception e) {
+            restore(backup, logic);
+            return fail("Failed to clear event: " + e.getMessage());
+        }
     }
 
     /**

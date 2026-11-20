@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
 
 import mod.hey.studios.build.BuildSettings;
 import mod.hey.studios.util.Helper;
-import mod.hilal.saif.activities.tools.SdkManagerActivity;
+import org.sketchware.daygreen.settings.activities.SdkManagerActivity;
 import mod.jbk.build.BuiltInLibraries;
 import mod.pranav.dependency.resolver.DependencyResolver;
 import pro.sketchware.R;

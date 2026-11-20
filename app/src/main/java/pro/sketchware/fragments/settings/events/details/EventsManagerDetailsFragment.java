@@ -84,7 +84,7 @@ public class EventsManagerDetailsFragment extends qA {
 
             ViewCompat.setOnApplyWindowInsetsListener(view1, (v, i) -> {
                 Insets insets = i.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-                v.setPadding(left + insets.left, top + insets.top, right + insets.right, bottom + insets.bottom);
+                v.setPadding(left + insets.left, top, right + insets.right, bottom);
                 return i;
             });
         }

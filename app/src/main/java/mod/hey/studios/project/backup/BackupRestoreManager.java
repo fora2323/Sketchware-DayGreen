@@ -35,7 +35,7 @@ import pro.sketchware.utility.FilePathUtil;
 import mod.hey.studios.project.ProjectSettings;
 import org.sketchware.daygreen.FileCheckUtils;
 import android.content.Intent;
-import mod.hilal.saif.activities.tools.BuildToolsActivity;
+import org.sketchware.daygreen.settings.activities.BuildToolsActivity;
 
 public class BackupRestoreManager {
 

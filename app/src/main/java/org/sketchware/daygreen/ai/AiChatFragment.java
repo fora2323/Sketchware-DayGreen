@@ -14,6 +14,9 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -65,27 +68,53 @@ public class AiChatFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         store = new AiSettingsStore(requireContext());
-        client = new AiChatClient(requireContext(), getScId(), getJavaName());
+        String scId = getScId();
+        String javaName = getJavaName();
+        String xmlName = getXmlName();
+
+        client = new AiChatClient(requireContext(), scId, javaName, xmlName);
 
         formatter = new ChatTextFormatter(requireContext());
         adapter = new ChatAdapter(formatter, this::openEvent);
 
-        // Messages start at the top and grow downward, like a normal chat list.
         LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
         layoutManager.setStackFromEnd(false);
         binding.rvChat.setLayoutManager(layoutManager);
         binding.rvChat.setAdapter(adapter);
 
-        if (getScId().isEmpty()) {
+        // Adjust input box with keyboard WindowInsets
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, insets) -> {
+            Insets imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime());
+            Insets navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+            int bottomPadding = Math.max(imeInsets.bottom, navInsets.bottom);
+            binding.cvInput.setPadding(
+                    binding.cvInput.getPaddingLeft(),
+                    binding.cvInput.getPaddingTop(),
+                    binding.cvInput.getPaddingRight(),
+                    bottomPadding > 0 ? bottomPadding : (int) (8 * getResources().getDisplayMetrics().density)
+            );
+            if (insets.isVisible(WindowInsetsCompat.Type.ime())) {
+                scrollToBottom();
+            }
+            return insets;
+        });
+
+        // Display active context pill (e.g. MainActivity.java | main.xml)
+        if (binding.tvActiveContext != null) {
+            binding.tvActiveContext.setText(javaName + " | " + xmlName);
+        }
+
+        if (scId.isEmpty()) {
             adapter.add(ChatAdapter.ChatMessage.agent(
-                    "Project id is missing. Close the project and open it again."));
+                    "Project ID is missing. Close the project and open it again."));
             binding.btnSend.setEnabled(false);
             return;
         }
-        
-        binding.btnPrompt1.setOnClickListener(v -> sendPrompt("Fix the warnings and errors in the current file"));
-        binding.btnPrompt2.setOnClickListener(v -> sendPrompt("Add documentation to my current file"));
-        binding.btnPrompt3.setOnClickListener(v -> sendPrompt("Explain this code to me"));
+
+        binding.btnPrompt1.setOnClickListener(v -> sendPrompt("Analisis dan perbaiki error compile terakhir di project ini"));
+        binding.btnPrompt2.setOnClickListener(v -> sendPrompt("Tolong buatkan layout form login dengan input email, password, dan tombol masuk di " + xmlName));
+        binding.btnPrompt3.setOnClickListener(v -> sendPrompt("Tolong pasang block logic di onCreate untuk tombol login dan tampilkan Toast"));
+        binding.btnPrompt4.setOnClickListener(v -> sendPrompt("Tolong analisis kode dan potensi bug di file " + javaName + " dan layout " + xmlName));
 
         binding.btnSend.setOnClickListener(v -> send());
         binding.btnApply.setOnClickListener(v -> confirmApply());
@@ -95,7 +124,7 @@ public class AiChatFragment extends Fragment {
         }
         binding.btnModel.setOnClickListener(v ->
                 AiModelPicker.show(requireContext(), store, store.getProviderIndex(), this::refreshModelLabel));
-                
+
         updateEmptyState();
         adapter.registerAdapterDataObserver(new androidx.recyclerview.widget.RecyclerView.AdapterDataObserver() {
             @Override
@@ -104,12 +133,12 @@ public class AiChatFragment extends Fragment {
             }
         });
     }
-    
+
     private void sendPrompt(String text) {
         binding.etInput.setText(text);
         send();
     }
-    
+
     private void updateEmptyState() {
         if (binding == null) return;
         boolean empty = adapter.getItemCount() == 0;
@@ -143,30 +172,36 @@ public class AiChatFragment extends Fragment {
     }
 
     /**
-     * Shows a bottom sheet to attach a photo, file, or analyze an error.
+     * Shows a bottom sheet to attach error logs, layouts, blocks, or links.
      */
     private void showAttachmentOptions() {
-        com.google.android.material.bottomsheet.BottomSheetDialog bottomSheet = 
+        com.google.android.material.bottomsheet.BottomSheetDialog bottomSheet =
                 new com.google.android.material.bottomsheet.BottomSheetDialog(requireContext());
-        
+
         android.widget.LinearLayout layout = new android.widget.LinearLayout(requireContext());
         layout.setOrientation(android.widget.LinearLayout.VERTICAL);
         int pad = (int) (16 * getResources().getDisplayMetrics().density);
         layout.setPadding(pad, pad, pad, pad);
-        
+
         android.widget.TextView title = new android.widget.TextView(requireContext());
-        title.setText("Add attachment");
+        title.setText("Quick Assistant Actions");
         title.setTextSize(18);
-        title.setTypeface(null, android.graphics.Typeface.BOLD);
+        title.setTypeface(null, Typeface.BOLD);
         title.setPadding(0, 0, 0, pad);
         layout.addView(title);
-        
-        String[] options = {"Photo", "File", "Analyze Error", "URL"};
+
+        String[] options = {
+                "🔍 Analisis Error Compile",
+                "🎨 Periksa / Bikin Layout (" + getXmlName() + ")",
+                "🧩 Pasang Block Logic (" + getJavaName() + ")",
+                "🔗 Tambah URL Link"
+        };
+
         for (int i = 0; i < options.length; i++) {
             android.widget.TextView item = new android.widget.TextView(requireContext());
             item.setText(options[i]);
-            item.setTextSize(16);
-            item.setPadding(0, pad/2, 0, pad/2);
+            item.setTextSize(15);
+            item.setPadding(0, pad / 2, 0, pad / 2);
             android.util.TypedValue outValue = new android.util.TypedValue();
             requireContext().getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
             item.setBackgroundResource(outValue.resourceId);
@@ -175,13 +210,15 @@ public class AiChatFragment extends Fragment {
                 bottomSheet.dismiss();
                 switch (finalI) {
                     case 0:
-                        pro.sketchware.utility.SketchwareUtil.toast("Photo attachment coming soon");
+                        attachCompileError();
                         break;
                     case 1:
-                        pro.sketchware.utility.SketchwareUtil.toast("File attachment coming soon");
+                        binding.etInput.setText("Tolong periksa layout " + getXmlName() + " dan buat tampilan baru yang bagus.");
+                        binding.etInput.setSelection(binding.etInput.getText().length());
                         break;
                     case 2:
-                        pro.sketchware.utility.SketchwareUtil.toast("Error analysis coming soon");
+                        binding.etInput.setText("Tolong pasang block logic di " + getJavaName() + " untuk event ");
+                        binding.etInput.setSelection(binding.etInput.getText().length());
                         break;
                     case 3:
                         showLinkDialog();
@@ -190,9 +227,15 @@ public class AiChatFragment extends Fragment {
             });
             layout.addView(item);
         }
-        
+
         bottomSheet.setContentView(layout);
         bottomSheet.show();
+    }
+
+    private void attachCompileError() {
+        String error = AiDiagnosticHelper.getCompileError(getScId());
+        binding.etInput.setText("Tolong analisis error compile berikut dan beri solusinya:\n" + error);
+        binding.etInput.setSelection(binding.etInput.getText().length());
     }
 
     /**
@@ -222,10 +265,6 @@ public class AiChatFragment extends Fragment {
                 .show();
     }
 
-    /**
-     * Tapping a highlighted event name (onCreate, onResume, initializeLogic...)
-     * opens that event in the Logic editor.
-     */
     private void openEvent(String eventName) {
         if (binding == null) return;
 
@@ -238,8 +277,6 @@ public class AiChatFragment extends Fragment {
             return;
         }
 
-        // Same key rule as AiEventCatalog: id + "_" + event.
-        // initializeLogic (and onCreate) live under the onCreate target.
         boolean onCreateGroup = "onCreate".equals(eventName) || "initializeLogic".equals(eventName);
         String id = onCreateGroup ? "onCreate" : eventName;
         String event = "onCreate".equals(eventName) ? "initializeLogic" : eventName;
@@ -253,11 +290,13 @@ public class AiChatFragment extends Fragment {
     }
 
     private static ProjectFileBean findProjectFile(String scId, String javaName) {
-        for (ProjectFileBean projectFile : jC.b(scId).b()) {
-            if (javaName.equals(projectFile.getJavaName())) {
-                return projectFile;
+        try {
+            for (ProjectFileBean projectFile : jC.b(scId).b()) {
+                if (javaName.equals(projectFile.getJavaName())) {
+                    return projectFile;
+                }
             }
-        }
+        } catch (Exception ignored) {}
         return null;
     }
 
@@ -284,16 +323,30 @@ public class AiChatFragment extends Fragment {
                     adapter.add(ChatAdapter.ChatMessage.agent(reply));
 
                     if (proposals.isEmpty()) {
-                        // A new answer without a proposal clears the old proposal.
                         pending = null;
                         binding.btnApply.setVisibility(View.GONE);
                     } else {
                         pending = proposals.get(proposals.size() - 1);
                         binding.btnApply.setVisibility(View.VISIBLE);
-                        String label = pending.isSource()
-                                ? "Proposed source code (not written yet):\n"
-                                : "Proposed blocks (not written yet):\n";
-                        adapter.add(ChatAdapter.ChatMessage.agent(label + pending.summary));
+
+                        String buttonLabel;
+                        String proposalLabel;
+                        if (pending.isLayout()) {
+                            buttonLabel = "Apply layout to " + pending.xmlName;
+                            proposalLabel = "Proposed layout XML (not applied yet):\n";
+                        } else if (pending.isWidget()) {
+                            buttonLabel = "Add widget to " + pending.xmlName;
+                            proposalLabel = "Proposed widget (not applied yet):\n";
+                        } else if (pending.isSource()) {
+                            buttonLabel = "Write source code to " + pending.eventKey;
+                            proposalLabel = "Proposed source code (not written yet):\n";
+                        } else {
+                            buttonLabel = "Write blocks to " + pending.eventKey;
+                            proposalLabel = "Proposed blocks (not written yet):\n";
+                        }
+
+                        binding.btnApply.setText(buttonLabel);
+                        adapter.add(ChatAdapter.ChatMessage.agent(proposalLabel + pending.summary));
                     }
                     scrollToBottom();
                 });
@@ -335,8 +388,17 @@ public class AiChatFragment extends Fragment {
         if (pending == null) return;
         AiChatClient.Proposal p = pending;
 
-        if (p.isSource()) {
+        if (p.isLayout()) {
+            confirmLayoutCode(p);
+        } else if (p.isSource()) {
             confirmSourceCode(p);
+        } else if (p.isWidget()) {
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Add widget?")
+                    .setMessage("Add " + p.widgetType + " (" + p.widgetId + ") to " + p.xmlName + "?\n\n" + p.summary)
+                    .setPositiveButton("Add", (d, w) -> applyPending(p))
+                    .setNegativeButton("Cancel", null)
+                    .show();
         } else {
             new MaterialAlertDialogBuilder(requireContext())
                     .setTitle("Write blocks?")
@@ -347,9 +409,26 @@ public class AiChatFragment extends Fragment {
         }
     }
 
-    /**
-     * Shows the whole code before anything is written. The user can scroll the full text.
-     */
+    private void confirmLayoutCode(AiChatClient.Proposal p) {
+        TextView code = new TextView(requireContext());
+        code.setText(p.layoutXml);
+        code.setTypeface(Typeface.MONOSPACE);
+        code.setTextIsSelectable(true);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        code.setPadding(pad, pad, pad, pad);
+
+        ScrollView scroll = new ScrollView(requireContext());
+        scroll.addView(code);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Apply layout XML to " + p.xmlName + "?")
+                .setMessage("This will update the project layout with the following XML:")
+                .setView(scroll)
+                .setPositiveButton("Apply", (d, w) -> applyPending(p))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
     private void confirmSourceCode(AiChatClient.Proposal p) {
         TextView code = new TextView(requireContext());
         code.setText(p.sourceCode);
@@ -363,7 +442,7 @@ public class AiChatFragment extends Fragment {
 
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Write this source code?")
-                .setMessage("Event: " + p.eventKey + "\nNo block fits, so this is raw code.")
+                .setMessage("Event: " + p.eventKey + "\nInserted using addSourceDirectly block.")
                 .setView(scroll)
                 .setPositiveButton("Write", (d, w) -> applyPending(p))
                 .setNegativeButton("Cancel", null)
@@ -373,17 +452,35 @@ public class AiChatFragment extends Fragment {
     private void applyPending(AiChatClient.Proposal p) {
         String scId = getScId();
         new Thread(() -> {
-            AiBlockWriter.Result r = p.isSource()
-                    ? AiBlockWriter.writeSourceCode(scId, p.javaName, p.eventKey, p.sourceCode)
-                    : AiBlockWriter.appendBlocks(scId, p.javaName, p.eventKey, p.steps);
+            String message;
+            boolean success;
+
+            if (p.isLayout()) {
+                AiLayoutHelper.Result r = AiLayoutHelper.applyLayoutXml(scId, p.xmlName, p.layoutXml);
+                message = r.message;
+                success = r.success;
+            } else if (p.isWidget()) {
+                AiLayoutHelper.Result r = AiLayoutHelper.addWidget(scId, p.xmlName, p.widgetType,
+                        p.widgetId, p.widgetParent, p.widgetText, p.widgetWidth, p.widgetHeight, p.widgetOrientation);
+                message = r.message;
+                success = r.success;
+            } else if (p.isSource()) {
+                AiBlockWriter.Result r = AiBlockWriter.writeSourceCode(scId, p.javaName, p.eventKey, p.sourceCode);
+                message = r.message;
+                success = r.success;
+            } else {
+                AiBlockWriter.Result r = AiBlockWriter.appendBlocks(scId, p.javaName, p.eventKey, p.steps);
+                message = r.message;
+                success = r.success;
+            }
 
             main.post(() -> {
                 if (binding == null) return;
-                adapter.add(ChatAdapter.ChatMessage.agent(r.message));
-                if (r.success) {
+                adapter.add(ChatAdapter.ChatMessage.agent(message));
+                if (success) {
                     pending = null;
                     binding.btnApply.setVisibility(View.GONE);
-                    SketchwareUtil.toast(p.isSource() ? "Source code written." : "Blocks written.");
+                    SketchwareUtil.toast("Applied successfully.");
                 }
                 scrollToBottom();
             });
@@ -392,7 +489,6 @@ public class AiChatFragment extends Fragment {
 
     private void setBusy(boolean busy) {
         binding.btnSend.setEnabled(!busy);
-        // Keep the disabled look clearly different, so it does not look frozen.
         binding.btnSend.setAlpha(busy ? 0.45f : 1f);
     }
 
@@ -408,6 +504,11 @@ public class AiChatFragment extends Fragment {
 
     private String getJavaName() {
         Bundle args = getArguments();
-        return args != null ? args.getString(ARG_JAVA_NAME, "") : "";
+        return args != null ? args.getString(ARG_JAVA_NAME, "MainActivity") : "MainActivity";
+    }
+
+    private String getXmlName() {
+        ProjectFileBean file = findProjectFile(getScId(), getJavaName());
+        return file != null ? file.getXmlName() : "main.xml";
     }
 }

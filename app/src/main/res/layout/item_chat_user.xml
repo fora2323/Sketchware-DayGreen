@@ -13,17 +13,21 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:cardBackgroundColor="?attr/colorPrimaryContainer"
-        app:cardCornerRadius="20dp"
+        app:cardCornerRadius="16dp"
         app:cardElevation="0dp"
-        app:strokeWidth="0dp">
+        app:strokeColor="?attr/colorOutlineVariant"
+        app:strokeWidth="1dp">
 
         <TextView
             android:id="@+id/tv_message"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="12dp"
+            android:paddingStart="14dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="10dp"
             android:textColor="?attr/colorOnPrimaryContainer"
             android:textIsSelectable="true"
-            android:textSize="15sp" />
+            android:textSize="14sp" />
     </com.google.android.material.card.MaterialCardView>
 </LinearLayout>

@@ -79,29 +79,15 @@ public class AddCustomComponentActivity extends BaseAppCompatActivity implements
         }
 
         {
-            View view = binding.content;
-            int left = view.getPaddingLeft();
-            int top = view.getPaddingTop();
-            int right = view.getPaddingRight();
-            int bottom = view.getPaddingBottom();
+            View content = binding.content;
+            View appBar = binding.appBarLayout;
 
-            ViewCompat.setOnApplyWindowInsetsListener(view, (v, i) -> {
-                Insets insets = i.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime() | WindowInsetsCompat.Type.displayCutout());
-                v.setPadding(left + insets.left, top, right + insets.right, bottom + insets.bottom);
-                return i;
-            });
-        }
+            ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), (v, i) -> {
+                Insets sysInsets = i.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime() | WindowInsetsCompat.Type.displayCutout());
 
-        {
-            View view = binding.appBarLayout;
-            int left = view.getPaddingLeft();
-            int top = view.getPaddingTop();
-            int right = view.getPaddingRight();
-            int bottom = view.getPaddingBottom();
+                appBar.setPadding(sysInsets.left, sysInsets.top, sysInsets.right, 0);
+                content.setPadding(sysInsets.left, 0, sysInsets.right, sysInsets.bottom);
 
-            ViewCompat.setOnApplyWindowInsetsListener(view, (v, i) -> {
-                Insets insets = i.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
-                v.setPadding(left + insets.left, top + insets.top, right + insets.right, bottom + insets.bottom);
                 return i;
             });
         }
