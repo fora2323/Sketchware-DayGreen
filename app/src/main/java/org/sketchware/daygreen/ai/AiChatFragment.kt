@@ -97,12 +97,10 @@ class AiChatFragment : Fragment() {
             insets
         }
 
-        binding.tvActiveContext.text = "$javaName | $xmlName"
-
         if (scId.isEmpty()) {
             adapter.add(
                 ChatAdapter.ChatMessage.agent(
-                    "ID Project tidak ditemukan. Silakan tutup dan buka kembali project Anda."
+                    "Project ID is missing. Please close and reopen your project."
                 )
             )
             binding.btnSend.isEnabled = false
@@ -110,16 +108,13 @@ class AiChatFragment : Fragment() {
         }
 
         binding.btnPrompt1.setOnClickListener {
-            sendPrompt("Analisis dan perbaiki error compile terakhir di project ini")
+            sendPrompt("Fix the warnings and errors in the current file")
         }
         binding.btnPrompt2.setOnClickListener {
-            sendPrompt("Tolong buatkan layout form baru dengan input dan tombol di $xmlName")
+            sendPrompt("Add documentation to my current file")
         }
         binding.btnPrompt3.setOnClickListener {
-            sendPrompt("Tolong pasang block logic di $javaName untuk event onClick dan tampilkan Toast")
-        }
-        binding.btnPrompt4.setOnClickListener {
-            sendPrompt("Tolong analisis potensi bug dan optimasi kode di $javaName serta layout $xmlName")
+            sendPrompt("Explain this code to me")
         }
 
         binding.btnSend.setOnClickListener { send() }
@@ -176,7 +171,7 @@ class AiChatFragment : Fragment() {
     }
 
     /**
-     * BottomSheetDialog aksi asisten cepat (tanpa emoji, menggunakan Vector Icon resmi).
+     * BottomSheetDialog for quick actions.
      */
     private fun showAttachmentOptions() {
         val bottomSheet = BottomSheetDialog(requireContext())
@@ -187,7 +182,7 @@ class AiChatFragment : Fragment() {
         }
 
         val title = TextView(requireContext()).apply {
-            text = "Quick Assistant Actions"
+            text = "Quick Actions"
             textSize = 18f
             setTypeface(null, Typeface.BOLD)
             val pad = (12 * resources.displayMetrics.density).toInt()
@@ -198,17 +193,17 @@ class AiChatFragment : Fragment() {
         data class ActionItem(val iconRes: Int, val title: String, val onClick: () -> Unit)
 
         val actions = listOf(
-            ActionItem(R.drawable.ic_mtrl_bug_report, "Analisis Error Compile") {
+            ActionItem(R.drawable.ic_mtrl_bug_report, "Analyze Compile Errors") {
                 attachCompileError()
             },
-            ActionItem(R.drawable.ic_mtrl_folder, "Pilih File / Periksa Layout (${getXmlName()})") {
+            ActionItem(R.drawable.ic_mtrl_folder, "Select File / Inspect Layout (${getXmlName()})") {
                 openFilePicker()
             },
-            ActionItem(R.drawable.ic_mtrl_code, "Pasang Block Logic (${getJavaName()})") {
-                binding.etInput.setText("Tolong pasang block logic di ${getJavaName()} untuk event ")
+            ActionItem(R.drawable.ic_mtrl_code, "Insert Logic Blocks (${getJavaName()})") {
+                binding.etInput.setText("Please add logic blocks to ${getJavaName()} for event ")
                 binding.etInput.setSelection(binding.etInput.text.length)
             },
-            ActionItem(R.drawable.ic_mtrl_link, "Tambah URL Link") {
+            ActionItem(R.drawable.ic_mtrl_link, "Add URL Link") {
                 showLinkDialog()
             }
         )
@@ -260,7 +255,7 @@ class AiChatFragment : Fragment() {
 
     private fun openFilePicker() {
         val options = FilePickerOptions().apply {
-            title = "Pilih File"
+            title = "Select File"
         }
         val callback = object : FilePickerCallback() {
             override fun onFileSelected(file: File) {
@@ -274,7 +269,7 @@ class AiChatFragment : Fragment() {
 
     private fun attachCompileError() {
         val error = AiDiagnosticHelper.getCompileError(getScId())
-        binding.etInput.setText("Tolong analisis error compile berikut dan beri solusinya:\n$error")
+        binding.etInput.setText("Please analyze the following compile errors and suggest fixes:\n$error")
         binding.etInput.setSelection(binding.etInput.text.length)
     }
 
@@ -284,9 +279,9 @@ class AiChatFragment : Fragment() {
         dialog.etInput.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
 
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Tambah URL Link")
+            .setTitle("Add URL Link")
             .setView(dialog.root)
-            .setPositiveButton("Tambah") { _, _ ->
+            .setPositiveButton("Add") { _, _ ->
                 val url = dialog.etInput.text?.toString()?.trim() ?: ""
                 if (url.isNotEmpty()) {
                     val current = binding.etInput.text?.toString() ?: ""
@@ -294,7 +289,7 @@ class AiChatFragment : Fragment() {
                     binding.etInput.append("$separator$url ")
                 }
             }
-            .setNegativeButton("Batal", null)
+            .setNegativeButton("Cancel", null)
             .show()
     }
 
@@ -305,7 +300,7 @@ class AiChatFragment : Fragment() {
 
         val file = findProjectFile(scId, javaName)
         if (file == null) {
-            SketchwareUtil.toast("File Java tidak ditemukan di project.")
+            SketchwareUtil.toast("Java file not found in project.")
             return
         }
 
@@ -336,7 +331,7 @@ class AiChatFragment : Fragment() {
 
         binding.etInput.setText("")
         adapter.add(ChatAdapter.ChatMessage.user(text))
-        adapter.updateStatus("Sedang berpikir...")
+        adapter.updateStatus("Thinking...")
         scrollToBottom()
         setBusy(true)
 
@@ -359,17 +354,17 @@ class AiChatFragment : Fragment() {
                         val buttonLabel: String
                         val proposalLabel: String
                         if (p.isLayout) {
-                            buttonLabel = "Terapkan layout ke ${p.xmlName}"
-                            proposalLabel = "Rancangan layout XML (belum diterapkan):\n"
+                            buttonLabel = "Apply layout to ${p.xmlName}"
+                            proposalLabel = "Proposed layout XML (not applied yet):\n"
                         } else if (p.isWidget) {
-                            buttonLabel = "Tambah widget ke ${p.xmlName}"
-                            proposalLabel = "Rancangan widget (belum diterapkan):\n"
+                            buttonLabel = "Add widget to ${p.xmlName}"
+                            proposalLabel = "Proposed widget (not applied yet):\n"
                         } else if (p.isSource) {
-                            buttonLabel = "Tulis source code ke ${p.eventKey}"
-                            proposalLabel = "Rancangan source code (belum ditulis):\n"
+                            buttonLabel = "Write source code to ${p.eventKey}"
+                            proposalLabel = "Proposed source code (not written yet):\n"
                         } else {
-                            buttonLabel = "Tulis block ke ${p.eventKey}"
-                            proposalLabel = "Rancangan block (belum ditulis):\n"
+                            buttonLabel = "Write blocks to ${p.eventKey}"
+                            proposalLabel = "Proposed blocks (not written yet):\n"
                         }
 
                         binding.btnApply.text = buttonLabel
@@ -416,17 +411,17 @@ class AiChatFragment : Fragment() {
             confirmSourceCode(p)
         } else if (p.isWidget) {
             MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Tambah widget?")
-                .setMessage("Tambahkan ${p.widgetType} (${p.widgetId}) ke ${p.xmlName}?\n\n${p.summary}")
-                .setPositiveButton("Tambah") { _, _ -> applyPending(p) }
-                .setNegativeButton("Batal", null)
+                .setTitle("Add widget?")
+                .setMessage("Add ${p.widgetType} (${p.widgetId}) to ${p.xmlName}?\n\n${p.summary}")
+                .setPositiveButton("Add") { _, _ -> applyPending(p) }
+                .setNegativeButton("Cancel", null)
                 .show()
         } else {
             MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Tulis block?")
+                .setTitle("Write blocks?")
                 .setMessage("Event: ${p.eventKey}\n\n${p.summary}")
-                .setPositiveButton("Tulis") { _, _ -> applyPending(p) }
-                .setNegativeButton("Batal", null)
+                .setPositiveButton("Write") { _, _ -> applyPending(p) }
+                .setNegativeButton("Cancel", null)
                 .show()
         }
     }
@@ -442,11 +437,11 @@ class AiChatFragment : Fragment() {
         val scroll = ScrollView(requireContext()).apply { addView(code) }
 
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Terapkan layout XML ke ${p.xmlName}?")
-            .setMessage("Ini akan memperbarui layout project dengan kode XML berikut:")
+            .setTitle("Apply layout XML to ${p.xmlName}?")
+            .setMessage("This will update the project layout with the following XML code:")
             .setView(scroll)
-            .setPositiveButton("Terapkan") { _, _ -> applyPending(p) }
-            .setNegativeButton("Batal", null)
+            .setPositiveButton("Apply") { _, _ -> applyPending(p) }
+            .setNegativeButton("Cancel", null)
             .show()
     }
 
@@ -461,11 +456,11 @@ class AiChatFragment : Fragment() {
         val scroll = ScrollView(requireContext()).apply { addView(code) }
 
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Tulis source code ini?")
-            .setMessage("Event: ${p.eventKey}\nDimasukkan menggunakan block addSourceDirectly.")
+            .setTitle("Write this source code?")
+            .setMessage("Event: ${p.eventKey}\nInserted using addSourceDirectly block.")
             .setView(scroll)
-            .setPositiveButton("Tulis") { _, _ -> applyPending(p) }
-            .setNegativeButton("Batal", null)
+            .setPositiveButton("Write") { _, _ -> applyPending(p) }
+            .setNegativeButton("Cancel", null)
             .show()
     }
 
@@ -502,7 +497,7 @@ class AiChatFragment : Fragment() {
                 if (success) {
                     pending = null
                     binding.btnApply.visibility = View.GONE
-                    SketchwareUtil.toast("Berhasil diterapkan ke project.")
+                    SketchwareUtil.toast("Applied successfully to project.")
                 }
                 scrollToBottom()
             }

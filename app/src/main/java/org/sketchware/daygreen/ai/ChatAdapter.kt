@@ -161,14 +161,14 @@ class ChatAdapter(
             val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
             if (cm != null) {
                 cm.setPrimaryClip(ClipData.newPlainText(finalFileName, code))
-                SketchwareUtil.toast("Kode disalin")
+                SketchwareUtil.toast("Code copied to clipboard")
             }
         }
         return view
     }
 
     private fun bindThinking(holder: Holder, item: ChatMessage) {
-        holder.title?.text = "Reasoning (${if (item.expanded) "sembunyikan" else "tampilkan"})"
+        holder.title?.text = "Reasoning (${if (item.expanded) "hide" else "show"})"
         holder.chevron?.rotation = if (item.expanded) 180f else 0f
         holder.body?.text = item.text
         holder.body?.visibility = if (item.expanded) View.VISIBLE else View.GONE
