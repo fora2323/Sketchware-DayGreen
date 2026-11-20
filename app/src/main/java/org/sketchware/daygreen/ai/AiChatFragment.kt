@@ -2,20 +2,27 @@ package org.sketchware.daygreen.ai
 
 import a.a.a.jC
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Rect
 import android.graphics.Typeface
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.OpenableColumns
 import android.text.InputType
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
@@ -32,6 +39,7 @@ import org.sketchware.daygreen.ai.activities.AiSettingsActivity
 import pro.sketchware.R
 import pro.sketchware.databinding.DialogAiInputBinding
 import pro.sketchware.databinding.FragmentAiChatBinding
+import pro.sketchware.databinding.ItemAttachmentChipBinding
 import pro.sketchware.utility.SketchwareUtil
 import java.io.File
 
@@ -46,6 +54,24 @@ class AiChatFragment : Fragment() {
     private lateinit var formatter: ChatTextFormatter
     private val mainHandler = Handler(Looper.getMainLooper())
     private var pending: AiChatClient.Proposal? = null
+    private var isBusy = false
+
+    private data class Attachment(
+        val uri: Uri,
+        val name: String,
+        val isImage: Boolean,
+        val bitmap: Bitmap? = null
+    )
+
+    private val attachedList = mutableListOf<Attachment>()
+
+    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { addAttachmentChip(it, isImage = true) }
+    }
+
+    private val layoutListener = ViewTreeObserver.OnGlobalLayoutListener {
+        updateKeyboardPosition()
+    }
 
     companion object {
         private const val ARG_SC_ID = "sc_id"
@@ -90,11 +116,23 @@ class AiChatFragment : Fragment() {
         binding.rvChat.layoutManager = layoutManager
         binding.rvChat.adapter = adapter
 
+        // Listen for keyboard and view hierarchy size changes
+        binding.root.viewTreeObserver.addOnGlobalLayoutListener(layoutListener)
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
-            if (insets.isVisible(WindowInsetsCompat.Type.ime())) {
-                scrollToBottom()
-            }
+            updateKeyboardPosition()
             insets
+        }
+
+        // Show/hide "Scroll to bottom" pill button
+        binding.rvChat.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                val canScrollDown = recyclerView.canScrollVertically(1)
+                binding.btnScrollToBottom.visibility = if (canScrollDown) View.VISIBLE else View.GONE
+            }
+        })
+
+        binding.btnScrollToBottom.setOnClickListener {
+            scrollToBottom()
         }
 
         if (scId.isEmpty()) {
@@ -117,7 +155,14 @@ class AiChatFragment : Fragment() {
             sendPrompt("Explain this code to me")
         }
 
-        binding.btnSend.setOnClickListener { send() }
+        binding.btnSend.setOnClickListener {
+            if (isBusy) {
+                cancelRequest()
+            } else {
+                send()
+            }
+        }
+
         binding.btnApply.setOnClickListener { confirmApply() }
         binding.btnLink.setOnClickListener { showAttachmentOptions() }
         binding.btnSettings.setOnClickListener { openSettings() }
@@ -133,6 +178,35 @@ class AiChatFragment : Fragment() {
                 updateEmptyState()
             }
         })
+    }
+
+    private fun updateKeyboardPosition() {
+        if (_binding == null) return
+        val root = binding.root
+        val insets = ViewCompat.getRootWindowInsets(root)
+        val imeInsets = insets?.getInsets(WindowInsetsCompat.Type.ime())
+        val imeHeight = imeInsets?.bottom ?: 0
+        val imeVisible = insets?.isVisible(WindowInsetsCompat.Type.ime()) == true || imeHeight > 100
+
+        val targetTranslationY = if (imeVisible) {
+            val r = Rect()
+            root.getWindowVisibleDisplayFrame(r)
+            val loc = IntArray(2)
+            root.getLocationOnScreen(loc)
+            val rootBottom = loc[1] + root.height
+            val overlap = (rootBottom - r.bottom).coerceAtLeast(0)
+            -overlap.toFloat()
+        } else {
+            0f
+        }
+
+        if (binding.cvInput.translationY != targetTranslationY) {
+            binding.cvInput.translationY = targetTranslationY
+            binding.btnScrollToBottom.translationY = targetTranslationY
+            if (targetTranslationY < 0f) {
+                scrollToBottom()
+            }
+        }
     }
 
     private fun sendPrompt(text: String) {
@@ -152,6 +226,7 @@ class AiChatFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        binding.root.viewTreeObserver.removeOnGlobalLayoutListener(layoutListener)
         _binding = null
         super.onDestroyView()
     }
@@ -167,11 +242,106 @@ class AiChatFragment : Fragment() {
 
         val provider = AiProviders.ALL[providerIndex]
         val modelId = store.getModelId("")
-        binding.btnModel.text = if (modelId.isEmpty()) provider.models[0] else modelId
+        binding.tvModelName.text = if (modelId.isEmpty()) provider.models[0] else modelId
     }
 
     /**
-     * BottomSheetDialog for quick actions.
+     * Add an attachment chip for photo or file.
+     */
+    private fun addAttachmentChip(uri: Uri, isImage: Boolean, customName: String? = null) {
+        val fileName = customName ?: getFileName(uri)
+        var bitmap: Bitmap? = null
+
+        if (isImage) {
+            try {
+                requireContext().contentResolver.openInputStream(uri)?.use { stream ->
+                    val options = BitmapFactory.Options().apply {
+                        inJustDecodeBounds = true
+                    }
+                    BitmapFactory.decodeStream(stream, null, options)
+                    val sampleSize = calculateInSampleSize(options, 72, 72)
+
+                    requireContext().contentResolver.openInputStream(uri)?.use { stream2 ->
+                        val decodeOptions = BitmapFactory.Options().apply {
+                            inSampleSize = sampleSize
+                        }
+                        bitmap = BitmapFactory.decodeStream(stream2, null, decodeOptions)
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+
+        val attachment = Attachment(uri, fileName, isImage, bitmap)
+        attachedList.add(attachment)
+
+        val chipBinding = ItemAttachmentChipBinding.inflate(layoutInflater, binding.llAttachments, false)
+        chipBinding.tvAttachmentName.text = fileName
+
+        if (isImage && bitmap != null) {
+            chipBinding.ivAttachmentPreview.setImageBitmap(bitmap)
+            chipBinding.ivAttachmentPreview.imageTintList = null
+        } else {
+            chipBinding.ivAttachmentPreview.setImageResource(R.drawable.ic_mtrl_folder)
+            val typedValue = TypedValue()
+            requireContext().theme.resolveAttribute(R.attr.colorPrimary, typedValue, true)
+            chipBinding.ivAttachmentPreview.setColorFilter(typedValue.data)
+        }
+
+        chipBinding.btnAttachmentRemove.setOnClickListener {
+            binding.llAttachments.removeView(chipBinding.root)
+            attachedList.remove(attachment)
+            if (attachedList.isEmpty()) {
+                binding.hsvAttachments.visibility = View.GONE
+            }
+        }
+
+        binding.llAttachments.addView(chipBinding.root)
+        binding.hsvAttachments.visibility = View.VISIBLE
+        binding.hsvAttachments.post {
+            binding.hsvAttachments.fullScroll(View.FOCUS_RIGHT)
+        }
+    }
+
+    private fun getFileName(uri: Uri): String {
+        var name = ""
+        if (uri.scheme == "content") {
+            try {
+                val cursor = requireContext().contentResolver.query(uri, null, null, null, null)
+                cursor?.use {
+                    if (it.moveToFirst()) {
+                        val index = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (index >= 0) {
+                            name = it.getString(index)
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        if (name.isEmpty()) {
+            name = uri.lastPathSegment ?: "attachment"
+            val cut = name.lastIndexOf('/')
+            if (cut != -1) {
+                name = name.substring(cut + 1)
+            }
+        }
+        return name
+    }
+
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val (height: Int, width: Int) = options.run { outHeight to outWidth }
+        var inSampleSize = 1
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight: Int = height / 2
+            val halfWidth: Int = width / 2
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
+    }
+
+    /**
+     * BottomSheetDialog for attachments and quick actions.
      */
     private fun showAttachmentOptions() {
         val bottomSheet = BottomSheetDialog(requireContext())
@@ -182,22 +352,28 @@ class AiChatFragment : Fragment() {
         }
 
         val title = TextView(requireContext()).apply {
-            text = "Quick Actions"
-            textSize = 18f
+            text = "Add Attachments & Quick Actions"
+            textSize = 17f
             setTypeface(null, Typeface.BOLD)
             val pad = (12 * resources.displayMetrics.density).toInt()
             setPadding(0, 0, 0, pad)
+            val typedValue = TypedValue()
+            requireContext().theme.resolveAttribute(R.attr.colorOnSurface, typedValue, true)
+            setTextColor(typedValue.data)
         }
         layout.addView(title)
 
         data class ActionItem(val iconRes: Int, val title: String, val onClick: () -> Unit)
 
         val actions = listOf(
+            ActionItem(R.drawable.photo_library_24px, "Attach Photo") {
+                pickImageLauncher.launch("image/*")
+            },
+            ActionItem(R.drawable.ic_mtrl_folder, "Attach Project File / Layout (${getXmlName()})") {
+                openFilePicker()
+            },
             ActionItem(R.drawable.ic_mtrl_bug_report, "Analyze Compile Errors") {
                 attachCompileError()
-            },
-            ActionItem(R.drawable.ic_mtrl_folder, "Select File / Inspect Layout (${getXmlName()})") {
-                openFilePicker()
             },
             ActionItem(R.drawable.ic_mtrl_code, "Insert Logic Blocks (${getJavaName()})") {
                 binding.etInput.setText("Please add logic blocks to ${getJavaName()} for event ")
@@ -259,9 +435,7 @@ class AiChatFragment : Fragment() {
         }
         val callback = object : FilePickerCallback() {
             override fun onFileSelected(file: File) {
-                val current = binding.etInput.text.toString()
-                val separator = if (current.isEmpty() || current.endsWith(" ")) "" else " "
-                binding.etInput.append("$separator[File: ${file.name}] ")
+                addAttachmentChip(Uri.fromFile(file), isImage = false, customName = file.name)
             }
         }
         FilePickerDialogFragment(options, callback).show(parentFragmentManager, "file_picker")
@@ -325,17 +499,58 @@ class AiChatFragment : Fragment() {
         }
     }
 
+    private fun cancelRequest() {
+        client.cancel()
+        setBusy(false)
+        adapter.removeStatus()
+        adapter.add(ChatAdapter.ChatMessage.agent("Request canceled by user."))
+        scrollToBottom()
+    }
+
     private fun send() {
-        val text = binding.etInput.text?.toString()?.trim() ?: ""
-        if (text.isEmpty()) return
+        var text = binding.etInput.text?.toString()?.trim() ?: ""
+        if (text.isEmpty() && attachedList.isEmpty()) return
+
+        if (text.isEmpty()) {
+            text = "Please inspect the attached files/photos."
+        }
+
+        val promptBuilder = StringBuilder(text)
+        if (attachedList.isNotEmpty()) {
+            promptBuilder.append("\n\nAttached items:")
+            for (att in attachedList) {
+                if (att.isImage) {
+                    promptBuilder.append("\n- [Image: ${att.name}]")
+                } else {
+                    val content = try {
+                        val file = File(att.uri.path ?: "")
+                        if (file.exists() && file.isFile) file.readText() else null
+                    } catch (_: Exception) {
+                        null
+                    }
+                    if (!content.isNullOrEmpty()) {
+                        val trimmed = if (content.length > 2500) content.substring(0, 2500) + "\n... (truncated)" else content
+                        promptBuilder.append("\n- File '${att.name}':\n```\n$trimmed\n```")
+                    } else {
+                        promptBuilder.append("\n- [File: ${att.name}]")
+                    }
+                }
+            }
+        }
+
+        val finalPrompt = promptBuilder.toString()
 
         binding.etInput.setText("")
+        attachedList.clear()
+        binding.llAttachments.removeAllViews()
+        binding.hsvAttachments.visibility = View.GONE
+
         adapter.add(ChatAdapter.ChatMessage.user(text))
         adapter.updateStatus("Thinking...")
         scrollToBottom()
         setBusy(true)
 
-        client.ask(text, object : AiChatClient.Callback {
+        client.ask(finalPrompt, object : AiChatClient.Callback {
             override fun onResult(reply: String, proposals: List<AiChatClient.Proposal>) {
                 mainHandler.post {
                     if (_binding == null) return@post
@@ -505,8 +720,14 @@ class AiChatFragment : Fragment() {
     }
 
     private fun setBusy(busy: Boolean) {
-        binding.btnSend.isEnabled = !busy
-        binding.btnSend.alpha = if (busy) 0.45f else 1f
+        isBusy = busy
+        if (busy) {
+            binding.btnSend.setImageResource(R.drawable.ic_stop)
+            binding.btnSend.contentDescription = "Stop"
+        } else {
+            binding.btnSend.setImageResource(R.drawable.ic_send_plane)
+            binding.btnSend.contentDescription = "Send"
+        }
     }
 
     private fun scrollToBottom() {
