@@ -92,9 +92,10 @@ public final class AiChatClient {
                     + "6. If a tool returns an error, read it, adjust, and try again or explain to the user.\n"
                     + "7. Only call tools that are listed to you. If a tool is missing, tell the user.\n"
                     + "8. If list_blocks has no block that fits the request, do NOT write code yourself. "
-                    + "Tell the user no matching block exists and ask whether they want raw source code instead. "
+                    + "Tell the user no matching block exists and ask for permission to use 'add source directly'. "
                     + "Only call propose_source_code after the user explicitly says yes.\n"
-                    + "9. Once you have enough data, answer the user in plain text. "
+                    + "9. You can also suggest layout modifications like main.xml, but explain to the user how to apply it.\n"
+                    + "10. Once you have enough data, answer the user in plain text. "
                     + "Do not keep calling list tools for a question that is already answered.";
 
     private final AiSettingsStore store;

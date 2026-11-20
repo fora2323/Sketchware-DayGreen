@@ -82,13 +82,38 @@ public class AiChatFragment extends Fragment {
             binding.btnSend.setEnabled(false);
             return;
         }
+        
+        binding.btnPrompt1.setOnClickListener(v -> sendPrompt("Fix the warnings and errors in the current file"));
+        binding.btnPrompt2.setOnClickListener(v -> sendPrompt("Add documentation to my current file"));
+        binding.btnPrompt3.setOnClickListener(v -> sendPrompt("Explain this code to me"));
 
         binding.btnSend.setOnClickListener(v -> send());
         binding.btnApply.setOnClickListener(v -> confirmApply());
-        binding.btnLink.setOnClickListener(v -> showLinkDialog());
-        binding.btnSettings.setOnClickListener(v -> openSettings());
+        binding.btnLink.setOnClickListener(v -> showAttachmentOptions());
+        if (binding.btnSettings != null) {
+            binding.btnSettings.setOnClickListener(v -> openSettings());
+        }
         binding.btnModel.setOnClickListener(v ->
                 AiModelPicker.show(requireContext(), store, store.getProviderIndex(), this::refreshModelLabel));
+                
+        updateEmptyState();
+        adapter.registerAdapterDataObserver(new androidx.recyclerview.widget.RecyclerView.AdapterDataObserver() {
+            @Override
+            public void onItemRangeInserted(int positionStart, int itemCount) {
+                updateEmptyState();
+            }
+        });
+    }
+    
+    private void sendPrompt(String text) {
+        binding.etInput.setText(text);
+        send();
+    }
+    
+    private void updateEmptyState() {
+        if (binding == null) return;
+        boolean empty = adapter.getItemCount() == 0;
+        binding.llEmptyState.setVisibility(empty ? View.VISIBLE : View.GONE);
     }
 
     @Override
@@ -115,6 +140,59 @@ public class AiChatFragment extends Fragment {
         AiProviders.Provider provider = AiProviders.ALL[providerIndex];
         String modelId = store.getModelId("");
         binding.btnModel.setText(modelId.isEmpty() ? provider.models[0] : modelId);
+    }
+
+    /**
+     * Shows a bottom sheet to attach a photo, file, or analyze an error.
+     */
+    private void showAttachmentOptions() {
+        com.google.android.material.bottomsheet.BottomSheetDialog bottomSheet = 
+                new com.google.android.material.bottomsheet.BottomSheetDialog(requireContext());
+        
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(requireContext());
+        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        layout.setPadding(pad, pad, pad, pad);
+        
+        android.widget.TextView title = new android.widget.TextView(requireContext());
+        title.setText("Add attachment");
+        title.setTextSize(18);
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
+        title.setPadding(0, 0, 0, pad);
+        layout.addView(title);
+        
+        String[] options = {"Photo", "File", "Analyze Error", "URL"};
+        for (int i = 0; i < options.length; i++) {
+            android.widget.TextView item = new android.widget.TextView(requireContext());
+            item.setText(options[i]);
+            item.setTextSize(16);
+            item.setPadding(0, pad/2, 0, pad/2);
+            android.util.TypedValue outValue = new android.util.TypedValue();
+            requireContext().getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
+            item.setBackgroundResource(outValue.resourceId);
+            int finalI = i;
+            item.setOnClickListener(v -> {
+                bottomSheet.dismiss();
+                switch (finalI) {
+                    case 0:
+                        pro.sketchware.utility.SketchwareUtil.toast("Photo attachment coming soon");
+                        break;
+                    case 1:
+                        pro.sketchware.utility.SketchwareUtil.toast("File attachment coming soon");
+                        break;
+                    case 2:
+                        pro.sketchware.utility.SketchwareUtil.toast("Error analysis coming soon");
+                        break;
+                    case 3:
+                        showLinkDialog();
+                        break;
+                }
+            });
+            layout.addView(item);
+        }
+        
+        bottomSheet.setContentView(layout);
+        bottomSheet.show();
     }
 
     /**
