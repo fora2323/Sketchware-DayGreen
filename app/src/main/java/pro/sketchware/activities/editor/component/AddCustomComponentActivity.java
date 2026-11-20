@@ -67,10 +67,14 @@ public class AddCustomComponentActivity extends BaseAppCompatActivity implements
         }
         getViewsById();
         if (isEditMode) {
-            setTitle(Helper.getResString(R.string.event_title_edit_component));
+            String title = Helper.getResString(R.string.event_title_edit_component);
+            setTitle(title);
+            binding.collapsingToolbarLayout.setTitle(title);
             fillUp();
         } else {
-            setTitle(Helper.getResString(R.string.event_title_add_new_component));
+            String title = Helper.getResString(R.string.event_title_add_new_component);
+            setTitle(title);
+            binding.collapsingToolbarLayout.setTitle(title);
             initializeHelper();
         }
 

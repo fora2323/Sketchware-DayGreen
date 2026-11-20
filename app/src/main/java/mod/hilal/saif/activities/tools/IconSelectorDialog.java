@@ -31,9 +31,17 @@ public class IconSelectorDialog {
         this.activity = activity;
         this.toSetText = toSetText;
 
-        data = new ArrayList<>(OldResourceIdMapper.HIGHEST_ID - OldResourceIdMapper.LOWEST_ID);
-        for (int i = OldResourceIdMapper.LOWEST_ID; i < OldResourceIdMapper.HIGHEST_ID; i++) {
-            data.add(i);
+        data = new ArrayList<>();
+        for (int i = OldResourceIdMapper.LOWEST_ID; i <= OldResourceIdMapper.HIGHEST_ID; i++) {
+            int resId = OldResourceIdMapper.getDrawableFromOldResourceId(i);
+            if (resId != 0) {
+                try {
+                    if (activity.getResources().getDrawable(resId, activity.getTheme()) != null) {
+                        data.add(i);
+                    }
+                } catch (Resources.NotFoundException ignored) {
+                }
+            }
         }
     }
 
@@ -79,13 +87,15 @@ public class IconSelectorDialog {
             }
 
             int oldResourceId = getItem(position);
-            try {
-                itemBinding.iconImage.setImageResource(
-                        OldResourceIdMapper.getDrawableFromOldResourceId(oldResourceId)
-                );
-            } catch (Resources.NotFoundException e) {
-                iconsList.remove(position);
-                notifyDataSetChanged();
+            int resId = OldResourceIdMapper.getDrawableFromOldResourceId(oldResourceId);
+            if (resId != 0) {
+                try {
+                    itemBinding.iconImage.setImageResource(resId);
+                } catch (Resources.NotFoundException e) {
+                    itemBinding.iconImage.setImageDrawable(null);
+                }
+            } else {
+                itemBinding.iconImage.setImageDrawable(null);
             }
 
             return convertView;
