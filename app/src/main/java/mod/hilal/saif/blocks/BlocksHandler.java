@@ -2796,7 +2796,6 @@ public class BlocksHandler {
         logicEditorActivity.a("b", "false");
         logicEditorActivity.a("b", "<");
         logicEditorActivity.a("b", "=");
-        IDOperator.addPaletteBlocks(logicEditorActivity);
         logicEditorActivity.a("b", ">");
         logicEditorActivity.a("b", "&&");
         logicEditorActivity.a("b", "||");
@@ -2847,6 +2846,7 @@ public class BlocksHandler {
             logicEditorActivity.a("s", "GsonListTojsonString");
             logicEditorActivity.a(" ", "stringSplitToList");
         }
+        IDOperator.addPaletteBlocks(logicEditorActivity);
     }
 
     private static @ColorInt int getTitleBgColor(LogicEditorActivity logicEditorActivity) {
