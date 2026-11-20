@@ -90,7 +90,7 @@ public class PaletteBlock extends LinearLayout {
 
     public void a(String title, int color) {
         var cardView = new MaterialCardView(context);
-        var params = getLayoutParams(18.0F);
+        var params = getLayoutParams(30.0F);
         params.topMargin = (int) (f * 16.0F);
         params.bottomMargin = (int) (f * 8.0F);
         cardView.setLayoutParams(params);
