@@ -91,17 +91,6 @@ class AiChatFragment : Fragment() {
         binding.rvChat.adapter = adapter
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
-            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
-            val navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars())
-            val bottomPadding = Math.max(imeInsets.bottom, navInsets.bottom)
-            val defaultPadding = (8 * resources.displayMetrics.density).toInt()
-
-            binding.cvInput.setPadding(
-                binding.cvInput.paddingLeft,
-                binding.cvInput.paddingTop,
-                binding.cvInput.paddingRight,
-                if (bottomPadding > 0) bottomPadding else defaultPadding
-            )
             if (insets.isVisible(WindowInsetsCompat.Type.ime())) {
                 scrollToBottom()
             }
