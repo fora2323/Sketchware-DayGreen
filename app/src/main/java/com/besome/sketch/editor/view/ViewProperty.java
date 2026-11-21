@@ -12,6 +12,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
@@ -85,6 +86,18 @@ public class ViewProperty extends LinearLayout implements Kw {
 
     public interface onPropertyDeleted {
         void deleteProperty(ViewBean viewBean);
+    }
+
+    public interface onPropertyMoved {
+        void moveProperty(ViewBean viewBean, boolean up);
+    }
+
+    private onPropertyMoved onPropertyMovedListener;
+    private ImageButton imgUp;
+    private ImageButton imgDown;
+
+    public void setOnPropertyMoved(onPropertyMoved listener) {
+        onPropertyMovedListener = listener;
     }
 
     public void setOnPropertyDeleted(onPropertyDeleted onPropertyDeleted) {
@@ -286,6 +299,10 @@ public class ViewProperty extends LinearLayout implements Kw {
         });
         imgDelete = findViewById(R.id.img_delete);
         imgDelete.setOnClickListener(view -> showDeleteViewBeanWidget());
+        imgUp = findViewById(R.id.img_up);
+        imgUp.setOnClickListener(view -> moveSelected(true));
+        imgDown = findViewById(R.id.img_down);
+        imgDown.setOnClickListener(view -> moveSelected(false));
         spnWidget = findViewById(R.id.spn_widget);
         idsAdapter = new ViewIdsAdapter(context, projectActivityViews);
         spnWidget.setAdapter(idsAdapter);
@@ -315,12 +332,54 @@ public class ViewProperty extends LinearLayout implements Kw {
         if ("_fab".equals(viewBean.id)) {
             imgSave.setVisibility(GONE);
             imgDelete.setVisibility(GONE);
+            imgUp.setVisibility(GONE);
+            imgDown.setVisibility(GONE);
         } else {
             imgSave.setVisibility(VISIBLE);
             imgDelete.setVisibility(VISIBLE);
+            imgUp.setVisibility(VISIBLE);
+            imgDown.setVisibility(VISIBLE);
+            updateMoveButtonsState(viewBean);
         }
         viewPropertyItems.setProjectFileBean(projectFile);
         e();
+    }
+
+    private void moveSelected(boolean up) {
+        int pos = idsAdapter.getSelectedItemPosition();
+        if (onPropertyMovedListener != null && pos < projectActivityViews.size()) {
+            onPropertyMovedListener.moveProperty(projectActivityViews.get(pos), up);
+        }
+    }
+
+    private void updateMoveButtonsState(ViewBean viewBean) {
+        if (viewBean == null || viewBean.parent == null) {
+            setMoveButtonEnabled(imgUp, false);
+            setMoveButtonEnabled(imgDown, false);
+            return;
+        }
+        ArrayList<ViewBean> siblings = new ArrayList<>();
+        for (ViewBean child : projectActivityViews) {
+            if (child.parent != null && child.parent.equals(viewBean.parent)) {
+                siblings.add(child);
+            }
+        }
+        siblings.sort((a, b) -> Integer.compare(a.index, b.index));
+
+        int myPos = -1;
+        for (int i = 0; i < siblings.size(); i++) {
+            if (siblings.get(i).id.equals(viewBean.id)) {
+                myPos = i;
+                break;
+            }
+        }
+        setMoveButtonEnabled(imgUp, myPos > 0);
+        setMoveButtonEnabled(imgDown, myPos >= 0 && myPos < siblings.size() - 1);
+    }
+
+    private void setMoveButtonEnabled(ImageButton button, boolean enabled) {
+        button.setEnabled(enabled);
+        button.setAlpha(enabled ? 1.0f : 0.38f);
     }
 
     public void a(String sc_id, ProjectFileBean projectFileBean) {
@@ -332,7 +391,11 @@ public class ViewProperty extends LinearLayout implements Kw {
     public void a(String str) {
         for (int i = 0; i < projectActivityViews.size(); i++) {
             if (projectActivityViews.get(i).id.equals(str)) {
-                spnWidget.setSelection(i);
+                if (spnWidget.getSelectedItemPosition() == i) {
+                    selectView(projectActivityViews.get(i));
+                } else {
+                    spnWidget.setSelection(i);
+                }
                 return;
             }
         }
