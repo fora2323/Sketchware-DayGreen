@@ -1,6 +1,7 @@
 package org.sketchware.daygreen.settings
 
 import android.app.Activity
+import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,7 +45,29 @@ data class BuildToolItem(
     val isInstalled: Boolean,
     val toolId: String,
     val customUrl: String? = null,
+    val version: String? = null,
 )
+
+private const val NDK_BASE = "https://github.com/Apex-Studio-Dev/apex-toolchains/releases/download"
+
+private val NDK_VERSIONS = listOf(
+    "r30", "r29", "r28c", "r28b", "r28",
+    "r27d", "r27c", "r27b", "r27",
+    "r26d", "r26c", "r26b", "r26"
+)
+
+private fun ndkTriple(abi: String): String? = when (abi) {
+    "arm64-v8a" -> "aarch64-linux-android"
+    "armeabi-v7a" -> "armv7a-linux-androideabi"
+    "x86_64" -> "x86_64-linux-android"
+    "x86" -> "i686-linux-android"
+    else -> null
+}
+
+private fun ndkUrl(version: String, abi: String): String? {
+    val triple = ndkTriple(abi) ?: return null
+    return "$NDK_BASE/ndk-$version/custom-android-ndk-$version-$triple.tar.xz"
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,12 +97,6 @@ fun BuildToolsScreen(onBack: () -> Unit) {
 
         val ndkToolsItems = remember(refreshTrigger) {
             val abi = DownloadUtility.getDeviceAbi()
-            val ndkAbi = when (abi) {
-                "arm64-v8a" -> "aarch64"
-                "armeabi-v7a" -> "arm"
-                "x86_64" -> "x86_64"
-                else -> "aarch64"
-            }
             val cmakeAbi = when (abi) {
                 "arm64-v8a" -> "arm64"
                 "armeabi-v7a" -> "arm"
@@ -87,21 +104,28 @@ fun BuildToolsScreen(onBack: () -> Unit) {
                 else -> "arm64"
             }
 
-            listOf(
-                BuildToolItem(
-                    title = "Android NDK (r29)",
-                    description = "Required for compiling native C/C++ code",
-                    isInstalled = FileCheckUtils.isNdkDownloaded(context),
-                    toolId = "ndk",
-                    customUrl = "https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r29-$ndkAbi.tar.xz",
-                ),
-                BuildToolItem(
-                    title = "CMake (3.25.3)",
-                    description = "Build tool to configure and compile native code",
-                    isInstalled = FileCheckUtils.isCmakeDownloaded(context),
-                    toolId = "cmake",
-                    customUrl = "https://github.com/gus23-okta/sketchware-daygreen-build-tools/releases/download/3.25.3/cmake-3.25.3-1-linux-$cmakeAbi.tar.gz",
-                )
+            val prefs = context.getSharedPreferences("build_tools", Context.MODE_PRIVATE)
+            val installedNdk = prefs.getString("ndk_version", null)
+
+            val ndkItems = NDK_VERSIONS.mapNotNull { version ->
+                ndkUrl(version, abi)?.let { url ->
+                    BuildToolItem(
+                        title = "Android NDK ($version)",
+                        description = "Required for compiling native C/C++ code",
+                        isInstalled = FileCheckUtils.isNdkDownloaded(context) && installedNdk == version,
+                        toolId = "ndk",
+                        customUrl = url,
+                        version = version,
+                    )
+                }
+            }
+
+            ndkItems + BuildToolItem(
+                title = "CMake (3.25.3)",
+                description = "Build tool to configure and compile native code",
+                isInstalled = FileCheckUtils.isCmakeDownloaded(context),
+                toolId = "cmake",
+                customUrl = "https://github.com/gus23-okta/sketchware-daygreen-build-tools/releases/download/3.25.3/cmake-3.25.3-1-linux-$cmakeAbi.tar.gz",
             )
         }
 
@@ -113,6 +137,8 @@ fun BuildToolsScreen(onBack: () -> Unit) {
                     .setPositiveButton("Remove") { _, _ ->
                         if (item.toolId == "ndk") {
                             File(context.filesDir, "native/ndk").deleteRecursively()
+                            context.getSharedPreferences("build_tools", Context.MODE_PRIVATE)
+                                .edit().remove("ndk_version").apply()
                         } else if (item.toolId == "cmake") {
                             File(context.filesDir, "native/cmake").deleteRecursively()
                         } else if (item.toolId.startsWith("android-sdk-tools-v")) {
@@ -136,6 +162,10 @@ fun BuildToolsScreen(onBack: () -> Unit) {
                             File(context.filesDir, "native/cmake.tar.gz")
                         } else {
                             File(context.filesDir, "bin/${item.toolId.removePrefix("android-sdk-tools-v")}/tools.zip")
+                        }
+                        if (item.toolId == "ndk") {
+                            context.getSharedPreferences("build_tools", Context.MODE_PRIVATE)
+                                .edit().putString("ndk_version", item.version).apply()
                         }
                         (context as? Activity)?.let { act ->
                             DownloadUtility.downloadFile(act, url, destination) {

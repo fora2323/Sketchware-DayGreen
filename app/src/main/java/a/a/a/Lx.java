@@ -592,7 +592,7 @@ public class Lx {
                     eventLogic + "\r\n" +
                     "}";
             case "onRequestPermissionResult" -> "@Override\r\n" +
-                    "public void onRequestPermissionResult(int requestCode, int grantResult) {\r\n" +
+                    "public void onRequestPermissionResult(int _requestCode, int _grantResult) {\r\n" +
                     eventLogic + "\r\n" +
                     "}";                    
             default -> ManageEvent.f(targetId, eventName, eventLogic);
