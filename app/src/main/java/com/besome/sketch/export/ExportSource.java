@@ -103,6 +103,9 @@ public class ExportSource {
                 ensureCMakeLists(cppDest);
             }
 
+            /* Salin gradle wrapper dari assets/gradle_file ke project export */
+            copyAssetFolder(activity, "gradle_file", new File(project_metadata.projectMyscPath));
+
             project_metadata.f();
 
             /* It makes no sense that those methods aren't static */
@@ -125,6 +128,25 @@ public class ExportSource {
     private static void updateStatus(TextView statusTextView, String msg) {
         if (statusTextView == null || statusTextView.getContext() == null) return;
         ((Activity) statusTextView.getContext()).runOnUiThread(() -> statusTextView.setText(msg));
+    }
+        
+    private static void copyAssetFolder(Activity activity, String assetPath, File destDir) throws java.io.IOException {
+        String[] children = activity.getAssets().list(assetPath);
+        if (children == null || children.length == 0) {
+            if (destDir.getParentFile() != null) destDir.getParentFile().mkdirs();
+            try (java.io.InputStream in = activity.getAssets().open(assetPath);
+                 java.io.OutputStream out = new java.io.FileOutputStream(destDir)) {
+                byte[] buf = new byte[8192];
+                int n;
+                while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+            }
+            destDir.setExecutable(true);
+            return;
+        }
+        destDir.mkdirs();
+        for (String child : children) {
+            copyAssetFolder(activity, assetPath + "/" + child, new File(destDir, child));
+        }
     }
 
     public static void ensureCMakeLists(File cppDir) {
