@@ -130,7 +130,7 @@ public class ExportSource {
         ((Activity) statusTextView.getContext()).runOnUiThread(() -> statusTextView.setText(msg));
     }
         
-    private static void copyAssetFolder(Activity activity, String assetPath, File destDir) throws java.io.IOException {
+    public static void copyAssetFolder(Activity activity, String assetPath, File destDir) throws java.io.IOException {
         String[] children = activity.getAssets().list(assetPath);
         if (children == null || children.length == 0) {
             if (destDir.getParentFile() != null) destDir.getParentFile().mkdirs();
