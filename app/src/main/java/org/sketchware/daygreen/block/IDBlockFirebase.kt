@@ -45,7 +45,8 @@ object IDBlockFirebase {
         logicEditor.a(" ", "firebaseStopListen")
     }
 
-    private fun registerLabels(context: Context) {
+    @JvmStatic
+    fun registerLabels(context: Context) {
         val xb = xB.b()
         xb.a(context, "firebaseSetValue")
         xb.c["firebaseSetValue"] = "%m.firebase add key %s value %s"

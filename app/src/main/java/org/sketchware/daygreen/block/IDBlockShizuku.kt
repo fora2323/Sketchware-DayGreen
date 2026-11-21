@@ -98,7 +98,8 @@ object IDBlockShizuku {
      * Label diambil dari map xB.c berdasarkan opCode. Token %m.shizuku membuat dropdown
      * pemilih component, sama seperti %m.intent pada block Intent.
      */
-    private fun registerLabels(context: Context) {
+    @JvmStatic
+    fun registerLabels(context: Context) {
         val xb = xB.b()
         xb.a(context, "shizukuPingBinder")
         xb.c["shizukuPingBinder"] = "%m.shizuku pingBinder"
