@@ -1348,6 +1348,8 @@ public class ExportProjectActivity extends BaseAppCompatActivity {
                 ExportSource.ensureCMakeLists(cppDest);
             }
 
+            ExportSource.copyAssetFolder(this, "gradle_file", new File(project_metadata.projectMyscPath));
+
             ArrayList<String> toCompress = new ArrayList<>();
             toCompress.add(project_metadata.projectMyscPath);
             String exportedFilename = yB.c(sc_metadata, "my_ws_name") + ".zip";
