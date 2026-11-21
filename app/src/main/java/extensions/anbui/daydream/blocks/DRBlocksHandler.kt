@@ -1,6 +1,7 @@
 package extensions.anbui.daydream.blocks
 
 import org.sketchware.daygreen.blocks.IDBlockShizuku
+import org.sketchware.daygreen.blocks.IDBlockFirebase
 
 object DRBlockHandler {
     @JvmStatic
@@ -12,6 +13,7 @@ object DRBlockHandler {
         addBasicComponentBlocks(arrayList)
         addIntentPutExtraBlocks(arrayList)
         IDBlockShizuku.addBlocks(arrayList)
+        IDBlockFirebase.addBlocks(arrayList)
     }
 
     @JvmStatic

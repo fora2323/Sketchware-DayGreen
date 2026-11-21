@@ -89,7 +89,7 @@ public class kq {
                  "objectanimatorSetDuration", "objectanimatorSetRepeatMode",
                  "objectanimatorSetRepeatCount", "objectanimatorSetInterpolator",
                  "objectanimatorStart", "objectanimatorCancel", "objectanimatorIsRunning",
-                 "firebaseAdd", "firebaseDelete", "firebasePush", "firebaseGetPushKey",
+                 "firebaseAdd", "firebaseSetValue", "firebaseDelete", "firebasePush", "firebaseGetPushKey",
                  "firebaseGetChildren", "firebaseauthCreateUser", "firebaseauthSignInUser",
                  "firebaseauthSignInAnonymously", "firebaseauthIsLoggedIn",
                  "firebaseauthGetCurrentUser", "firebaseauthGetUid", "firebaseauthResetPassword",

@@ -920,6 +920,9 @@ public class Fx {
             case "firebaseAdd":
                 opcode = String.format("%s.child(%s).updateChildren(%s);", params.get(0), params.get(1), params.get(2));
                 break;
+            case "firebaseSetValue":
+                opcode = String.format("%s.child(%s).setValue(%s);", params.get(0), params.get(1), params.get(2));
+                break;
             case "firebasePush":
                 opcode = String.format("%s.push().updateChildren(%s);", params.get(0), params.get(1));
                 break;

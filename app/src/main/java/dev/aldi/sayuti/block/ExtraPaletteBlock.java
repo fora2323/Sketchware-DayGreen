@@ -26,6 +26,7 @@ import extensions.anbui.daydream.blocks.DRPaletteBlock;
 import extensions.anbui.daydream.library.DRFeatureManager;
 
 import org.sketchware.daygreen.blocks.IDBlockShizuku;
+import org.sketchware.daygreen.blocks.IDBlockFirebase;
 
 import mod.agus.jcoderz.beans.ViewBeans;
 import mod.hey.studios.editor.view.IdGenerator;
@@ -1086,14 +1087,7 @@ public class ExtraPaletteBlock {
                     logicEditor.a("b", "objectanimatorIsRunning");
                 }
                 if (extraBlocks.isComponentUsed(ComponentBean.COMPONENT_TYPE_FIREBASE)) {
-                    logicEditor.a("Firebase", getTitleBgColor());
-                    logicEditor.a(" ", "firebaseAdd");
-                    logicEditor.a(" ", "firebasePush");
-                    logicEditor.a("s", "firebaseGetPushKey");
-                    logicEditor.a(" ", "firebaseDelete");
-                    logicEditor.a("c", "firebaseGetChildren");
-                    logicEditor.a(" ", "firebaseStartListen");
-                    logicEditor.a(" ", "firebaseStopListen");
+                    IDBlockFirebase.addPaletteBlocks(logicEditor);
                 }
                 if (extraBlocks.isComponentUsed(ComponentBean.COMPONENT_TYPE_FIREBASE_AUTH)) {
                     logicEditor.a("FirebaseAuth", getTitleBgColor());
