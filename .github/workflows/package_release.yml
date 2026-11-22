@@ -2,6 +2,12 @@ name: Android Release
 
 on:
   workflow_dispatch:
+    inputs:
+      resend:
+        description: 'Build ulang dan kirim ke Telegram saja (tag dan release tidak dibuat ulang)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -94,38 +100,35 @@ jobs:
           TAG="${{ steps.version.outputs.version }}"
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Tag $TAG sudah ada. Workflow dihentikan agar tidak duplicate."
+            if [ "${{ inputs.resend }}" = "true" ]; then
+              echo "Tag $TAG sudah ada. Mode resend: build ulang dan kirim ke Telegram saja."
+            else
+              echo "Tag $TAG sudah ada. Workflow dihentikan agar tidak duplicate. Centang 'resend' untuk kirim ulang ke Telegram."
+            fi
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create and push tag
-        if: steps.check_tag.outputs.exists == 'false'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ steps.version.outputs.version }}"
-          git push origin "${{ steps.version.outputs.version }}"
-
       - name: Set up JDK 17
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || inputs.resend
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
       - name: Setup Gradle
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || inputs.resend
         uses: gradle/actions/setup-gradle@v4
 
       - name: Grant execute permission for gradlew
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || inputs.resend
         run: chmod +x gradlew
 
       - name: Build release APKs
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || inputs.resend
         run: ./gradlew assembleRelease --build-cache --stacktrace
 
+      # Tag dibuat oleh action ini saat release dibuat, jadi kalau build gagal tag tidak ada
       - name: Create GitHub Release
         if: steps.check_tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
@@ -137,17 +140,17 @@ jobs:
             app/build/outputs/apk/android33/release/*.apk
 
       - name: Set up Python
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || inputs.resend
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Install Pyrogram & Dependencies
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || inputs.resend
         run: pip install pyrofork tgcrypto
 
       - name: Send APKs to Telegram (Userbot)
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || inputs.resend
         timeout-minutes: 15
         env:
           API_ID: ${{ secrets.API_ID }}
@@ -161,4 +164,5 @@ jobs:
           APP_PACKAGE: ${{ steps.version.outputs.package }}
           REPO: ${{ github.repository }}
           NOTES_FILE: notes.md
+          FORCE_RESEND: ${{ inputs.resend }}
         run: python send_telegram.py
