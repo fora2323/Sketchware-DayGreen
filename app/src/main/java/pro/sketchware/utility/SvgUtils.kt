@@ -236,7 +236,9 @@ class SvgUtils(private val context: Context) {
         val width: Int = 24,
         val height: Int = 24,
         val viewportWidth: Float = 24f,
-        val viewportHeight: Float = 24f
+        val viewportHeight: Float = 24f,
+        val minX: Float = 0f,
+        val minY: Float = 0f
     )
 
     private fun extractSvgAttributes(parser: XmlPullParser): SvgAttributes {
@@ -246,6 +248,8 @@ class SvgUtils(private val context: Context) {
 
         // Get viewBox attributes
         val viewBox = parser.getAttributeValue(null, "viewBox")?.split(" ")
+        val minX = viewBox?.getOrNull(0)?.toFloatOrNull() ?: 0f
+        val minY = viewBox?.getOrNull(1)?.toFloatOrNull() ?: 0f
         val viewportWidth = viewBox?.getOrNull(2)?.toFloatOrNull() ?: 24f
         val viewportHeight = viewBox?.getOrNull(3)?.toFloatOrNull() ?: 24f
 
@@ -254,7 +258,7 @@ class SvgUtils(private val context: Context) {
         val height =
             parser.getAttributeValue(null, "height")?.removeSuffix("px")?.toIntOrNull() ?: 24
 
-        return SvgAttributes(width, height, viewportWidth, viewportHeight)
+        return SvgAttributes(width, height, viewportWidth, viewportHeight, minX, minY)
     }
 
     private fun writeVectorDrawable(
@@ -274,6 +278,11 @@ class SvgUtils(private val context: Context) {
         serializer.attribute(null, "android:height", "${attributes.height * SIZE_MULTIPLIER}dp")
         serializer.attribute(null, "android:viewportWidth", attributes.viewportWidth.toString())
         serializer.attribute(null, "android:viewportHeight", attributes.viewportHeight.toString())
+        if (attributes.minX != 0f || attributes.minY != 0f) {
+            serializer.startTag(null, "group")
+            serializer.attribute(null, "android:translateX", (-attributes.minX).toString())
+            serializer.attribute(null, "android:translateY", (-attributes.minY).toString())
+        }
 
         // Process all SVG elements
         var depth = 0
@@ -313,6 +322,9 @@ class SvgUtils(private val context: Context) {
             parser.next()
         }
 
+        if (attributes.minX != 0f || attributes.minY != 0f) {
+            serializer.endTag(null, "group")
+        }
         serializer.endTag(null, "vector")
         serializer.endDocument()
     }
