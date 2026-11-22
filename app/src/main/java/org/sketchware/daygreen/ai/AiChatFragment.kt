@@ -135,6 +135,10 @@ class AiChatFragment : Fragment() {
             scrollToBottom()
         }
 
+        binding.cvInput.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            updateChatBottomPadding()
+        }
+
         if (scId.isEmpty()) {
             adapter.add(
                 ChatAdapter.ChatMessage.agent(
@@ -732,7 +736,32 @@ class AiChatFragment : Fragment() {
 
     private fun scrollToBottom() {
         if (_binding == null || adapter.itemCount == 0) return
-        binding.rvChat.post { binding.rvChat.scrollToPosition(adapter.itemCount - 1) }
+        val rv = binding.rvChat
+        val last = adapter.itemCount - 1
+        rv.post {
+            if (_binding == null) return@post
+            rv.scrollToPosition(last)
+            rv.post {
+                if (_binding == null) return@post
+                val lm = rv.layoutManager as? LinearLayoutManager ?: return@post
+                val child = lm.findViewByPosition(last) ?: return@post
+                val visibleBottom = rv.height - rv.paddingBottom
+                val overflow = child.bottom - visibleBottom
+                if (overflow > 0) {
+                    rv.scrollBy(0, overflow)
+                }
+            }
+        }
+    }
+
+    private fun updateChatBottomPadding() {
+        if (_binding == null) return
+        val rv = binding.rvChat
+        val extra = (48 * resources.displayMetrics.density).toInt()
+        val target = binding.cvInput.height + extra
+        if (rv.paddingBottom != target) {
+            rv.setPadding(rv.paddingLeft, rv.paddingTop, rv.paddingRight, target)
+        }
     }
 
     private fun getScId(): String = arguments?.getString(ARG_SC_ID, "") ?: ""
