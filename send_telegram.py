@@ -5,7 +5,6 @@ import html
 from urllib.parse import quote
 from pyrogram import Client
 from pyrogram.enums import ParseMode
-from pyrogram.types import InputMediaDocument
 
 api_id = int(os.environ["API_ID"])
 api_hash = os.environ["API_HASH"]
@@ -47,14 +46,14 @@ def download_url(path):
 
 def build_caption(body):
     head = (
-        f"📢 <b>New update available for {html.escape(app_name)}</b>\n\n"
+        f"<b>New update available for {html.escape(app_name)}</b>\n\n"
         f"• <b>App name:</b> {html.escape(app_name)}\n"
         f"• <b>Package:</b> <code>{html.escape(package)}</code>\n"
         f"• <b>Version:</b> <code>{html.escape(version)}</code>\n"
         f"• <b>Minimum SDK:</b> 26 / 33\n\n"
-        f"• <b>Download (SDK 26):</b> <a href=\"{download_url(apk26)}\">{html.escape(os.path.basename(apk26))}</a>\n"
-        f"• <b>Download (SDK 33):</b> <a href=\"{download_url(apk33)}\">{html.escape(os.path.basename(apk33))}</a>\n"
-        f"• <b>Repository:</b> <a href=\"https://github.com/{repo}\">{html.escape(repo)}</a>\n\n"
+        f"• <a href=\"{download_url(apk26)}\">Download APK SDK 26</a>\n"
+        f"• <a href=\"{download_url(apk33)}\">Download APK SDK 33</a>\n"
+        f"• <a href=\"https://github.com/{repo}\">Repository</a>\n\n"
         f"• <b>What's new?</b>\n<blockquote>"
     )
     tail = "</blockquote>"
@@ -66,7 +65,16 @@ def build_caption(body):
     return head + escaped + tail
 
 
-caption = build_caption(notes)
+def build_short_caption(apk_path, sdk):
+    return (
+        f"<b>{html.escape(app_name)}</b> {html.escape(version)}\n"
+        f"• <b>Minimum SDK:</b> {sdk}\n"
+        f"• <a href=\"{download_url(apk_path)}\">Download APK SDK {sdk}</a>"
+    )
+
+
+caption26 = build_caption(notes)
+caption33 = build_short_caption(apk33, 33)
 
 
 def make_client():
@@ -80,11 +88,11 @@ def make_client():
     )
 
 
-def already_sent(app):
-    # Cek apakah album versi ini sudah ada di chat, supaya retry tidak mengirim dua kali.
+def already_sent_file(app, file_name):
+    # Cek apakah file ini sudah ada di chat, supaya retry tidak mengirim dua kali.
     try:
-        for m in app.search_messages(chat_id, query=version, limit=10):
-            if m.outgoing and m.caption and version in m.caption:
+        for m in app.search_messages(chat_id, query=version, limit=20):
+            if m.outgoing and m.document and m.document.file_name == file_name:
                 return True
     except Exception as e:
         print(f"Gagal cek pesan lama (lanjut kirim): {type(e).__name__}: {e}")
@@ -93,35 +101,39 @@ def already_sent(app):
 
 MAX_TRIES = 3
 RETRY_DELAY = 30
-sent = False
 
-for attempt in range(1, MAX_TRIES + 1):
-    try:
-        with make_client() as app:
-            if already_sent(app):
-                print("Album untuk versi ini sudah ada di chat, tidak dikirim ulang.")
-                sent = True
-                break
 
-            tujuan = f"topik {topic_id}" if topic_id else "group"
-            print(f"[{attempt}/{MAX_TRIES}] Mengirim APK SDK 26 & 33 ke {tujuan}")
-            app.send_media_group(
-                chat_id=chat_id,
-                media=[
-                    InputMediaDocument(apk26, caption=caption, parse_mode=ParseMode.HTML),
-                    InputMediaDocument(apk33),
-                ],
-                message_thread_id=topic_id,
-            )
-        sent = True
-        break
-    except Exception as e:
-        print(f"Percobaan {attempt} gagal: {type(e).__name__}: {e}")
-        if attempt < MAX_TRIES:
-            time.sleep(RETRY_DELAY * attempt)
+def send_one(apk_path, caption, label):
+    file_name = os.path.basename(apk_path)
+    tujuan = f"topik {topic_id}" if topic_id else "group"
+    for attempt in range(1, MAX_TRIES + 1):
+        try:
+            with make_client() as app:
+                if already_sent_file(app, file_name):
+                    print(f"{label} sudah ada di chat, tidak dikirim ulang.")
+                    return True
+                print(f"[{attempt}/{MAX_TRIES}] Mengirim {label} ke {tujuan}")
+                app.send_document(
+                    chat_id=chat_id,
+                    document=apk_path,
+                    file_name=file_name,
+                    caption=caption,
+                    parse_mode=ParseMode.HTML,
+                    message_thread_id=topic_id,
+                )
+            return True
+        except Exception as e:
+            print(f"{label} percobaan {attempt} gagal: {type(e).__name__}: {e}")
+            if attempt < MAX_TRIES:
+                time.sleep(RETRY_DELAY * attempt)
+    return False
 
-if not sent:
-    print("Gagal mengirim APK setelah semua percobaan.")
+
+ok26 = send_one(apk26, caption26, "APK SDK 26")
+ok33 = send_one(apk33, caption33, "APK SDK 33")
+
+if not (ok26 and ok33):
+    print("Ada APK yang gagal dikirim setelah semua percobaan.")
     exit(1)
 
 print("Rilis berhasil dikirim ke Telegram!")
