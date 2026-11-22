@@ -50,23 +50,8 @@ jobs:
           LOG_TITLE: "Debug #${{ github.run_number }}"
         run: python live_log.py ./gradlew assembleDebug --build-cache --stacktrace
 
-      - name: Upload android26 debug APK
-        uses: actions/upload-artifact@v5
-        with:
-          name: app-android26-debug
-          path: app/build/outputs/apk/android26/debug/*.apk
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Upload android33 debug APK
-        uses: actions/upload-artifact@v5
-        with:
-          name: app-android33-debug
-          path: app/build/outputs/apk/android33/debug/*.apk
-          if-no-files-found: error
-          retention-days: 30
-
       - name: Send APK to Telegram (Userbot)
+        timeout-minutes: 15
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
