@@ -2,13 +2,6 @@ name: Android Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version name (contoh: v8.0.7-daygreen, tanpa suffix flavor)'
-        required: true
-      message:
-        description: 'What is new (pakai \n untuk baris baru)'
-        required: true
 
 permissions:
   contents: write
@@ -27,38 +20,73 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read and validate version
+      - name: Read release info from message_commit.txt
         id: version
-        env:
-          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          FILE="app/build.gradle"
-          [ -f "app/build.gradle.kts" ] && FILE="app/build.gradle.kts"
+          MSG_FILE="message_commit.txt"
+          if [ ! -f "$MSG_FILE" ]; then
+            echo "Error: $MSG_FILE tidak ditemukan di root repo"
+            exit 1
+          fi
 
-          # versionName pertama = defaultConfig
-          VERSION_NAME=$(grep -m1 'versionName' "$FILE" | sed -E 's/.*versionName[[:space:]=]*"([^"]+)".*/\1/')
+          trim() { sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//'; }
+
+          VERSION=$(tr -d '\r' < "$MSG_FILE" | grep -m1 -E '^VERSION:' | sed -E 's/^VERSION:[[:space:]]*//' | trim)
+          CODE=$(tr -d '\r' < "$MSG_FILE" | grep -m1 -E '^CODE_VERSION:' | sed -E 's/^CODE_VERSION:[[:space:]]*//' | trim)
+          TITLE=$(tr -d '\r' < "$MSG_FILE" | grep -m1 -E '^COMMIT_MESSAGE:' | sed -E 's/^COMMIT_MESSAGE:[[:space:]]*//' | trim)
+
+          if [ -z "$VERSION" ] || [ -z "$CODE" ]; then
+            echo "Error: VERSION dan CODE_VERSION wajib ada di $MSG_FILE"
+            exit 1
+          fi
+          if ! echo "$CODE" | grep -qE '^[0-9]+$'; then
+            echo "Error: CODE_VERSION harus angka, dapat: $CODE"
+            exit 1
+          fi
+
+          FILE="app/build.gradle"
+          if [ -f "app/build.gradle.kts" ]; then FILE="app/build.gradle.kts"; fi
+
+          GRADLE_NAME=$(grep -m1 'versionName' "$FILE" | sed -E 's/.*versionName[[:space:]=]*"([^"]+)".*/\1/')
+          GRADLE_CODE=$(grep -m1 'versionCode' "$FILE" | sed -E 's/.*versionCode[[:space:]=]*([0-9]+).*/\1/')
           PACKAGE=$(grep -m1 'applicationId' "$FILE" | sed -E 's/.*applicationId[[:space:]=]*"([^"]+)".*/\1/')
 
-          if [ -z "$VERSION_NAME" ]; then
-            echo "Error: versionName tidak ditemukan!"
+          if [ "$GRADLE_NAME" != "$VERSION" ]; then
+            echo "Error: versionName di $FILE ($GRADLE_NAME) beda dengan VERSION di $MSG_FILE ($VERSION)"
             exit 1
           fi
-
-          if [ "$VERSION_NAME" != "$INPUT_VERSION" ]; then
-            echo "Error: versionName di gradle ($VERSION_NAME) beda dengan input ($INPUT_VERSION)"
+          if [ "$GRADLE_CODE" != "$CODE" ]; then
+            echo "Error: versionCode di $FILE ($GRADLE_CODE) beda dengan CODE_VERSION di $MSG_FILE ($CODE)"
             exit 1
           fi
-
-          # Pastikan kedua flavor juga punya versionName yang sesuai
           for FLAVOR in android26 android33; do
-            if ! grep -q "versionName \"${INPUT_VERSION}-${FLAVOR}\"" "$FILE"; then
-              echo "Error: versionName flavor $FLAVOR tidak sesuai (harus ${INPUT_VERSION}-${FLAVOR})"
+            if ! grep -q "versionName \"${VERSION}-${FLAVOR}\"" "$FILE"; then
+              echo "Error: versionName flavor $FLAVOR tidak sesuai (harus ${VERSION}-${FLAVOR})"
               exit 1
             fi
           done
 
-          echo "version=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          # Catatan rilis: COMMIT_MESSAGE jadi poin pertama, baris lain jadi poin berikutnya
+          {
+            if [ -n "$TITLE" ]; then echo "- $TITLE"; fi
+            tr -d '\r' < "$MSG_FILE" \
+              | grep -v -E '^(VERSION|CODE_VERSION|COMMIT_MESSAGE):' \
+              | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' \
+              | awk 'NF { if ($0 ~ /^- /) print; else print "- " $0 }'
+          } > notes.md
+
+          # Kalau catatan kosong, pakai daftar commit sejak tag terakhir
+          if [ "$(tr -d '[:space:]' < notes.md | wc -c)" -eq 0 ]; then
+            PREV=$(git tag --sort=-v:refname | head -n1)
+            if [ -n "$PREV" ]; then RANGE="$PREV..HEAD"; else RANGE="HEAD"; fi
+            git log --no-merges --pretty=format:'- %s' "$RANGE" > notes.md
+            echo "" >> notes.md
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "package=$PACKAGE" >> "$GITHUB_OUTPUT"
+          echo "--- isi notes.md ---"
+          cat notes.md
 
       - name: Check if tag already exists
         id: check_tag
@@ -70,12 +98,6 @@ jobs:
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Write release notes
-        if: steps.check_tag.outputs.exists == 'false'
-        env:
-          INPUT_MESSAGE: ${{ inputs.message }}
-        run: printf '%b\n' "$INPUT_MESSAGE" > notes.md
 
       - name: Create and push tag
         if: steps.check_tag.outputs.exists == 'false'
@@ -92,7 +114,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # Cache dependency Gradle dan build cache
       - name: Setup Gradle
         if: steps.check_tag.outputs.exists == 'false'
         uses: gradle/actions/setup-gradle@v4
@@ -127,6 +148,7 @@ jobs:
 
       - name: Send APKs to Telegram (Userbot)
         if: steps.check_tag.outputs.exists == 'false'
+        timeout-minutes: 15
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}

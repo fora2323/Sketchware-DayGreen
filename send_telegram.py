@@ -26,9 +26,11 @@ notes = ""
 if os.path.exists(notes_path):
     notes = open(notes_path, encoding="utf-8").read().strip()
 
+
 def find_apk(flavor):
     files = sorted(glob.glob(f"app/build/outputs/apk/{flavor}/release/*.apk"))
     return files[0] if files else None
+
 
 apk26 = find_apk("android26")
 apk33 = find_apk("android33")
@@ -37,9 +39,11 @@ if not apk26 or not apk33:
     print("APK android26 atau android33 tidak ditemukan.")
     exit(1)
 
+
 def download_url(path):
     name = quote(os.path.basename(path))
     return f"https://github.com/{repo}/releases/download/{quote(tag, safe='')}/{name}"
+
 
 def build_caption(body):
     head = (
@@ -61,7 +65,9 @@ def build_caption(body):
         escaped = escaped[:max(0, room - 3)] + "..."
     return head + escaped + tail
 
+
 caption = build_caption(notes)
+
 
 def make_client():
     return Client(
@@ -73,11 +79,30 @@ def make_client():
         max_concurrent_transmissions=1,
     )
 
-MAX_TRIES = 5
+
+def already_sent(app):
+    # Cek apakah album versi ini sudah ada di chat, supaya retry tidak mengirim dua kali.
+    try:
+        for m in app.search_messages(chat_id, query=version, limit=10):
+            if m.outgoing and m.caption and version in m.caption:
+                return True
+    except Exception as e:
+        print(f"Gagal cek pesan lama (lanjut kirim): {type(e).__name__}: {e}")
+    return False
+
+
+MAX_TRIES = 3
+RETRY_DELAY = 30
 sent = False
+
 for attempt in range(1, MAX_TRIES + 1):
     try:
         with make_client() as app:
+            if already_sent(app):
+                print("Album untuk versi ini sudah ada di chat, tidak dikirim ulang.")
+                sent = True
+                break
+
             tujuan = f"topik {topic_id}" if topic_id else "group"
             print(f"[{attempt}/{MAX_TRIES}] Mengirim APK SDK 26 & 33 ke {tujuan}")
             app.send_media_group(
@@ -90,11 +115,10 @@ for attempt in range(1, MAX_TRIES + 1):
             )
         sent = True
         break
-    except BaseException as e:
-        if isinstance(e, KeyboardInterrupt):
-            raise
+    except Exception as e:
         print(f"Percobaan {attempt} gagal: {type(e).__name__}: {e}")
-        time.sleep(10 * attempt)
+        if attempt < MAX_TRIES:
+            time.sleep(RETRY_DELAY * attempt)
 
 if not sent:
     print("Gagal mengirim APK setelah semua percobaan.")

@@ -28,8 +28,8 @@ android {
         //noinspection ExpiredTargetSdkVersion
         targetSdk = 28
         minSdk = 26
-        versionCode = 198
-        versionName = "v8.0.8-daygreen"
+        versionCode = 200
+        versionName = "v8.0.8-daygreen-release"
         buildConfigField("String", "GIT_HASH", "\"${gitCommitHash()}\"")
     }
 
@@ -100,14 +100,14 @@ android {
     flavorDimensions "default"
     productFlavors {
         android26 {
-            versionName "v8.0.8-daygreen-android26"
+            versionName "v8.0.8-daygreen-release-android26"
             dimension "default"
             resValue "integer", "for_min_sdk", "26"
             resValue "bool", "enable_relase_app", "true"
             resValue "bool", "enable_r8", "true"
         }
         android33 {
-            versionName "v8.0.8-daygreen-android33"
+            versionName "v8.0.8-daygreen-release-android33"
             dimension "default"
             resValue "integer", "for_min_sdk", "33"
             resValue "bool", "enable_relase_app", "true"
