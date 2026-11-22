@@ -47,15 +47,14 @@ def download_url(path):
     return f"https://github.com/{repo}/releases/download/{quote(tag, safe='')}/{name}"
 
 
-def build_caption(body):
+def build_caption(apk_path, sdk, body):
     head = (
         f"<b>New update available for {html.escape(app_name)}</b>\n\n"
         f"• <b>App name:</b> {html.escape(app_name)}\n"
         f"• <b>Package:</b> <code>{html.escape(package)}</code>\n"
         f"• <b>Version:</b> <code>{html.escape(version)}</code>\n"
-        f"• <b>Minimum SDK:</b> 26 / 33\n\n"
-        f"• <a href=\"{download_url(apk26)}\">Download APK SDK 26</a>\n"
-        f"• <a href=\"{download_url(apk33)}\">Download APK SDK 33</a>\n"
+        f"• <b>Minimum SDK:</b> {sdk}\n\n"
+        f"• <a href=\"{download_url(apk_path)}\">Download APK SDK {sdk}</a>\n"
         f"• <a href=\"https://github.com/{repo}\">Repository</a>\n\n"
         f"• <b>What's new?</b>\n<blockquote>"
     )
@@ -68,16 +67,8 @@ def build_caption(body):
     return head + escaped + tail
 
 
-def build_short_caption(apk_path, sdk):
-    return (
-        f"<b>{html.escape(app_name)}</b> {html.escape(version)}\n"
-        f"• <b>Minimum SDK:</b> {sdk}\n"
-        f"• <a href=\"{download_url(apk_path)}\">Download APK SDK {sdk}</a>"
-    )
-
-
-caption26 = build_caption(notes)
-caption33 = build_short_caption(apk33, 33)
+caption26 = build_caption(apk26, 26, notes)
+caption33 = build_caption(apk33, 33, notes)
 
 
 def make_client():
