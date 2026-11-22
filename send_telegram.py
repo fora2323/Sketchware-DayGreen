@@ -21,6 +21,9 @@ package = os.environ.get("APP_PACKAGE", "-")
 repo = os.environ["REPO"]
 notes_path = os.environ.get("NOTES_FILE", "notes.md")
 
+# true = kirim ulang walaupun pesan versi ini sudah ada di chat
+FORCE_RESEND = os.environ.get("FORCE_RESEND", "false") == "true"
+
 notes = ""
 if os.path.exists(notes_path):
     notes = open(notes_path, encoding="utf-8").read().strip()
@@ -109,7 +112,7 @@ def send_one(apk_path, caption, label):
     for attempt in range(1, MAX_TRIES + 1):
         try:
             with make_client() as app:
-                if already_sent_file(app, file_name):
+                if not FORCE_RESEND and already_sent_file(app, file_name):
                     print(f"{label} sudah ada di chat, tidak dikirim ulang.")
                     return True
                 print(f"[{attempt}/{MAX_TRIES}] Mengirim {label} ke {tujuan}")
@@ -128,6 +131,9 @@ def send_one(apk_path, caption, label):
                 time.sleep(RETRY_DELAY * attempt)
     return False
 
+
+if FORCE_RESEND:
+    print("Mode resend aktif: pengecekan duplikat dilewati.")
 
 ok26 = send_one(apk26, caption26, "APK SDK 26")
 ok33 = send_one(apk33, caption33, "APK SDK 33")
