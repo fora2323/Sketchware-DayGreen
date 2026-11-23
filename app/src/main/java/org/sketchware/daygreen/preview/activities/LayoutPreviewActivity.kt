@@ -13,10 +13,14 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.Contrast
+import androidx.compose.material.icons.filled.SignalCellular4Bar
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -243,8 +248,6 @@ private fun MenuStage(scId: String, xml: String, nightMode: Boolean) {
 
     PhoneFrame(nightMode = nightMode) {
         Column(Modifier.fillMaxSize()) {
-            Spacer(Modifier.height(28.dp))
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -424,68 +427,127 @@ private fun Drawable.toImageBitmap(): ImageBitmap {
 private fun PhoneFrame(nightMode: Boolean, content: @Composable BoxScope.() -> Unit) {
     val screenColor = if (nightMode) Color(0xFF121212) else Color.White
     val overlayColor = if (nightMode) Color.White else Color.Black
-    // Bezel must stand out from the stage background in both modes.
-    val bezelColor = if (nightMode) Color(0xFF4A4A4A) else Color(0xFF212121)
+    val bezelColor = if (nightMode) Color(0xFF3A3A3A) else Color(0xFF1E1E1E)
 
     Card(
         modifier = Modifier
-            // Fit the phone inside the space left by the top bar, instead of overflowing it.
             .fillMaxHeight(0.94f)
             .aspectRatio(360f / 780f, matchHeightConstraintsFirst = true)
             .widthIn(max = 360.dp),
-        shape = RoundedCornerShape(32.dp),
+        shape = RoundedCornerShape(36.dp),
         colors = CardDefaults.cardColors(containerColor = screenColor),
-        border = BorderStroke(8.dp, bezelColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        border = BorderStroke(9.dp, bezelColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.fillMaxSize(), content = content)
-            PhoneStatusBar(textColor = overlayColor)
-            PhoneNavBar(color = overlayColor)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 28.dp, bottom = 24.dp),
+                content = content
+            )
+
+            PhoneStatusBar(
+                contentColor = overlayColor,
+                nightMode = nightMode
+            )
+
+            PhoneNavBar(
+                color = overlayColor,
+                nightMode = nightMode
+            )
         }
     }
 }
 
 @Composable
-private fun BoxScope.PhoneStatusBar(textColor: Color) {
-    Row(
+private fun BoxScope.PhoneStatusBar(
+    contentColor: Color,
+    nightMode: Boolean
+) {
+    val scrimBrush = Brush.verticalGradient(
+        colors = if (nightMode) {
+            listOf(Color.Black.copy(alpha = 0.65f), Color.Transparent)
+        } else {
+            listOf(Color.White.copy(alpha = 0.85f), Color.Transparent)
+        }
+    )
+
+    Box(
         modifier = Modifier
             .align(Alignment.TopCenter)
             .fillMaxWidth()
-            .height(28.dp)
-            .background(Color(0x33000000))
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .height(32.dp)
+            .background(scrimBrush)
+            .padding(horizontal = 20.dp)
     ) {
         Text(
             text = "12:00",
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = textColor.copy(alpha = 0.85f)
-        )
-        Text(
-            text = "4G",
+            modifier = Modifier.align(Alignment.CenterStart),
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = textColor.copy(alpha = 0.85f)
+            fontWeight = FontWeight.SemiBold,
+            color = contentColor.copy(alpha = 0.9f)
         )
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .size(11.dp)
+                .clip(CircleShape)
+                .background(Color(0xFF0F0F0F))
+        )
+
+        Row(
+            modifier = Modifier.align(Alignment.CenterEnd),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Wifi,
+                contentDescription = "Wi-Fi",
+                modifier = Modifier.size(14.dp),
+                tint = contentColor.copy(alpha = 0.9f)
+            )
+            Icon(
+                imageVector = Icons.Filled.SignalCellular4Bar,
+                contentDescription = "Signal",
+                modifier = Modifier.size(13.dp),
+                tint = contentColor.copy(alpha = 0.9f)
+            )
+            Icon(
+                imageVector = Icons.Filled.BatteryFull,
+                contentDescription = "Battery",
+                modifier = Modifier.size(15.dp),
+                tint = contentColor.copy(alpha = 0.9f)
+            )
+        }
     }
 }
 
 @Composable
-private fun BoxScope.PhoneNavBar(color: Color) {
+private fun BoxScope.PhoneNavBar(
+    color: Color,
+    nightMode: Boolean
+) {
+    val scrimBrush = Brush.verticalGradient(
+        colors = if (nightMode) {
+            listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f))
+        } else {
+            listOf(Color.Transparent, Color.White.copy(alpha = 0.75f))
+        }
+    )
+
     Box(
         modifier = Modifier
             .align(Alignment.BottomCenter)
             .fillMaxWidth()
-            .height(48.dp)
-            .background(Color(0x33000000)),
+            .height(28.dp)
+            .background(scrimBrush),
         contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
-                .width(120.dp)
+                .width(108.dp)
                 .height(4.dp)
                 .clip(RoundedCornerShape(2.dp))
                 .background(color.copy(alpha = 0.85f))
