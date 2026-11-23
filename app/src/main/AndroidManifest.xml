@@ -408,7 +408,8 @@
             
         <activity
             android:name="org.sketchware.daygreen.preview.activities.LayoutPreviewActivity"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:theme="@style/Theme.DayGreen.Settings2027" />
 
         <activity
             android:name="org.sketchware.daygreen.settings.activities.DonationActivity"

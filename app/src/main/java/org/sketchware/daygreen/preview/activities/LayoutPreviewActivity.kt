@@ -6,16 +6,16 @@ import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.View
 import android.graphics.Canvas as AndroidCanvas
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Contrast
@@ -28,6 +28,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -45,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -52,6 +55,7 @@ import com.besome.sketch.beans.ViewBean
 import com.besome.sketch.editor.view.ItemView
 import com.besome.sketch.editor.view.ViewPane
 import com.besome.sketch.lib.base.BaseAppCompatActivity
+import com.google.android.material.R as MaterialR
 import a.a.a.jC
 import a.a.a.mB
 import org.sketchware.daygreen.preview.PreviewLayoutParser
@@ -68,6 +72,8 @@ class LayoutPreviewActivity : BaseAppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdgeNoContrast()
         super.onCreate(savedInstanceState)
+        // The Compose TopAppBar replaces the framework action bar.
+        supportActionBar?.hide()
 
         val scId = intent.getStringExtra("sc_id").orEmpty()
         val xml = intent.getStringExtra("xml").orEmpty()
@@ -83,17 +89,43 @@ class LayoutPreviewActivity : BaseAppCompatActivity() {
         }
 
         setContent {
-            LayoutPreviewScreen(
-                scId = scId,
-                xml = xml,
-                filePath = filePath,
-                previewType = type,
-                subtitle = subtitle,
-                initialNight = initialNight,
-                onBack = { if (!mB.a()) onBackPressedDispatcher.onBackPressed() }
-            )
+            PreviewTheme {
+                LayoutPreviewScreen(
+                    scId = scId,
+                    xml = xml,
+                    filePath = filePath,
+                    previewType = type,
+                    subtitle = subtitle,
+                    initialNight = initialNight,
+                    onBack = { if (!mB.a()) onBackPressedDispatcher.onBackPressed() }
+                )
+            }
         }
     }
+}
+
+/* ---------------------------------------------------------------- Theme */
+
+/**
+ * Uses the app theme (Theme.DayGreen.Settings2027) colors so the preview screen
+ * matches the rest of the app. Falls back to Material defaults when an attribute is missing.
+ */
+@Composable
+private fun PreviewTheme(content: @Composable () -> Unit) {
+    val context = LocalContext.current
+    val base = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
+    val scheme = base.copy(
+        primary = context.themeColor(MaterialR.attr.colorPrimary, base.primary),
+        onPrimary = context.themeColor(MaterialR.attr.colorOnPrimary, base.onPrimary),
+        surface = context.themeColor(MaterialR.attr.colorSurface, base.surface),
+        onSurface = context.themeColor(MaterialR.attr.colorOnSurface, base.onSurface),
+    )
+    MaterialTheme(colorScheme = scheme, content = content)
+}
+
+private fun Context.themeColor(attr: Int, fallback: Color): Color {
+    val value = TypedValue()
+    return if (theme.resolveAttribute(attr, value, true)) Color(value.data) else fallback
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -162,10 +194,9 @@ private fun titleFor(type: String): String = when (type) {
 
 @Composable
 private fun LayoutStage(scId: String, xml: String, nightMode: Boolean) {
+    // No outer scroll: the phone frame stays fixed on screen.
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         PhoneFrame(nightMode = nightMode) {
@@ -185,7 +216,7 @@ private fun createLayoutPane(context: Context, scId: String, xml: String, nightM
     try {
         pane.initialize(scId, true)
         pane.setPadding(0, 0, 0, 0)
-        pane.setVerticalScrollBarEnabled(true)
+        pane.setVerticalScrollBarEnabled(false)
         pane.setResourceManager(jC.d(scId))
 
         val resolver = PreviewResourceResolver.init(scId, nightMode)
