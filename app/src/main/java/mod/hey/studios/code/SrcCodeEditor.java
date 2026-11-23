@@ -40,7 +40,7 @@ import mod.hey.studios.util.Helper;
 import mod.jbk.code.CodeEditorColorSchemes;
 import mod.jbk.code.CodeEditorLanguages;
 import pro.sketchware.R;
-import pro.sketchware.activities.preview.LayoutPreviewActivity;
+import org.sketchware.daygreen.preview.activities.LayoutPreviewActivity;
 import pro.sketchware.databinding.CodeEditorHsBinding;
 import pro.sketchware.utility.EditorUtils;
 import pro.sketchware.utility.FileUtil;

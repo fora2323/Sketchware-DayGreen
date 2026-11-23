@@ -407,7 +407,7 @@
             android:configChanges="orientation|screenSize" />
             
         <activity
-            android:name=".activities.preview.LayoutPreviewActivity"
+            android:name="org.sketchware.daygreen.preview.activities.LayoutPreviewActivity"
             android:configChanges="orientation|screenSize" />
 
         <activity

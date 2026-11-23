@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.util.AttributeSet
 import android.view.View
 import android.graphics.Canvas as AndroidCanvas
+import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -32,7 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +54,8 @@ import com.besome.sketch.editor.view.ViewPane
 import com.besome.sketch.lib.base.BaseAppCompatActivity
 import a.a.a.jC
 import a.a.a.mB
+import org.sketchware.daygreen.preview.PreviewLayoutParser
+import org.sketchware.daygreen.preview.PreviewResourceResolver
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import pro.sketchware.activities.preview.DrawablePreviewRenderer
