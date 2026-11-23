@@ -16,7 +16,6 @@ public class Gx {
         return className;
     }
 
-    // keeping this method, because it's used in a.a.a.eC
     public String a() {
         return className;
     }
@@ -125,10 +124,10 @@ public class Gx {
             case "Switch":
                 classInfos = "View.Clickable.TextView.Button.CompoundButton.Switch";
                 break;
-                
+
             case "MaterialSwitch":
-                 classInfos = "View.Clickable.TextView.Button.CompoundButton.MaterialSwitch";
-                 break;    
+                classInfos = "View.Clickable.TextView.Button.CompoundButton.MaterialSwitch";
+                break;
 
             case "SeekBar":
                 classInfos = "View.SeekBar";
@@ -148,6 +147,10 @@ public class Gx {
 
             case "FloatingActionButton":
                 classInfos = "View.Clickable.FloatingActionButton";
+                break;
+
+            case "FrameLayout":
+                classInfos = "View.Clickable.ViewGroup.FrameLayout";
                 break;
 
             case "LinearLayout":
@@ -225,10 +228,10 @@ public class Gx {
             case "ViewPager":
                 classInfos = "View.ViewGroup.ViewPager";
                 break;
-                
+
             case "ViewPager2":
                 classInfos = "View.ViewGroup.ViewPager2";
-                break;    
+                break;
 
             case "BottomNavigationView":
                 classInfos = "View.ViewGroup.BottomNavigationView";

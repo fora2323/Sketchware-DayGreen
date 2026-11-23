@@ -239,7 +239,7 @@ class BuildTaskNew @JvmOverloads constructor(
             step(
                 name = "shrinkResources$modeName",
                 stepNo = 16,
-                skipIf = { !builder.proguard.isShrinkResourcesEnabled() }
+                skipIf = { !builder.proguard.isShrinkingEnabled() || !builder.proguard.isShrinkResourcesEnabled() }
             ) {
                 val shrinker = ResourceShrinker(context, builder)
                 shrinker.shrink()
