@@ -194,6 +194,9 @@ private fun createLayoutPane(context: Context, scId: String, xml: String, nightM
     val pane = ViewPane(context, null as AttributeSet?)
     try {
         pane.initialize(scId, true)
+        // ViewPane's preview mode paints colorSurface (dark in this app theme).
+        // Set the phone screen color here so the area around the layout matches the device.
+        pane.setBackgroundColor(if (nightMode) 0xFF121212.toInt() else 0xFFFFFFFF.toInt())
         pane.setPadding(0, 0, 0, 0)
         pane.setVerticalScrollBarEnabled(false)
         pane.setResourceManager(jC.d(scId))
@@ -421,16 +424,18 @@ private fun Drawable.toImageBitmap(): ImageBitmap {
 private fun PhoneFrame(nightMode: Boolean, content: @Composable BoxScope.() -> Unit) {
     val screenColor = if (nightMode) Color(0xFF121212) else Color.White
     val overlayColor = if (nightMode) Color.White else Color.Black
+    // Bezel must stand out from the stage background in both modes.
+    val bezelColor = if (nightMode) Color(0xFF4A4A4A) else Color(0xFF212121)
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-            .widthIn(max = 360.dp)
-            .aspectRatio(360f / 780f),
+            // Fit the phone inside the space left by the top bar, instead of overflowing it.
+            .fillMaxHeight(0.94f)
+            .aspectRatio(360f / 780f, matchHeightConstraintsFirst = true)
+            .widthIn(max = 360.dp),
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = screenColor),
-        border = BorderStroke(8.dp, Color(0xFF212121)),
+        border = BorderStroke(8.dp, bezelColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
