@@ -1,14 +1,8 @@
-VERSION: v8.0.8-daygreen-release
-CODE_VERSION: 200
+VERSION: v8.0.9-daygreen-release
+CODE_VERSION: 203
 COMMIT_MESSAGE: New features and new changes
-1: add ai agent feature in fragment design
-2: changes to UI settings and feature layout
-3: system changes add icons using the download system (online)
-4: and UI changes to drawer design
-5: and code changes using compose, in some UI, and deletion of unused resource and Java files
-6: add git features
+1: UI preview layout changes and using compose
 
-fix bugs and crashes
-1: fix bottom sheet add component, icon not accurately displaying image in drawable folder
-2: fix Zip backup result add gradle file
-3: and fix errors or crashes that are bothering users
+Bug and Crash fixes
+1: fix system shrinking resource
+2: fix FrameLayout that cannot be filled with child views
