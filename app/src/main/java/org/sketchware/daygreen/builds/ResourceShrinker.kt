@@ -297,7 +297,7 @@ class ResourceShrinker(private val context: Context, private val builder: Projec
         LogUtil.d(TAG, "Shrinker deleted $deletedCount unused resource files (Saved ${deletedSize / 1024} KB).")
 
         // 10. Re-link dengan AAPT2 menggunakan folder yang sudah disusutkan
-        val aapt2 = File(context.filesDir, "bin/aapt2")
+        val aapt2 = builder.aapt2Binary
         val compiler = ResourceCompiler(builder, aapt2, false, null)
         compiler.compileAndRelinkShrunk(shrunkDir.absolutePath)
         

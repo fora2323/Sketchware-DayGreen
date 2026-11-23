@@ -273,10 +273,14 @@ public class ProjectBuilder {
             File cached = buildCache.stageOutputDir("resources");
             File cachedApk = new File(cached, "resources.apk");
             File cachedGen = new File(cached, "gen");
-            if (cachedApk.exists() && cachedGen.exists()) {
+            File cachedRules = new File(cached, "aapt_rules.pro");
+            File cachedIds = new File(cached, "resource_ids.txt");
+            if (cachedApk.exists() && cachedGen.exists() && cachedRules.exists() && cachedIds.exists()) {
                 if (progressReceiver != null) progressReceiver.onProgress("Resources UP-TO-DATE", 10);
                 smartCopyFile(cachedApk, new File(yq.resourcesApkPath));
                 smartSyncDirectory(cachedGen, new File(yq.rJavaDirectoryPath));
+                smartCopyFile(cachedRules, new File(yq.proguardAaptRules));
+                smartCopyFile(cachedIds, new File(yq.binDirectoryPath, "resource_ids.txt"));
                 LogUtil.d(TAG, "Resources UP-TO-DATE");
                 return true;
             }
@@ -292,9 +296,21 @@ public class ProjectBuilder {
             File cached = buildCache.stageOutputDir("resources");
             FileUtil.copyFile(yq.resourcesApkPath, new File(cached, "resources.apk").getAbsolutePath());
             FileUtil.copyDirectory(new File(yq.rJavaDirectoryPath), new File(cached, "gen"));
+            copyIfExists(new File(yq.proguardAaptRules), new File(cached, "aapt_rules.pro"));
+            copyIfExists(new File(yq.binDirectoryPath, "resource_ids.txt"), new File(cached, "resource_ids.txt"));
             buildCache.markUpToDate("resources", inputHash);
         }
         return false;
+    }
+
+    public File getAapt2Binary() {
+        return aapt2Binary;
+    }
+
+    private void copyIfExists(File src, File dest) {
+        if (src.exists()) {
+            FileUtil.copyFile(src.getAbsolutePath(), dest.getAbsolutePath());
+        }
     }
 
     public void generateViewBinding() throws IOException, SAXException {
