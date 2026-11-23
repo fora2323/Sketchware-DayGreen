@@ -29,7 +29,7 @@ import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 import pro.sketchware.editor.SketchwareCodeEditor;
 import pro.sketchware.activities.appcompat.ManageAppCompatActivity;
-import pro.sketchware.activities.preview.LayoutPreviewActivity;
+import org.sketchware.daygreen.preview.activities.LayoutPreviewActivity;
 import pro.sketchware.databinding.ViewCodeEditorBinding;
 import pro.sketchware.managers.inject.InjectRootLayoutManager;
 import pro.sketchware.tools.ViewBeanParser;
