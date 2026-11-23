@@ -28,7 +28,7 @@ android {
         //noinspection ExpiredTargetSdkVersion
         targetSdk = 28
         minSdk = 26
-        versionCode = 201
+        versionCode = 203
         versionName = "v8.0.9-daygreen-release"
         buildConfigField("String", "GIT_HASH", "\"${gitCommitHash()}\"")
     }
