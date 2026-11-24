@@ -54,6 +54,6 @@ public class CodeViewerActivity extends BaseAppCompatActivity {
         } else {
             EditorUtils.loadJavaConfig(binding.editor);
         }
-        SrcCodeEditor.loadCESettings(this, binding.editor, "act", true);
+        SrcCodeEditor.loadCESettings(this, binding.editor, "act", false);
     }
 }

@@ -69,6 +69,8 @@ public class SketchwareCodeEditor extends CodeEditor {
     private ColorsEditorManager colorsManager;
     private String currentScId;
     private final Map<String, Drawable> iconCache = new HashMap<>();
+    private boolean cachedGutterActive;
+    private boolean cachedConflictEnabled;
 
     public SketchwareCodeEditor(Context context) {
         super(context);
@@ -316,7 +318,10 @@ public class SketchwareCodeEditor extends CodeEditor {
     private void processStyles(Styles styles, @Nullable StyleUpdateRange range) {
         getProps().sideIconSizeFactor = 0.9f;
 
-        if (isGutterIndicationActive()) {
+        cachedGutterActive = isGutterIndicationActive();
+        cachedConflictEnabled = GitConfiguration.isConflictDetectionEnabled(getContext());
+
+        if (cachedGutterActive) {
             recomputeLineChanges();
         } else {
             currentLineChanges.clear();
@@ -362,14 +367,14 @@ public class SketchwareCodeEditor extends CodeEditor {
 
         boolean iconAdded = false;
 
-        if (GitConfiguration.isConflictDetectionEnabled(getContext())) {
+        if (cachedConflictEnabled) {
             if (lineText.startsWith("<<<<<<<") || lineText.startsWith("=======") || lineText.startsWith(">>>>>>>")) {
                 styles.addLineStyle(new LineSideIcon(line, getIconForConflict(lineText)));
                 iconAdded = true;
             }
         }
 
-        if (!iconAdded && isGutterIndicationActive() && !currentLineChanges.isEmpty()) {
+        if (!iconAdded && cachedGutterActive && !currentLineChanges.isEmpty()) {
             LineChangeType changeType = currentLineChanges.get(line);
             if (changeType != null && changeType != LineChangeType.NONE) {
                 styles.addLineStyle(new LineSideIcon(line, getGutterIndicator(changeType)));
