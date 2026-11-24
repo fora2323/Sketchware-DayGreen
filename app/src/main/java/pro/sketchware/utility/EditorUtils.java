@@ -7,6 +7,7 @@ import android.graphics.Typeface;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 
 import com.google.android.material.color.MaterialColors;
 
@@ -68,6 +69,11 @@ public class EditorUtils {
         scheme.setColor(EditorColorScheme.COMPLETION_WND_TEXT_PRIMARY, onSurface);
         scheme.setColor(EditorColorScheme.COMPLETION_WND_TEXT_SECONDARY, onSurfaceVariant);
         scheme.setColor(EditorColorScheme.COMPLETION_WND_CORNER, primary);
+
+        scheme.setColor(EditorColorScheme.TEXT_ACTION_WINDOW_BACKGROUND, surfaceContainerHighest);
+        scheme.setColor(EditorColorScheme.TEXT_ACTION_WINDOW_ICON_COLOR, onSurface);
+        scheme.setColor(EditorColorScheme.SELECTION_HANDLE, primary);
+        scheme.setColor(EditorColorScheme.SELECTED_TEXT_BACKGROUND, ColorUtils.setAlphaComponent(primary, 0x55));
 
         return scheme;
     }
