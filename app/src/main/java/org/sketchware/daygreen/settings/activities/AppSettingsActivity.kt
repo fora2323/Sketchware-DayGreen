@@ -11,7 +11,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Commit
@@ -28,7 +27,6 @@ import dev.aldi.sayuti.editor.manage.ManageLocalLibraryActivity
 import mod.hey.studios.util.Helper
 import mod.hilal.saif.activities.tools.BlocksManager
 import mod.hilal.saif.activities.tools.ConfigActivity
-import mod.khaled.logcat.LogReaderActivity
 
 import org.sketchware.daygreen.ai.activities.AiSettingsActivity
 import org.sketchware.daygreen.git.activities.GitSettingsActivity
@@ -103,13 +101,6 @@ class AppSettingsActivity : AppCompatActivity() {
         },
         SettingItem(Icons.Filled.LocalLibrary, "Local library manager", "Manage and download local libraries") {
             startActivity(Intent(applicationContext, ManageLocalLibraryActivity::class.java).putExtra("sc_id", "system"))
-        },
-        SettingItem(
-            Icons.Filled.Article,
-            Helper.getResString(R.string.design_drawer_menu_title_logcat_reader),
-            Helper.getResString(R.string.design_drawer_menu_subtitle_logcat_reader),
-        ) {
-            startActivity(Intent(applicationContext, LogReaderActivity::class.java))
         },
         SettingItem(Icons.Filled.AutoAwesome, "AI", "Configure AI assistant") {
             startActivity(Intent(applicationContext, AiSettingsActivity::class.java))
