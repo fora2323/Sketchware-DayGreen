@@ -391,10 +391,6 @@ public class ConfigActivity extends BaseAppCompatActivity {
             });
             dialog.show();
         }), true);
-        
-        backupCategory.addLibraryItem(createPreference(R.drawable.cleaning_services_24px, "Temporary files", "Files generated during the build process.", v -> cleanUpTemporaryFiles()), true);
-        backupCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_box, "Local library", "Scan and move unused local libraries to recycle bin.", v -> cleanUpLocalLib()), true);
-        backupCategory.addLibraryItem(createPreference(R.drawable.ic_mtrl_delete, "Recycle bin", "Delete all in recycle bin.", v -> cleanOutTheRecyclingBin()), true);
 
         LibraryItemView cleanPref = createDayGreenSwitchPreference(R.drawable.cleaning_services_24px, "Auto clean up after building", "Temporary files will be cleaned up after the build is complete.");
         DRSettings.getAutoCleanUpAfterBuild(this, value -> cleanPref.sw_enable.setChecked(value));

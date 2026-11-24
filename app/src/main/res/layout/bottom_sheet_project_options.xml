@@ -71,7 +71,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:background="@drawable/project_item_shape_middle"
+                android:background="@drawable/project_item_shape_bottom"
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
@@ -173,34 +173,6 @@
                     android:layout_marginStart="16dp"
                     android:gravity="center_vertical"
                     android:text="Export"
-                    android:textAppearance="?attr/textAppearanceBodyLarge"
-                    app:drawableEndCompat="@drawable/ic_mtrl_arrow_right" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/project_cleanup"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:background="@drawable/project_item_shape_bottom"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="16dp">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    app:srcCompat="@drawable/cleaning_services_24px" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:gravity="center_vertical"
-                    android:text="Clean up"
                     android:textAppearance="?attr/textAppearanceBodyLarge"
                     app:drawableEndCompat="@drawable/ic_mtrl_arrow_right" />
 

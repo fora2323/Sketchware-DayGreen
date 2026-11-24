@@ -36,7 +36,6 @@ import a.a.a.wq;
 import a.a.a.yB;
 import extensions.anbui.daydream.activity.project.DayDreamBackupTool;
 import extensions.anbui.daydream.settings.DRSettings;
-import extensions.anbui.daydream.tools.project.DayDreamCleanUpTemporaryFiles;
 import extensions.anbui.daydream.tools.project.DayDreamCloneTool;
 import extensions.anbui.daydream.tools.project.RemoveCore;
 import mod.hey.studios.project.ProjectSettingsDialog;
@@ -317,11 +316,6 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
             projectOptionsBSD.dismiss();
         });
 
-        binding.projectCleanup.setOnClickListener(v -> {
-            DayDreamCleanUpTemporaryFiles.showDialogNow(activity, yB.c(projectMap, "sc_id"));
-            projectOptionsBSD.dismiss();
-        });
-
         binding.projectSettings.setOnClickListener(v -> {
             toProjectSettingOrRequestPermission(projectMap, position);
             projectOptionsBSD.dismiss();
@@ -330,17 +324,6 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
         binding.projectDelete.setOnClickListener(v -> {
             RemoveCore.showDialogNow(activity, yB.c(projectMap, "sc_id"));
             projectOptionsBSD.dismiss();
-//            projectOptionsBSD.dismiss();
-//            MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(activity);
-//            dialog.setIcon(R.drawable.icon_delete);
-//            dialog.setTitle(Helper.getResString(R.string.delete_project_dialog_title));
-//            dialog.setMessage(Helper.getResString(R.string.delete_project_dialog_message).replace("%1$s", yB.c(projectMap, "my_app_name")));
-//            dialog.setPositiveButton(Helper.getResString(R.string.common_word_delete), (v1, which) -> {
-//                deleteProject(projectMap, position);
-//                v1.dismiss();
-//            });
-//            dialog.setNegativeButton(Helper.getResString(R.string.common_word_cancel), null);
-//            dialog.show();
         });
 
         if (isPinned(projectMap)) {
