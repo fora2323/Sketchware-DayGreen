@@ -1,8 +1,9 @@
-VERSION: v8.0.9-daygreen-release
-CODE_VERSION: 203
-COMMIT_MESSAGE: New features and new changes
-1: UI preview layout changes and using compose
-
-Bug and Crash fixes
-1: fix system shrinking resource
-2: fix FrameLayout that cannot be filled with child views
+VERSION: v8.0.10-daygreen-release
+CODE_VERSION: 208
+COMMIT_MESSAGE: Bug and Crash fixes
+1: improve editor performance
+2: fix crash when opening layout preview
+3: fix inaccurate icon search results when network is low
+4: fix stability on Design Creator 
+5: fix custom color load, on json
+6: fix in the part when open component crash occurs on android 16
