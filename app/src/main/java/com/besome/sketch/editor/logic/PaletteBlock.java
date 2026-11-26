@@ -52,7 +52,9 @@ public class PaletteBlock extends LinearLayout {
         Rs blockView = new Rs(context, -1, var1, var2, var3);
         blockView.setContentDescription(generateContentDescription(var3));
         blockView.setBlockType(1);
-        binding.blockBuilder.addView(blockView);
+        binding.blockBuilder.addView(blockView, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         return blockView;
     }
 
@@ -63,7 +65,9 @@ public class PaletteBlock extends LinearLayout {
         Rs blockView = new Rs(context, -1, var1, var2, var3, var4);
         blockView.setContentDescription(generateContentDescription(var4));
         blockView.setBlockType(1);
-        binding.blockBuilder.addView(blockView);
+        binding.blockBuilder.addView(blockView, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         return blockView;
     }
 

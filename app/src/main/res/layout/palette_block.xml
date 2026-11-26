@@ -48,6 +48,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:fadingEdgeLength="14dp"
+                    android:fillViewport="true"
                     android:requiresFadingEdge="horizontal"
                     android:scrollbars="none">
 
