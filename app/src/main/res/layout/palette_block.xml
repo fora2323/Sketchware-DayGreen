@@ -23,8 +23,6 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:fadingEdgeLength="14dp"
-            android:requiresFadingEdge="vertical"
             android:scrollbars="none">
 
             <LinearLayout
@@ -47,9 +45,7 @@
                     android:id="@+id/scroll_horizontal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fadingEdgeLength="14dp"
                     android:fillViewport="true"
-                    android:requiresFadingEdge="horizontal"
                     android:scrollbars="none">
 
                     <LinearLayout
@@ -124,12 +120,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:clipToPadding="false"
-                android:fadingEdgeLength="14dp"
+                android:clipToPadding="true"
                 android:paddingHorizontal="6dp"
-                android:paddingTop="2dp"
-                android:paddingBottom="10dp"
-                android:requiresFadingEdge="vertical"
+                android:paddingBottom="8dp"
                 android:scrollbars="none"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 

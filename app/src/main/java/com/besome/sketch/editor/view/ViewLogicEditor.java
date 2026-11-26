@@ -1,15 +1,27 @@
 package com.besome.sketch.editor.view;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
+import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
+
 import com.besome.sketch.editor.logic.BlockPane;
+
+import a.a.a.wB;
+import pro.sketchware.R;
+import pro.sketchware.utility.ThemeUtils;
 
 public class ViewLogicEditor extends LogicEditorScrollView {
     private final BlockPane blockPane;
     private final int[] posArea = new int[2];
+    private final Paint gridDotPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final float gridSpacing;
+    private final float gridDotRadius;
     private boolean isFirst = true;
 
     public ViewLogicEditor(Context context) {
@@ -26,10 +38,42 @@ public class ViewLogicEditor extends LogicEditorScrollView {
 
     public ViewLogicEditor(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
+        setWillNotDraw(false);
+        boolean isDark = ThemeUtils.isDarkThemeEnabled(context);
+        setBackgroundColor(ThemeUtils.getColor(context, isDark ? R.attr.colorSurfaceContainer : R.attr.colorSurface));
+
+        int dotBaseColor = ThemeUtils.getColor(context, R.attr.colorOutlineVariant);
+        gridDotPaint.setColor(ColorUtils.setAlphaComponent(dotBaseColor, isDark ? 140 : 180));
+        gridDotPaint.setStyle(Paint.Style.FILL);
+        gridSpacing = wB.a(context, 20.0f);
+        gridDotRadius = wB.a(context, 1.3f);
+
         blockPane = new BlockPane(context);
         blockPane.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
         addView(blockPane);
+    }
+
+    @Override
+    protected void onDraw(@NonNull Canvas canvas) {
+        super.onDraw(canvas);
+        float scrollX = getScrollX();
+        float scrollY = getScrollY();
+        float width = getWidth();
+        float height = getHeight();
+        if (width <= 0 || height <= 0 || gridSpacing <= 0) {
+            return;
+        }
+        float startX = ((float) Math.floor(scrollX / gridSpacing)) * gridSpacing;
+        float startY = ((float) Math.floor(scrollY / gridSpacing)) * gridSpacing;
+        float endX = scrollX + width + gridSpacing;
+        float endY = scrollY + height + gridSpacing;
+
+        for (float x = startX; x <= endX; x += gridSpacing) {
+            for (float y = startY; y <= endY; y += gridSpacing) {
+                canvas.drawCircle(x, y, gridDotRadius, gridDotPaint);
+            }
+        }
     }
 
     public BlockPane getBlockPane() {

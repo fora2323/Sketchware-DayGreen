@@ -1,10 +1,10 @@
 package com.besome.sketch.editor.logic;
 
 import static pro.sketchware.utility.ThemeUtils.getColor;
+import static pro.sketchware.utility.ThemeUtils.isDarkThemeEnabled;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.TypedValue;
@@ -116,69 +116,36 @@ public class PaletteBlock extends LinearLayout {
     }
 
     public void a(String title, int color) {
-        boolean isError = color == getColor(context, R.attr.colorError);
-        boolean isFirst = binding.blockBuilder.getChildCount() == 0;
-
-        if (isError) {
-            var cardView = new MaterialCardView(context);
-            var params = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            params.topMargin = (int) (f * (isFirst ? 4.0F : 12.0F));
-            params.bottomMargin = (int) (f * 4.0F);
-            cardView.setLayoutParams(params);
-            cardView.setCardBackgroundColor(getColor(context, R.attr.colorErrorContainer));
-            cardView.setRadius(f * 8.0F);
-            cardView.setCardElevation(0.0F);
-            cardView.setStrokeWidth(0);
-
-            TextView textView = new TextView(context);
-            textView.setText(title);
-            textView.setTextColor(getColor(context, R.attr.colorOnErrorContainer));
-            textView.setTextSize(11.0F);
-            textView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-            textView.setIncludeFontPadding(false);
-            textView.setPadding((int) (f * 10.0F), (int) (f * 5.0F), (int) (f * 10.0F), (int) (f * 5.0F));
-            cardView.addView(textView);
-
-            binding.blockBuilder.addView(cardView);
-            return;
-        }
-
-        LinearLayout header = new LinearLayout(context);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        params.topMargin = (int) (f * (isFirst ? 4.0F : 14.0F));
-        header.setLayoutParams(params);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-
-        View accent = new View(context);
-        LinearLayout.LayoutParams accentParams = new LinearLayout.LayoutParams((int) (f * 3.0F), (int) (f * 12.0F));
-        accentParams.setMarginEnd((int) (f * 6.0F));
-        accent.setLayoutParams(accentParams);
-        GradientDrawable accentDrawable = new GradientDrawable();
-        accentDrawable.setColor(getColor(context, R.attr.colorPrimary));
-        accentDrawable.setCornerRadius(f * 2.0F);
-        accent.setBackground(accentDrawable);
-        header.addView(accent);
+        var cardView = new MaterialCardView(context);
+        var params = getLayoutParams(24.0F);
+        params.topMargin = (int) (f * (binding.blockBuilder.getChildCount() == 0 ? 4.0F : 16.0F));
+        params.bottomMargin = (int) (f * 8.0F);
+        cardView.setLayoutParams(params);
+        cardView.setCardBackgroundColor(color);
+        cardView.setRadius(f * 8.0F);
+        cardView.setCardElevation(0.0F);
+        cardView.setMaxCardElevation(0.0F);
+        cardView.setUseCompatPadding(false);
+        cardView.setStrokeWidth(0);
 
         TextView textView = new TextView(context);
         textView.setText(title);
-        textView.setTextColor(getColor(context, R.attr.colorPrimary));
-        textView.setTextSize(11.5F);
-        textView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        textView.setLetterSpacing(0.02F);
-        textView.setIncludeFontPadding(false);
-        header.addView(textView);
+        boolean isError = color == getColor(context, R.attr.colorError);
+        textView.setTextColor(getColor(context, isError
+                ? R.attr.colorOnError
+                : (isDarkThemeEnabled(context) ? R.attr.colorOnSurface : R.attr.colorOnSurfaceInverse)));
+        textView.setTextSize(11.0F);
+        textView.setTypeface(null, Typeface.BOLD);
+        textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+        textView.setPadding((int) (f * 12.0F), (int) (f * 4.0F), (int) (f * 12.0F), (int) (f * 4.0F));
+        cardView.addView(textView);
 
-        binding.blockBuilder.addView(header);
+        binding.blockBuilder.addView(cardView);
     }
 
     public void addDeprecatedBlock(String message, String type, String opCode) {
         if (message != null && !message.isEmpty()) {
-            a(message, getColor(context, R.attr.colorSurfaceContainerHigh));
+            a(message, getColor(context, isDarkThemeEnabled(context) ? R.attr.colorSurfaceContainerHigh : R.attr.colorSurfaceInverse));
         }
         Ts blockView = a("", type, opCode);
         blockView.e = 0xFFBDBDBD;
