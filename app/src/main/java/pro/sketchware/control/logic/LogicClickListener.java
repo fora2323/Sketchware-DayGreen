@@ -172,7 +172,11 @@ public class LogicClickListener implements View.OnClickListener {
 
         List<Item> data = new LinkedList<>();
         RemoveAdapter adapter = new RemoveAdapter(logicEditor, data,
-                variableName -> logicEditor.o.c(variableName) || projectDataManager.c(javaName, variableName, eventName));
+                variableName -> {
+                    String parsedName = CustomVariableUtil.getVariableName(variableName);
+                    String nameToCheck = parsedName != null ? parsedName : variableName;
+                    return logicEditor.o.c(nameToCheck) || projectDataManager.c(javaName, nameToCheck, eventName);
+                });
         recyclerView.setAdapter(adapter);
 
         List<Pair<List<Integer>, String>> variableTypes = List.of(
@@ -189,11 +193,9 @@ public class LogicClickListener implements View.OnClickListener {
             List<Integer> first = variableType.first;
             for (int i = 0; i < first.size(); i++) {
                 Integer type = first.get(i);
-
-                if (i == 0) {
-                    variableTypeInstances = getUsedVariable(type);
-                } else {
-                    variableTypeInstances.addAll(getUsedVariable(type));
+                ArrayList<String> used = getUsedVariable(type);
+                if (used != null) {
+                    variableTypeInstances.addAll(used);
                 }
             }
 
@@ -278,7 +280,11 @@ public class LogicClickListener implements View.OnClickListener {
 
         List<Item> data = new LinkedList<>();
         RemoveAdapter adapter = new RemoveAdapter(logicEditor, data,
-                listName -> logicEditor.o.b(listName) || projectDataManager.b(javaName, listName, eventName));
+                listName -> {
+                    String parsedName = CustomVariableUtil.getVariableName(listName);
+                    String nameToCheck = parsedName != null ? parsedName : listName;
+                    return logicEditor.o.b(nameToCheck) || projectDataManager.b(javaName, nameToCheck, eventName);
+                });
         recyclerView.setAdapter(adapter);
 
         List<Pair<Integer, String>> listTypes = List.of(
@@ -383,7 +389,8 @@ public class LogicClickListener implements View.OnClickListener {
                         if (isInUseChecker.apply(item.text)) {
                             //noinspection ConstantConditions Item#inUseMessage can't be null if Item#type is Item#TYPE_ITEM
                             SketchwareUtil.toastError(Helper.getResString(item.inUseMessage), bB.TOAST_WARNING);
-                            checkBoxHolder.checkBox.performClick();
+                            item.isChecked = false;
+                            checkBoxHolder.checkBox.setChecked(false);
                         }
                     }
                 });

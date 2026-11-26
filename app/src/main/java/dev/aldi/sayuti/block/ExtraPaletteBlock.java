@@ -94,12 +94,14 @@ public class ExtraPaletteBlock {
                 // in case the View's in a Drawer
                 view = eC.c("_drawer_" + xmlName, logicEditor.id);
             }
-            String customView = view.customView;
-            if (customView != null && !customView.isEmpty()) {
-                for (ViewBean viewBean : jC.a(sc_id).d(ProjectFileBean.getXmlName(customView))) {
-                    if (viewBean.getClassInfo().a(str)) {
-                        mapSave.put(str, true);
-                        return true;
+            if (view != null) {
+                String customView = view.customView;
+                if (customView != null && !customView.isEmpty()) {
+                    for (ViewBean viewBean : jC.a(sc_id).d(ProjectFileBean.getXmlName(customView))) {
+                        if (viewBean.getClassInfo().a(str)) {
+                            mapSave.put(str, true);
+                            return true;
+                        }
                     }
                 }
             }
@@ -195,11 +197,18 @@ public class ExtraPaletteBlock {
         for (int i = 0; i < customVariables.size(); i++) {
             if (i == 0) logicEditor.a("Custom Variable", getTitleBgColor());
 
-            String[] split = customVariables.get(i).split(" ");
-            if (split.length > 1) {
-                logicEditor.a(split[1], "v", split[0], "getVar").setTag(customVariables.get(i));
+            String var5 = customVariables.get(i);
+            String varType = CustomVariableUtil.getVariableType(var5);
+            String varName = CustomVariableUtil.getVariableName(var5);
+            if (varType != null && varName != null) {
+                logicEditor.a(varName, "v", varType, "getVar").setTag(var5);
             } else {
-                SketchwareUtil.toastError("Found invalid data of Custom Variable #" + (i + 1) + ": \"" + customVariables.get(i) + "\"");
+                String[] split = var5.split(" ");
+                if (split.length > 1) {
+                    logicEditor.a(split[1], "v", split[0], "getVar").setTag(var5);
+                } else {
+                    SketchwareUtil.toastError("Found invalid data of Custom Variable #" + (i + 1) + ": \"" + var5 + "\"");
+                }
             }
         }
 
@@ -261,20 +270,22 @@ public class ExtraPaletteBlock {
                 // Event is of a Drawer View
                 viewBean = eC.c("_drawer_" + xmlName, viewId);
             }
-            String viewBeanCustomView = viewBean.customView;
-            if (viewBeanCustomView != null && !viewBeanCustomView.isEmpty()) {
-                ArrayList<ViewBean> customViews = jC.a(sc_id).d(ProjectFileBean.getXmlName(viewBeanCustomView));
-                for (int i = 0, customViewsSize = customViews.size(); i < customViewsSize; i++) {
-                    ViewBean customView = customViews.get(i);
+            if (viewBean != null) {
+                String viewBeanCustomView = viewBean.customView;
+                if (viewBeanCustomView != null && !viewBeanCustomView.isEmpty()) {
+                    ArrayList<ViewBean> customViews = jC.a(sc_id).d(ProjectFileBean.getXmlName(viewBeanCustomView));
+                    for (int i = 0, customViewsSize = customViews.size(); i < customViewsSize; i++) {
+                        ViewBean customView = customViews.get(i);
 
-                    if (i == 0) {
-                        logicEditor.a("Custom Views", getTitleBgColor());
-                    }
+                        if (i == 0) {
+                            logicEditor.a("Custom Views", getTitleBgColor());
+                        }
 
-                    if (!customView.convert.equals("include")) {
-                        String typeName = customView.convert.isEmpty() ? ViewBean.getViewTypeName(customView.type) : IdGenerator.getLastPath(customView.convert);
-                        String resultId = isViewBindingEnabled ? "binding." + ViewBindingBuilder.generateParameterFromId(customView.id) : customView.id;
-                        logicEditor.a(resultId, "v", typeName, "getVar").setTag(resultId);
+                        if (!customView.convert.equals("include")) {
+                            String typeName = customView.convert.isEmpty() ? ViewBean.getViewTypeName(customView.type) : IdGenerator.getLastPath(customView.convert);
+                            String resultId = isViewBindingEnabled ? "binding." + ViewBindingBuilder.generateParameterFromId(customView.id) : customView.id;
+                            logicEditor.a(resultId, "v", typeName, "getVar").setTag(resultId);
+                        }
                     }
                 }
             }
@@ -831,7 +842,7 @@ public class ExtraPaletteBlock {
                 boolean lottieAnimationViewUsed = isWidgetUsed("LottieAnimationView");
                 boolean otpViewUsed = isWidgetUsed("OTPView");
 
-                if (waveSideBarUsed || badgeViewUsed || bubbleLayoutUsed || patternLockViewUsed || codeViewUsed || lottieAnimationViewUsed) {
+                if (waveSideBarUsed || badgeViewUsed || bubbleLayoutUsed || patternLockViewUsed || codeViewUsed || lottieAnimationViewUsed || otpViewUsed) {
                     logicEditor.a("Library", getTitleBgColor());
 
                     if (otpViewUsed) {
@@ -1265,7 +1276,7 @@ public class ExtraPaletteBlock {
                                         " of current palette has an invalid block type data type");
                             }
                         }
-                    } else {
+                    } else if (palette != null) {
                         SketchwareUtil.toastError("Custom Block #" + paletteBlocks +
                                 " of current palette has an invalid block palette data type");
                     }

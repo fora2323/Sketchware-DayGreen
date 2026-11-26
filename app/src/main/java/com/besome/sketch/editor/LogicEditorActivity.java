@@ -399,12 +399,13 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             while (i < childCount) {
                 RadioButton radioButton = (RadioButton) viewGroup.getChildAt(i);
                 if (radioButton.isChecked()) {
-                    if (!o.b(Helper.getText(radioButton))) {
-                        if (!jC.a(scId).b(M.getJavaName(), Helper.getText(radioButton), id + "_" + eventName)) {
-                            l(Helper.getText(radioButton));
-                        }
+                    String text = Helper.getText(radioButton);
+                    if (!o.b(text) && !jC.a(scId).b(M.getJavaName(), text, id + "_" + eventName)) {
+                        l(text);
+                        v.dismiss();
+                    } else {
+                        Toast.makeText(getContext(), R.string.logic_editor_message_currently_used_list, Toast.LENGTH_SHORT).show();
                     }
-                    Toast.makeText(getContext(), R.string.logic_editor_message_currently_used_list, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 i++;
@@ -432,12 +433,13 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             while (i < childCount) {
                 RadioButton radioButton = (RadioButton) viewGroup.getChildAt(i);
                 if (radioButton.isChecked()) {
-                    if (!o.c(Helper.getText(radioButton))) {
-                        if (!jC.a(scId).c(M.getJavaName(), Helper.getText(radioButton), id + "_" + eventName)) {
-                            m(Helper.getText(radioButton));
-                        }
+                    String text = Helper.getText(radioButton);
+                    if (!o.c(text) && !jC.a(scId).c(M.getJavaName(), text, id + "_" + eventName)) {
+                        m(text);
+                        v.dismiss();
+                    } else {
+                        Toast.makeText(getContext(), R.string.logic_editor_message_currently_used_variable, Toast.LENGTH_SHORT).show();
                     }
-                    Toast.makeText(getContext(), R.string.logic_editor_message_currently_used_variable, Toast.LENGTH_SHORT).show();
                     return;
                 }
                 i++;
@@ -624,9 +626,13 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                 String parameter = block.parameters.get(j);
                 if (parameter != null && !parameter.isEmpty() && parameter.charAt(0) == '@') {
                     int parameterId = Integer.parseInt(parameter.substring(1));
-                    int parameterAsBlockId = hashMap.containsKey(parameterId) ? hashMap.get(parameterId) : 0;
-                    if (parameterAsBlockId >= 0) {
-                        block.parameters.set(j, '@' + String.valueOf(parameterAsBlockId));
+                    if (hashMap.containsKey(parameterId)) {
+                        int parameterAsBlockId = hashMap.get(parameterId);
+                        if (parameterAsBlockId >= 0) {
+                            block.parameters.set(j, '@' + String.valueOf(parameterAsBlockId));
+                        } else {
+                            block.parameters.set(j, "");
+                        }
                     } else {
                         block.parameters.set(j, "");
                     }
@@ -832,6 +838,9 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             block.ha = -1;
 
             for (int i = 0; i < blockBean.parameters.size(); i++) {
+                if (i >= block.V.size()) {
+                    break;
+                }
                 String parameter = blockBean.parameters.get(i);
                 if (parameter != null) {
                     if (!parameter.isEmpty() && parameter.charAt(0) == '@') {
@@ -853,9 +862,8 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                                     // Event is of a Drawer View
                                     view = eC.c("_drawer_" + xmlName, id);
                                 }
-                                String customView = view.customView;
-                                if (customView != null) {
-                                    xmlName = ProjectFileBean.getXmlName(customView);
+                                if (view != null && view.customView != null) {
+                                    xmlName = ProjectFileBean.getXmlName(view.customView);
                                 }
                             }
 
@@ -1518,16 +1526,17 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         int a2;
         int i2 = ViewGroup.LayoutParams.MATCH_PARENT;
         if (X) {
-            int width = getResources().getDisplayMetrics().widthPixels;
-            int height = getResources().getDisplayMetrics().heightPixels;
-            if (width <= height) {
-                width = height;
+            View parentView = (View) viewLogicEditor.getParent();
+            int parentWidth = parentView.getWidth();
+            int parentHeight = parentView.getHeight();
+            if (parentWidth <= 0) {
+                parentWidth = getResources().getDisplayMetrics().widthPixels;
             }
             if (2 == i) {
-                i2 = width - ((int) wB.a(this, 320.0f));
+                i2 = Math.max(0, parentWidth - ((int) wB.a(this, 320.0f)));
                 a2 = ViewGroup.LayoutParams.MATCH_PARENT;
             } else {
-                a2 = viewLogicEditor.getHeight() - K.getHeight();
+                a2 = parentHeight > 0 ? Math.max(0, parentHeight - K.getHeight()) : ViewGroup.LayoutParams.MATCH_PARENT;
             }
             layoutParams = new LinearLayout.LayoutParams(i2, a2);
         } else {
@@ -1723,11 +1732,17 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         }
         dialog.setView(customView);
         dialog.setPositiveButton(R.string.common_word_select, (v, which) -> {
-            RadioButton checkedRadioButton = radioGroup.findViewById(radioGroup.getCheckedRadioButtonId());
-            a(ss, Helper.getText(checkedRadioButton));
+            int checkedId = radioGroup.getCheckedRadioButtonId();
+            if (checkedId != -1) {
+                RadioButton checkedRadioButton = radioGroup.findViewById(checkedId);
+                if (checkedRadioButton != null) {
+                    a(ss, Helper.getText(checkedRadioButton));
+                }
+            }
             v.dismiss();
         });
         dialog.setNegativeButton(R.string.common_word_cancel, null);
+        dialog.setOnDismissListener(d -> soundPool.release());
         dialog.show();
     }
 
@@ -1859,6 +1874,9 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             e(false);
             return;
         }
+        if (mB.a()) {
+            return;
+        }
         k();
         if (!p()) {
             return;
@@ -1921,6 +1939,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
                 .applyToView(findViewById(R.id.layout));
         if (!super.isStoragePermissionGranted()) {
             finish();
+            return;
         }
         Parcelable parcelable;
         if (savedInstanceState == null) {
@@ -1934,8 +1953,12 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             eventName = savedInstanceState.getString("event");
             parcelable = savedInstanceState.getParcelable("project_file");
         }
-        isViewBindingEnabled = new ProjectSettings(scId).getValue(ProjectSettings.SETTING_ENABLE_VIEWBINDING, "false").equals("true");
         M = (ProjectFileBean) parcelable;
+        if (M == null || scId == null || id == null || eventName == null) {
+            finish();
+            return;
+        }
+        isViewBindingEnabled = new ProjectSettings(scId).getValue(ProjectSettings.SETTING_ENABLE_VIEWBINDING, "false").equals("true");
         T = (int) wB.a(getContext(), (float) T);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -2025,7 +2048,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             String specBit = spec.get(i);
             if (specBit.charAt(0) == '%') {
                 Rs block = BlockUtil.getVariableBlock(getContext(), blockId + 1, specBit, "getArg");
-                if (block != null) {
+                if (block != null && blockId < o.getRoot().V.size()) {
                     block.setBlockType(1);
                     o.addView(block);
                     o.getRoot().a((Ts) o.getRoot().V.get(blockId), block);
@@ -2050,6 +2073,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         super.onResume();
         if (!super.isStoragePermissionGranted()) {
             finish();
+            return;
         }
     }
 
@@ -2485,7 +2509,8 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         fa = ObjectAnimator.ofFloat(O, View.TRANSLATION_X, 0.0f);
         fa.setDuration(500L);
         fa.setInterpolator(new DecelerateInterpolator());
-        ga = ObjectAnimator.ofFloat(O, View.TRANSLATION_X, O.getHeight());
+        float drawerWidth = O.getWidth() > 0 ? O.getWidth() : wB.a(this, 150.0f);
+        ga = ObjectAnimator.ofFloat(O, View.TRANSLATION_X, drawerWidth);
         ga.setDuration(300L);
         ga.setInterpolator(new DecelerateInterpolator());
         ha = true;
@@ -2519,20 +2544,29 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
 
         @Override
         public void a() {
-            activity.get().h();
-            activity.get().finish();
+            LogicEditorActivity act = activity.get();
+            if (act != null && !act.isFinishing() && !act.isDestroyed()) {
+                act.h();
+                act.finish();
+            }
         }
 
         @Override
         public void a(String str) {
             Toast.makeText(a, R.string.common_error_failed_to_save, Toast.LENGTH_SHORT).show();
-            activity.get().h();
+            LogicEditorActivity act = activity.get();
+            if (act != null && !act.isFinishing() && !act.isDestroyed()) {
+                act.h();
+            }
         }
 
         @Override
         public void b() {
             publishProgress("Now saving..");
-            activity.get().E();
+            LogicEditorActivity act = activity.get();
+            if (act != null && !act.isFinishing() && !act.isDestroyed()) {
+                act.E();
+            }
         }
     }
 
@@ -2545,15 +2579,27 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         }
 
         public void execute() {
-            getActivity().k();
-            executorService.execute(this::doInBackground);
+            LogicEditorActivity activity = getActivity();
+            if (activity != null && !activity.isFinishing() && !activity.isDestroyed()) {
+                activity.k();
+                executorService.execute(this::doInBackground);
+            }
         }
 
         private void doInBackground() {
-            LogicEditorActivity activity = getActivity();
-            if (activity != null) {
-                activity.loadEventBlocks();
-                activity.runOnUiThread(activity::h);
+            try {
+                LogicEditorActivity activity = getActivity();
+                if (activity != null && !activity.isFinishing() && !activity.isDestroyed()) {
+                    activity.loadEventBlocks();
+                    activity.runOnUiThread(() -> {
+                        LogicEditorActivity act = getActivity();
+                        if (act != null && !act.isFinishing() && !act.isDestroyed()) {
+                            act.h();
+                        }
+                    });
+                }
+            } finally {
+                executorService.shutdown();
             }
         }
 

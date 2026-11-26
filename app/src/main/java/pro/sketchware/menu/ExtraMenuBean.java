@@ -623,8 +623,19 @@ public class ExtraMenuBean {
             case "ResAttr":
             case "ResXml":
                 title = "Deprecated";
+                dialog.setTitle(title);
                 dialog.setMessage("This Block Menu was initially used to parse resource values, but was too I/O heavy and has been removed due to that. Please use the Code Editor instead.");
-                break;
+                dialog.setNegativeButton(logicEditor.getString(R.string.common_word_cancel), null);
+                dialog.setNeutralButton("Code Editor", (v, which) -> {
+                    AsdDialog editor = new AsdDialog(logicEditor);
+                    editor.setContent(menu.getArgValue().toString());
+                    editor.show();
+                    editor.setOnSaveClickListener(logicEditor, false, menu, editor);
+                    editor.setOnCancelClickListener(editor);
+                    v.dismiss();
+                });
+                dialog.show();
+                return;
 
             case "AdUnit":
                 dialog.setIcon(R.drawable.unit_96);
@@ -803,13 +814,19 @@ public class ExtraMenuBean {
             path = String.format(NATIVE_PATH, sc_id);
             markedPath.add(0, path + ss.getArgValue().toString());
         }
+        if (path == null) {
+            return;
+        }
         String[] strArr = path.split("/");
         String splitter = strArr[strArr.length - 1];
         mOptions.setInitialDirectory(path);
         FilePickerCallback callback = new FilePickerCallback() {
             @Override
             public void onFileSelected(File file) {
-                logicEditor.a(ss, file.getAbsolutePath().split(splitter)[1]);
+                String absPath = file.getAbsolutePath();
+                int idx = absPath.indexOf(splitter);
+                String selected = idx >= 0 ? absPath.substring(idx + splitter.length()) : absPath;
+                logicEditor.a(ss, selected);
             }
         };
         FilePickerDialogFragment fpd = new FilePickerDialogFragment(mOptions, callback);
