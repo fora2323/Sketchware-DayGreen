@@ -14,9 +14,9 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.SimpleItemAnimator;
 
 import com.besome.sketch.beans.ComponentBean;
 import com.besome.sketch.beans.EventBean;
@@ -24,14 +24,13 @@ import com.besome.sketch.beans.ProjectFileBean;
 import com.besome.sketch.beans.ViewBean;
 import com.besome.sketch.editor.makeblock.MoreBlockBuilderView;
 import com.besome.sketch.lib.base.BaseAppCompatActivity;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.color.MaterialColors;
+import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
-
-import extensions.anbui.daydream.library.DRFeatureManager;
-import extensions.anbui.daydream.settings.DayDreamProjectSettings;
 
 import a.a.a.Ox;
 import a.a.a.bB;
@@ -42,6 +41,8 @@ import a.a.a.mB;
 import a.a.a.oq;
 import a.a.a.rs;
 import a.a.a.wB;
+import dev.chrisbanes.insetter.Insetter;
+import extensions.anbui.daydream.settings.DayDreamProjectSettings;
 import pro.sketchware.R;
 import pro.sketchware.databinding.LogicPopupAddEventBinding;
 
@@ -53,7 +54,6 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 	private MoreBlockBuilderView moreBlockView;
 	private String sc_id;
 	private ProjectFileBean projectFile;
-	private CategoryAdapter categoryAdapter;
 	private EventAdapter eventAdapter;
 	private EventsToAddAdapter eventsToAddAdapter;
 	private HashMap<Integer, ArrayList<EventBean>> categories;
@@ -61,26 +61,27 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 	private ArrayList<EventBean> addableViewEvents;
 	private ArrayList<EventBean> addableComponentEvents;
 	private ArrayList<EventBean> addableActivityEvents;
-	
+
 	private LogicPopupAddEventBinding binding;
-	
+
 	private void l() {
+		updateAddButtonLabel();
 		if (eventsToAdd.isEmpty() && !C) {
 			C = true;
 			gB.a(binding.eventsPreview, 300, new Animator.AnimatorListener() {
 				@Override
 				public void onAnimationStart(@NonNull Animator animation) {
 				}
-				
+
 				@Override
 				public void onAnimationEnd(@NonNull Animator animation) {
 					binding.eventsPreview.setVisibility(View.GONE);
 				}
-				
+
 				@Override
 				public void onAnimationCancel(@NonNull Animator animation) {
 				}
-				
+
 				@Override
 				public void onAnimationRepeat(@NonNull Animator animation) {
 				}
@@ -91,15 +92,70 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 			gB.b(binding.eventsPreview, 300, null);
 		}
 	}
-	
+
+	private void updateAddButtonLabel() {
+		if (eventsToAdd.isEmpty()) {
+			binding.addButton.setText(R.string.common_word_add);
+		} else {
+			binding.addButton.setText(getString(R.string.common_word_add) + " (" + eventsToAdd.size() + ")");
+		}
+	}
+
+	private void setupTabs() {
+		if (binding.tabLayout.getTabCount() > 0) {
+			return;
+		}
+		for (int i = 0; i < categories.size(); i++) {
+			TabLayout.Tab tab = binding.tabLayout.newTab()
+					.setText(rs.a(getApplicationContext(), i))
+					.setIcon(rs.a(i));
+			binding.tabLayout.addTab(tab, i == categoryIndex);
+		}
+		binding.tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+			@Override
+			public void onTabSelected(TabLayout.Tab tab) {
+				int pos = tab.getPosition();
+				if (pos != categoryIndex) {
+					categoryIndex = pos;
+					applyCategorySelection(pos);
+				}
+			}
+
+			@Override
+			public void onTabUnselected(TabLayout.Tab tab) {
+			}
+
+			@Override
+			public void onTabReselected(TabLayout.Tab tab) {
+			}
+		});
+	}
+
+	private void applyCategorySelection(int index) {
+		binding.emptyIcon.setImageResource(rs.a(index));
+		if (index == 4) {
+			binding.moreblockLayout.setVisibility(View.VISIBLE);
+			binding.emptyMessage.setVisibility(View.GONE);
+			binding.eventList.setVisibility(View.GONE);
+		} else {
+			binding.moreblockLayout.setVisibility(View.GONE);
+			ArrayList<EventBean> list = categories.get(index);
+			eventAdapter.setEvents(list != null ? list : new ArrayList<>());
+			eventAdapter.notifyDataSetChanged();
+		}
+	}
+
 	private void initialize() {
 		addableEtcEvents.clear();
+		addableViewEvents.clear();
 		addableActivityEvents.clear();
 		addableComponentEvents.clear();
 		addableDrawerViewEvents.clear();
-		addableEtcEvents.clear();
 		eventsToAdd.clear();
-		
+		C = true;
+		binding.eventsPreview.setVisibility(View.GONE);
+		updateAddButtonLabel();
+
 		boolean isFragment = isFragmentFile();
 		for (var activityEvent : oq.getAllActivityEvents()) {
 			if (!isFragment && "onDestroyView".equals(activityEvent)) {
@@ -112,7 +168,7 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 					break;
 				}
 			}
-			
+
 			if (!exists) {
 				addableActivityEvents.add(new EventBean(EventBean.EVENT_TYPE_ACTIVITY, 0, activityEvent, activityEvent));
 			}
@@ -135,7 +191,7 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 							}
 						}
 					}
-					
+
 					if (!exists && !toNotAdd.contains("android:id")) {
 						addableViewEvents.add(new EventBean(EventBean.EVENT_TYPE_VIEW, view.type, view.id, viewEvent));
 					}
@@ -193,25 +249,11 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 				}
 			}
 		}
-		if (categoryAdapter.lastSelectedCategory == -1) {
-			eventAdapter.setEvents(categories.get(categoryIndex));
-			categoryAdapter.lastSelectedCategory = categoryIndex;
-			binding.tvCategory.setText(rs.a(getApplicationContext(), categoryIndex));
-			if (categoryAdapter != null) {
-				categoryAdapter.notifyItemChanged(categoryIndex);
-			}
-			if (categoryIndex == 4) {
-				binding.moreblockLayout.setVisibility(View.VISIBLE);
-				binding.emptyMessage.setVisibility(View.GONE);
-				binding.eventList.setVisibility(View.GONE);
-			} else {
-				binding.moreblockLayout.setVisibility(View.GONE);
-				binding.eventList.setVisibility(View.VISIBLE);
-			}
+		TabLayout.Tab selectedTab = binding.tabLayout.getTabAt(categoryIndex);
+		if (selectedTab != null && !selectedTab.isSelected()) {
+			selectedTab.select();
 		}
-		if (eventAdapter != null) {
-			eventAdapter.notifyDataSetChanged();
-		}
+		applyCategorySelection(categoryIndex);
 	}
 
 	private boolean isFragmentFile() {
@@ -222,7 +264,7 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 				|| (projectFile.fileName != null && projectFile.fileName.contains("_fragment"))
 				|| DayDreamProjectSettings.getActivityType(sc_id, projectFile.fileName).contains("_fragment");
 	}
-	
+
 	@Override
 	public void onClick(View v) {
 		boolean finished = false;
@@ -232,12 +274,12 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 				if (!eventsToAdd.isEmpty() || !moreBlockView.a()) {
 					if (!moreBlockView.a()) {
 						if (!moreBlockView.b()) {
-							eventAdapter.setEvents(categories.get(4));
-							categoryAdapter.lastSelectedCategory = 4;
-							binding.tvCategory.setText(rs.a(getApplicationContext(), 4));
-							binding.emptyMessage.setVisibility(View.GONE);
-							binding.moreblockLayout.setVisibility(View.VISIBLE);
-							categoryAdapter.notifyDataSetChanged();
+							categoryIndex = 4;
+							TabLayout.Tab moreBlockTab = binding.tabLayout.getTabAt(4);
+							if (moreBlockTab != null) {
+								moreBlockTab.select();
+							}
+							applyCategorySelection(4);
 							finished = true;
 						} else {
 							Pair<String, String> blockInformation = moreBlockView.getBlockInformation();
@@ -264,23 +306,18 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 			}
 		}
 	}
-	
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		enableEdgeToEdgeNoContrast();
 		super.onCreate(savedInstanceState);
 		binding = LogicPopupAddEventBinding.inflate(getLayoutInflater());
 		setContentView(binding.getRoot());
 
-		setSupportActionBar(binding.toolbar);
-		if (getSupportActionBar() != null) {
-			getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-			getSupportActionBar().setTitle(R.string.event_title_add_new_event);
-		}
-		binding.toolbar.setNavigationOnClickListener(v -> {
-			setResult(RESULT_CANCELED);
-			finish();
-		});
-		
+		Insetter.builder()
+				.padding(WindowInsetsCompat.Type.navigationBars() | WindowInsetsCompat.Type.ime())
+				.applyToView(binding.bottomBar);
+
 		Intent intent = getIntent();
 		if (savedInstanceState == null) {
 			sc_id = intent.getStringExtra("sc_id");
@@ -291,6 +328,23 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 			projectFile = savedInstanceState.getParcelable("project_file");
 			categoryIndex = savedInstanceState.getInt("category_index");
 		}
+		if (categoryIndex < 0 || categoryIndex > 4) {
+			categoryIndex = 0;
+		}
+
+		setSupportActionBar(binding.toolbar);
+		if (getSupportActionBar() != null) {
+			getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+			getSupportActionBar().setTitle(R.string.event_title_add_new_event);
+			if (projectFile != null) {
+				getSupportActionBar().setSubtitle(projectFile.getJavaName());
+			}
+		}
+		binding.toolbar.setNavigationOnClickListener(v -> {
+			setResult(RESULT_CANCELED);
+			finish();
+		});
+
 		moreBlockView = new MoreBlockBuilderView(this);
 		binding.moreblockLayout.addView(moreBlockView);
 		binding.moreblockLayout.setVisibility(View.GONE);
@@ -307,13 +361,10 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 		categories.put(2, addableComponentEvents);
 		categories.put(3, addableDrawerViewEvents);
 		categories.put(4, addableEtcEvents);
+		setupTabs();
 		binding.eventList.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.VERTICAL, false));
 		eventAdapter = new EventAdapter();
 		binding.eventList.setAdapter(eventAdapter);
-		categoryAdapter = new CategoryAdapter();
-		binding.categoryList.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
-		binding.categoryList.setAdapter(categoryAdapter);
-		((SimpleItemAnimator) binding.categoryList.getItemAnimator()).setSupportsChangeAnimations(false);
 		eventsToAddAdapter = new EventsToAddAdapter();
 		binding.eventsPreview.setLayoutManager(new LinearLayoutManager(getApplicationContext(), RecyclerView.HORIZONTAL, false));
 		binding.eventsPreview.setAdapter(eventsToAddAdapter);
@@ -321,15 +372,14 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 		binding.eventsPreview.setVisibility(View.GONE);
 		binding.emptyMessage.setVisibility(View.GONE);
 		eventsToAdd = new ArrayList<>();
-		binding.eventList.bringToFront();
 	}
-	
+
 	@Override
 	public void onPostCreate(Bundle savedInstanceState) {
 		super.onPostCreate(savedInstanceState);
 		moreBlockView.setFuncNameValidator(jC.a(sc_id).a(projectFile));
 	}
-	
+
 	@Override
 	public void onResume() {
 		super.onResume();
@@ -337,7 +387,7 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 			initialize();
 		}
 	}
-	
+
 	@Override
 	public void onSaveInstanceState(Bundle newState) {
 		newState.putString("sc_id", sc_id);
@@ -345,21 +395,20 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 		newState.putInt("category_index", categoryIndex);
 		super.onSaveInstanceState(newState);
 	}
-	
+
 	private class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> {
 		private final ArrayList<EventBean> events = new ArrayList<>();
-		private int lastSelectedEvent = -1;
 		private boolean e;
-		
+
 		public EventAdapter() {
 		}
-		
+
 		@Override
 		public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
 			e = true;
 			holder.events_preview.removeAllViews();
 			holder.events_preview.setVisibility(View.VISIBLE);
-			EventBean event = categories.get(categoryAdapter.lastSelectedCategory).get(position);
+			EventBean event = events.get(position);
 			ImageView imageView = new ImageView(holder.itemView.getContext());
 			LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
 			layoutParams.setMargins(0, 0, (int) wB.a(getApplicationContext(), 2.0f), 0);
@@ -375,9 +424,7 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 			if (eventType == EventBean.EVENT_TYPE_ACTIVITY) {
 				holder.tv_target_type.setText("Activity");
 				holder.events_preview.setVisibility(View.GONE);
-			} else if (eventType == EventBean.EVENT_TYPE_VIEW) {
-				holder.tv_target_type.setText(ViewBean.getViewTypeName(event.targetType));
-			} else if (eventType == EventBean.EVENT_TYPE_DRAWER_VIEW) {
+			} else if (eventType == EventBean.EVENT_TYPE_VIEW || eventType == EventBean.EVENT_TYPE_DRAWER_VIEW) {
 				holder.tv_target_type.setText(ViewBean.getViewTypeName(event.targetType));
 			} else if (eventType == EventBean.EVENT_TYPE_COMPONENT) {
 				holder.tv_target_type.setText(ComponentBean.getComponentName(getApplicationContext(), event.targetType));
@@ -391,41 +438,56 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 			}
 			holder.tv_event_name.setText(oq.getEventName(event.eventName));
 			holder.checkbox.setChecked(event.isSelected);
+			updateCardSelection(holder.card_root, event.isSelected);
 			e = false;
 		}
-		
+
+		private void updateCardSelection(MaterialCardView card, boolean selected) {
+			if (selected) {
+				card.setCardBackgroundColor(MaterialColors.getColor(card, com.google.android.material.R.attr.colorSecondaryContainer));
+				card.setStrokeColor(MaterialColors.getColor(card, R.attr.colorPrimary));
+				card.setStrokeWidth((int) wB.a(getApplicationContext(), 1.5f));
+			} else {
+				card.setCardBackgroundColor(MaterialColors.getColor(card, com.google.android.material.R.attr.colorSurfaceContainerLow));
+				card.setStrokeWidth(0);
+			}
+		}
+
 		@Override
 		@NonNull
 		public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 			return new ViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.fr_logic_list_item_addevent, parent, false));
 		}
-		
+
 		@Override
 		public int getItemCount() {
 			return events.size();
 		}
-		
-		private void setEvents(ArrayList<EventBean> events) {
-			if (events.isEmpty()) {
+
+		private void setEvents(ArrayList<EventBean> newEvents) {
+			if (newEvents.isEmpty()) {
 				binding.emptyMessage.setVisibility(View.VISIBLE);
+				binding.eventList.setVisibility(View.GONE);
 			} else {
 				binding.emptyMessage.setVisibility(View.GONE);
 				binding.eventList.setVisibility(View.VISIBLE);
 			}
-			this.events.clear();
-			this.events.addAll(events);
+			events.clear();
+			events.addAll(newEvents);
 		}
-		
+
 		private class ViewHolder extends RecyclerView.ViewHolder {
+			public final MaterialCardView card_root;
 			public final LinearLayout events_preview;
 			public final ImageView img_icon;
 			public final TextView tv_target_type;
 			public final TextView tv_target_id;
 			public final TextView tv_event_name;
 			public final CheckBox checkbox;
-			
+
 			public ViewHolder(@NonNull View itemView) {
 				super(itemView);
+				card_root = (MaterialCardView) itemView;
 				events_preview = itemView.findViewById(R.id.events_preview);
 				img_icon = itemView.findViewById(R.id.img_icon);
 				tv_target_type = itemView.findViewById(R.id.tv_target_type);
@@ -434,152 +496,87 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 				checkbox = itemView.findViewById(R.id.checkbox);
 				itemView.setOnClickListener(v -> {
 					if (!mB.a()) {
-						lastSelectedEvent = getLayoutPosition();
-						EventBean event = categories.get(categoryAdapter.lastSelectedCategory).get(lastSelectedEvent);
+						int pos = getLayoutPosition();
+						if (pos == RecyclerView.NO_POSITION) return;
+						EventBean event = events.get(pos);
 						if (event.isSelected) {
 							event.isSelected = false;
-							eventsToAdd.remove(event);
+							int removedIdx = eventsToAdd.indexOf(event);
+							if (removedIdx >= 0) {
+								eventsToAdd.remove(removedIdx);
+								eventsToAddAdapter.notifyItemRemoved(removedIdx);
+							}
 							l();
-							eventsToAddAdapter.notifyItemRemoved(eventsToAddAdapter.getItemCount());
 						} else {
 							event.isSelected = true;
 							eventsToAdd.add(event);
+							eventsToAddAdapter.notifyItemInserted(eventsToAdd.size() - 1);
 							l();
-							eventsToAddAdapter.notifyItemInserted(eventsToAddAdapter.getItemCount());
 						}
 						if (!e) {
-							notifyItemChanged(lastSelectedEvent);
+							notifyItemChanged(pos);
 						}
 					}
 				});
 				checkbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
-					lastSelectedEvent = getLayoutPosition();
-					EventBean event = categories.get(categoryAdapter.lastSelectedCategory).get(lastSelectedEvent);
+					if (e) return;
+					int pos = getLayoutPosition();
+					if (pos == RecyclerView.NO_POSITION) return;
+					EventBean event = events.get(pos);
 					if (!event.isSelected && isChecked) {
 						event.isSelected = true;
 						eventsToAdd.add(event);
+						eventsToAddAdapter.notifyItemInserted(eventsToAdd.size() - 1);
 						l();
-						eventsToAddAdapter.notifyItemInserted(eventsToAddAdapter.getItemCount());
+						notifyItemChanged(pos);
 					} else if (event.isSelected && !isChecked) {
 						event.isSelected = false;
-						eventsToAdd.remove(event);
-						eventsToAddAdapter.notifyItemRemoved(eventsToAddAdapter.getItemCount());
+						int removedIdx = eventsToAdd.indexOf(event);
+						if (removedIdx >= 0) {
+							eventsToAdd.remove(removedIdx);
+							eventsToAddAdapter.notifyItemRemoved(removedIdx);
+						}
 						l();
-					}
-					if (!e) {
-						notifyItemChanged(lastSelectedEvent);
+						notifyItemChanged(pos);
 					}
 				});
 			}
 		}
 	}
-	
-	private class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHolder> {
-		private int lastSelectedCategory = -1;
-		
-		public CategoryAdapter() {
-		}
-		
-		@Override
-		public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-			holder.img_icon.setImageResource(rs.a(position));
-			if (lastSelectedCategory == position) {
-				holder.container.setBackgroundResource(R.drawable.border_top_corner_white_no_stroke);
-				holder.img_icon.animate().scaleX(1.0f).scaleY(1.0f).alpha(1.0f).start();
-				holder.container.animate().translationY(0.0f).start();
-			} else {
-				holder.container.setBackgroundResource(0);
-				holder.img_icon.animate().scaleX(0.8f).scaleY(0.8f).alpha(0.6f).start();
-				holder.container.setTranslationY(wB.a(getApplicationContext(), 12.0f));
-			}
-		}
-		
-		@Override
-		@NonNull
-		public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-			View inflate = LayoutInflater.from(parent.getContext()).inflate(R.layout.fr_logic_list_category_icon_item, parent, false);
-			inflate.setLayoutParams(new RecyclerView.LayoutParams(parent.getMeasuredWidth() / getItemCount(), (int) wB.a(getApplicationContext(), 44.0f)));
-			inflate.setTranslationY(wB.a(getApplicationContext(), 12.0f));
-			inflate.findViewById(R.id.img_icon).setAlpha(0.6f);
-			inflate.findViewById(R.id.img_icon).setScaleX(0.8f);
-			inflate.findViewById(R.id.img_icon).setScaleY(0.8f);
-			return new ViewHolder(inflate);
-		}
-		
-		@Override
-		public int getItemCount() {
-			return categories.size();
-		}
-		
-		private class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-			public final LinearLayout container;
-			public final ImageView img_icon;
-			
-			public ViewHolder(@NonNull View itemView) {
-				super(itemView);
-				img_icon = itemView.findViewById(R.id.img_icon);
-				container = itemView.findViewById(R.id.container);
-				itemView.setOnClickListener(this);
-			}
-			
-			@Override
-			public void onClick(View v) {
-				if (getLayoutPosition() != -1) {
-					int layoutPosition = getLayoutPosition();
-					if (layoutPosition != lastSelectedCategory) {
-						lastSelectedCategory = getLayoutPosition();
-						notifyDataSetChanged();
-						binding.tvCategory.setText(rs.a(getApplicationContext(), lastSelectedCategory));
-						if (lastSelectedCategory == 4) {
-							binding.moreblockLayout.setVisibility(View.VISIBLE);
-							binding.emptyMessage.setVisibility(View.GONE);
-							binding.eventList.setVisibility(View.GONE);
-						} else {
-							binding.moreblockLayout.setVisibility(View.GONE);
-							eventAdapter.setEvents(categories.get(lastSelectedCategory));
-							eventAdapter.notifyDataSetChanged();
-						}
-					}
-				}
-			}
-		}
-	}
-	
+
 	private class EventsToAddAdapter extends RecyclerView.Adapter<EventsToAddAdapter.ViewHolder> {
 		public EventsToAddAdapter() {
 		}
-		
+
 		@Override
 		public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
 			holder.ll_img_event.setVisibility(View.VISIBLE);
 			EventBean event = eventsToAdd.get(position);
 			int eventType = event.eventType;
-			if (eventType == EventBean.EVENT_TYPE_ACTIVITY) {
-				holder.ll_img_event.setVisibility(View.GONE);
-			} else if (eventType == EventBean.EVENT_TYPE_ETC) {
+			if (eventType == EventBean.EVENT_TYPE_ACTIVITY || eventType == EventBean.EVENT_TYPE_ETC) {
 				holder.ll_img_event.setVisibility(View.GONE);
 			}
 			holder.img_icon.setImageResource(EventBean.getEventIconResource(event.eventType, event.targetType));
 			holder.img_event.setImageResource(oq.getEventIconResource(event.eventName));
 		}
-		
+
 		@Override
 		@NonNull
 		public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 			return new ViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.fr_logic_list_preview_with_event_item, parent, false));
 		}
-		
+
 		@Override
 		public int getItemCount() {
 			return eventsToAdd.size();
 		}
-		
+
 		private static class ViewHolder extends RecyclerView.ViewHolder {
 			public LinearLayout ll_img_event;
 			public RelativeLayout container;
 			public ImageView img_icon;
 			public ImageView img_event;
-			
+
 			public ViewHolder(@NonNull View itemView) {
 				super(itemView);
 				container = itemView.findViewById(R.id.container);

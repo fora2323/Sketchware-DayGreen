@@ -77,6 +77,7 @@ public class MakeBlockActivity extends BaseAppCompatActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        enableEdgeToEdgeNoContrast();
         super.onCreate(savedInstanceState);
         if (!isStoragePermissionGranted()) {
             finish();
@@ -100,13 +101,18 @@ public class MakeBlockActivity extends BaseAppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         findViewById(R.id.layout_main_logo).setVisibility(View.GONE);
-        if (isEdit) {
-            getSupportActionBar().setTitle(getString(R.string.common_word_edit) + " " + getString(R.string.common_word_moreblock));
-        } else {
-            getSupportActionBar().setTitle(Helper.getResString(R.string.logic_editor_more_block_actionbar_title_create_more_block));
+        if (getSupportActionBar() != null) {
+            if (isEdit) {
+                getSupportActionBar().setTitle(getString(R.string.common_word_edit) + " " + getString(R.string.common_word_moreblock));
+            } else {
+                getSupportActionBar().setTitle(Helper.getResString(R.string.logic_editor_more_block_actionbar_title_create_more_block));
+            }
+            if (project != null) {
+                getSupportActionBar().setSubtitle(project.getJavaName());
+            }
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowTitleEnabled(true);
         }
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setDisplayShowTitleEnabled(true);
         toolbar.setNavigationOnClickListener(Helper.getBackPressedClickListener(this));
         makeBlock = new MoreBlockBuilderView(this);
         ArrayList<String> existingNames = new ArrayList<>(jC.a(sc_id).a(project));
@@ -118,8 +124,9 @@ public class MakeBlockActivity extends BaseAppCompatActivity {
         if (isEdit && oldBlockName != null) {
             makeBlock.loadFromExisting(oldBlockName, oldBlockSpec);
         }
-        LinearLayout makeBlock = findViewById(R.id.makeblock_view);
-        makeBlock.addView(this.makeBlock);
+        LinearLayout makeBlockContainer = findViewById(R.id.makeblock_view);
+        handleInsetts(makeBlockContainer);
+        makeBlockContainer.addView(this.makeBlock);
     }
 
     @Override
