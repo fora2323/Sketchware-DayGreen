@@ -1,22 +1,35 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
+    android:fitsSystemWindows="true"
     android:focusable="true"
     android:focusableInTouchMode="true"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:paddingLeft="32dp"
-    android:paddingTop="56dp"
-    android:paddingRight="32dp"
-    android:paddingBottom="64dp"
-    tools:background="#80000000">
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurfaceContainer">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="?attr/homeAsUpIndicator"
+            app:title="@string/event_title_add_new_event" />
+    </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/category_list"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="?attr/colorSurfaceContainer"
+        android:paddingTop="4dp"
         android:splitMotionEvents="false"
         tools:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         tools:listitem="@layout/fr_logic_list_category_icon_item"
@@ -25,8 +38,9 @@
     <LinearLayout
         android:id="@+id/contentRoot"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/bottom_corner_surface"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="?android:attr/colorBackground"
         android:orientation="vertical">
 
         <TextView
@@ -50,17 +64,17 @@
             <TextView
                 android:id="@+id/empty_message"
                 android:layout_width="match_parent"
-                android:layout_height="32dp"
+                android:layout_height="match_parent"
                 android:gravity="center"
                 android:text="@string/event_message_no_avail_events"
-                android:textSize="12sp"
+                android:textSize="13sp"
                 android:visibility="gone" />
 
             <ScrollView
                 android:id="@+id/moreblock_layout"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="horizontal"
+                android:fillViewport="true"
                 tools:visibility="gone" />
 
             <androidx.recyclerview.widget.RecyclerView

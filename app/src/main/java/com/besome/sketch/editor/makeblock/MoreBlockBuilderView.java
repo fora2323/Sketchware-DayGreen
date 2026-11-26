@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
+import a.a.a.FB;
 import a.a.a.Rs;
 import a.a.a.ZB;
 import a.a.a.bB;
@@ -268,6 +269,64 @@ public class MoreBlockBuilderView extends LinearLayout {
 
     public void setFuncNameValidator(ArrayList<String> var1) {
         blockNameValidator = new MoreblockValidator(activity, binding.tiName, uq.b, uq.a(), var1);
+    }
+
+    public void loadFromExisting(String oldBlockName, String oldBlockSpec) {
+        variablesSpecAndNamePair.clear();
+
+        if (oldBlockSpec != null && !oldBlockSpec.isEmpty()) {
+            ArrayList<String> tokens = FB.c(oldBlockSpec);
+            for (int i = 1; i < tokens.size(); i++) {
+                String token = tokens.get(i);
+                if (token.startsWith("%")) {
+                    String body = token.substring(1);
+                    int lastDot = body.lastIndexOf('.');
+                    if (lastDot > 0) {
+                        String paramType = body.substring(0, lastDot);
+                        String paramName = body.substring(lastDot + 1);
+                        variablesSpecAndNamePair.add(new Pair<>(paramType, paramName));
+                    } else {
+                        variablesSpecAndNamePair.add(new Pair<>("t", token));
+                    }
+                } else {
+                    variablesSpecAndNamePair.add(new Pair<>("t", token));
+                }
+            }
+        }
+
+        ArrayList<String> reservedVariableNames = new ArrayList<>(Arrays.asList(uq.a()));
+        for (Pair<String, String> variable : variablesSpecAndNamePair) {
+            if (!"t".equals(variable.first)) {
+                reservedVariableNames.add(variable.second);
+            }
+        }
+        variableNameValidator.a(reservedVariableNames.toArray(new String[0]));
+
+        String mbType = ReturnMoreblockManager.getMbType(oldBlockName != null ? oldBlockName : "");
+        int chipId;
+        boolean isCustomType = false;
+        switch (mbType) {
+            case "void" -> chipId = R.id.radio_mb_type_void;
+            case "String" -> chipId = R.id.radio_mb_type_string;
+            case "double" -> chipId = R.id.radio_mb_type_number;
+            case "boolean" -> chipId = R.id.radio_mb_type_boolean;
+            case "a|Map" -> chipId = R.id.radio_mb_type_map;
+            case "l|List String" -> chipId = R.id.radio_mb_type_liststring;
+            case "l|List Map" -> chipId = R.id.radio_mb_type_listmap;
+            case "v|View" -> chipId = R.id.radio_mb_type_view;
+            default -> {
+                chipId = R.id.radio_mb_type_void;
+                isCustomType = true;
+            }
+        }
+        binding.radioMbType.check(chipId);
+
+        String displayName = isCustomType ? oldBlockName : ReturnMoreblockManager.getMbName(oldBlockName != null ? oldBlockName : "");
+        binding.edName.setText(displayName);
+        if (displayName != null) {
+            binding.edName.setSelection(displayName.length());
+        }
+        refresh(getType());
     }
 
 }

@@ -33,6 +33,7 @@ import com.besome.sketch.beans.ViewBean;
 import com.besome.sketch.editor.LogicEditorActivity;
 import com.besome.sketch.editor.event.AddEventActivity;
 import com.besome.sketch.editor.event.CollapsibleEventLayout;
+import com.besome.sketch.editor.makeblock.MakeBlockActivity;
 import com.besome.sketch.lib.base.CollapsibleViewHolder;
 import com.besome.sketch.lib.ui.CollapsibleButton;
 import com.google.android.material.button.MaterialButton;
@@ -72,6 +73,8 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
     private ImageView sortMenuIcon;
     private View searchContainer;
     private final ActivityResultLauncher<Intent> addEventLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+            result -> refreshEvents());
+    private final ActivityResultLauncher<Intent> editMoreBlockLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
             result -> refreshEvents());
     private final ActivityResultLauncher<Intent> openEvent = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         // in case any Events were added, e.g. a new MoreBlock
@@ -223,6 +226,16 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
             events.get(getPaletteIndex()).remove(position);
             eventAdapter.refreshAfterDelete();
         }
+    }
+
+    private void editMoreBlock(EventBean moreBlock) {
+        Intent intent = new Intent(requireActivity().getApplicationContext(), MakeBlockActivity.class);
+        intent.putExtra("sc_id", sc_id);
+        intent.putExtra("project_file", currentActivity);
+        intent.putExtra("is_edit", true);
+        intent.putExtra("old_block_name", moreBlock.targetId);
+        intent.putExtra("old_block_spec", jC.a(sc_id).b(currentActivity.getJavaName(), moreBlock.targetId));
+        editMoreBlockLauncher.launch(intent);
     }
 
     public void c() {
@@ -476,8 +489,10 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
             holder.preview.setImageResource(oq.getEventIconResource(eventBean.eventName));
             holder.optionsLayout.showDelete();
             if (eventBean.eventType == EventBean.EVENT_TYPE_ETC) {
+                holder.optionsLayout.showEdit();
                 holder.optionsLayout.showAddToCollection();
             } else {
+                holder.optionsLayout.hideEdit();
                 holder.optionsLayout.hideAddToCollection();
             }
             if (eventBean.eventType == EventBean.EVENT_TYPE_ACTIVITY) {
@@ -651,7 +666,9 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
                 optionsLayout = itemView.findViewById(R.id.event_option);
                 optionsLayout.setButtonOnClickListener(v -> {
                     if (!mB.a()) {
-                        EventBean eventBean = getActiveList().get(getLayoutPosition());
+                        int layoutPosition = getLayoutPosition();
+                        if (layoutPosition == RecyclerView.NO_POSITION) return;
+                        EventBean eventBean = getActiveList().get(layoutPosition);
                         if (v instanceof CollapsibleButton button) {
                             setAnimateNextTransformation(true);
                             int id = button.getButtonId();
@@ -659,12 +676,18 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
                                 eventBean.buttonPressed = id;
                                 eventBean.isConfirmation = false;
                                 eventBean.isCollapsed = false;
-                                notifyItemChanged(getLayoutPosition());
-                                showSaveMoreBlockToCollectionsDialog(getLayoutPosition());
+                                notifyItemChanged(layoutPosition);
+                                showSaveMoreBlockToCollectionsDialog(layoutPosition);
+                            } else if (id == 3) {
+                                eventBean.buttonPressed = id;
+                                eventBean.isConfirmation = false;
+                                eventBean.isCollapsed = false;
+                                notifyItemChanged(layoutPosition);
+                                editMoreBlock(eventBean);
                             } else {
                                 eventBean.buttonPressed = id;
                                 eventBean.isConfirmation = true;
-                                notifyItemChanged(getLayoutPosition());
+                                notifyItemChanged(layoutPosition);
                             }
                         } else {
                             if (v.getId() == R.id.confirm_no) {

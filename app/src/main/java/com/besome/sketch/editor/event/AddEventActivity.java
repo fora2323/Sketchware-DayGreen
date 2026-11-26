@@ -14,7 +14,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
@@ -43,7 +42,6 @@ import a.a.a.mB;
 import a.a.a.oq;
 import a.a.a.rs;
 import a.a.a.wB;
-import dev.chrisbanes.insetter.Insetter;
 import pro.sketchware.R;
 import pro.sketchware.databinding.LogicPopupAddEventBinding;
 
@@ -65,12 +63,6 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 	private ArrayList<EventBean> addableActivityEvents;
 	
 	private LogicPopupAddEventBinding binding;
-	
-	@Override
-	public void finish() {
-		super.finish();
-		overridePendingTransition(R.anim.ani_fade_in, R.anim.ani_fade_out);
-	}
 	
 	private void l() {
 		if (eventsToAdd.isEmpty() && !C) {
@@ -275,12 +267,19 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-		enableEdgeToEdgeNoContrast();
 		super.onCreate(savedInstanceState);
 		binding = LogicPopupAddEventBinding.inflate(getLayoutInflater());
 		setContentView(binding.getRoot());
-		
-		Insetter.builder().marginBottom(WindowInsetsCompat.Type.ime(), false).applyToView(binding.contentRoot);
+
+		setSupportActionBar(binding.toolbar);
+		if (getSupportActionBar() != null) {
+			getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+			getSupportActionBar().setTitle(R.string.event_title_add_new_event);
+		}
+		binding.toolbar.setNavigationOnClickListener(v -> {
+			setResult(RESULT_CANCELED);
+			finish();
+		});
 		
 		Intent intent = getIntent();
 		if (savedInstanceState == null) {
@@ -323,7 +322,6 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 		binding.emptyMessage.setVisibility(View.GONE);
 		eventsToAdd = new ArrayList<>();
 		binding.eventList.bringToFront();
-		overridePendingTransition(R.anim.ani_fade_in, R.anim.ani_fade_out);
 	}
 	
 	@Override
@@ -335,7 +333,6 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 	@Override
 	public void onResume() {
 		super.onResume();
-		gB.a(binding.container, 500);
 		if (projectFile != null) {
 			initialize();
 		}
@@ -491,7 +488,7 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 				holder.img_icon.animate().scaleX(1.0f).scaleY(1.0f).alpha(1.0f).start();
 				holder.container.animate().translationY(0.0f).start();
 			} else {
-				holder.container.setBackgroundResource(R.drawable.border_top_corner_grey_no_stroke);
+				holder.container.setBackgroundResource(0);
 				holder.img_icon.animate().scaleX(0.8f).scaleY(0.8f).alpha(0.6f).start();
 				holder.container.setTranslationY(wB.a(getApplicationContext(), 12.0f));
 			}
@@ -536,6 +533,7 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 						if (lastSelectedCategory == 4) {
 							binding.moreblockLayout.setVisibility(View.VISIBLE);
 							binding.emptyMessage.setVisibility(View.GONE);
+							binding.eventList.setVisibility(View.GONE);
 						} else {
 							binding.moreblockLayout.setVisibility(View.GONE);
 							eventAdapter.setEvents(categories.get(lastSelectedCategory));

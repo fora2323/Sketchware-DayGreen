@@ -2,11 +2,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/img_button"
     android:layout_width="0dp"
-    android:layout_height="48dp"
+    android:layout_height="wrap_content"
     android:layout_weight="1"
     android:background="?android:selectableItemBackground"
     android:gravity="center"
+    android:minHeight="48dp"
     android:orientation="horizontal"
+    android:paddingHorizontal="4dp"
+    android:paddingVertical="6dp"
     tools:layout_width="match_parent">
 
     <ImageView
@@ -21,8 +24,10 @@
         android:id="@+id/name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="6dp"
+        android:ellipsize="end"
         android:gravity="center"
+        android:maxLines="2"
         android:textSize="13sp"
         tools:text="@string/common_word_delete" />
 </LinearLayout>
