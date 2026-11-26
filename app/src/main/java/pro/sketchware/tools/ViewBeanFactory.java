@@ -143,8 +143,11 @@ public class ViewBeanFactory {
         for (Map.Entry<String, String> entry : attributes.entrySet()) {
             var attrName = entry.getKey();
             var attrValue = entry.getValue();
-            var reference = parseReferName(attrName, ":");
+            if (attrName.equals("app:backgroundTint") && bean.getClassInfo().b("MaterialButton")) {
+                continue;
+            }
             
+            var reference = parseReferName(attrName, ":");
             boolean isTextFallback = textAttributes.contains(reference) && !bean.getClassInfo().a("TextView");
 
             if (!AttributeConstants.BUILT_IN_ATTRIBUTES.contains(reference) || isTextFallback) {
@@ -554,7 +557,10 @@ public class ViewBeanFactory {
         var background = attributes.getOrDefault("android:background", null);
         applyBackground("android:background", background, injectAttributes);
         var cardBackgroundColor = attributes.getOrDefault("app:cardBackgroundColor", null);
-        applyBackground("app:cardBackgroundColor", cardBackgroundColor, injectAttributes);
+        if (bean.getClassInfo().b("MaterialButton")) {
+            var backgroundTint = attributes.getOrDefault("app:backgroundTint", null);
+            applyBackground("app:backgroundTint", backgroundTint, injectAttributes);
+        }
     }
 
     private void applyText(Map<String, String> attributes, Map<String, String> injectAttributes) {
