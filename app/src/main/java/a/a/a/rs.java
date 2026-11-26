@@ -347,7 +347,8 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
         }
     }
 
-    private void showSaveMoreBlockToCollectionsDialog(int moreBlockPosition) {
+    private void showSaveMoreBlockToCollectionsDialog(EventBean moreBlock) {
+        if (moreBlock == null) return;
         MaterialAlertDialogBuilder aBVar = new MaterialAlertDialogBuilder(requireActivity());
         aBVar.setTitle(R.string.logic_more_block_favorites_save_title);
         aBVar.setIcon(R.drawable.ic_bookmark_red_48dp);
@@ -362,7 +363,7 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
         aBVar.setView(a2);
         aBVar.setPositiveButton(R.string.common_word_save, (v, which) -> {
             if (nb.b()) {
-                saveMoreBlockToCollection(Helper.getText(editText), moreBlocks.get(moreBlockPosition));
+                saveMoreBlockToCollection(Helper.getText(editText), moreBlock);
                 mB.a(requireContext(), editText);
                 v.dismiss();
             }
@@ -423,12 +424,16 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
 
         boolean hasAnyBlocks = false;
         boolean failedToAddResourceToCollections = false;
-        for (BlockBean next : moreBlockBlocks) {
-            ArrayList<Gx> paramClassInfo = next.getParamClassInfo();
-            if (!paramClassInfo.isEmpty()) {
-                for (int i = 0; i < paramClassInfo.size(); i++) {
-                    Gx gx = paramClassInfo.get(i);
-                    String parameter = next.parameters.get(i);
+        if (moreBlockBlocks != null) {
+            for (BlockBean next : moreBlockBlocks) {
+                ArrayList<Gx> paramClassInfo = next.getParamClassInfo();
+                if (!paramClassInfo.isEmpty()) {
+                    for (int i = 0; i < paramClassInfo.size(); i++) {
+                        if (i >= next.parameters.size()) {
+                            break;
+                        }
+                        Gx gx = paramClassInfo.get(i);
+                        String parameter = next.parameters.get(i);
 
                     if (gx.b("resource") || gx.b("resource_bg")) {
                         if (jC.d(sc_id).l(parameter) && !Op.g().b(parameter)) {
@@ -449,6 +454,7 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
                     }
                 }
                 hasAnyBlocks = true;
+                }
             }
         }
         if (hasAnyBlocks) {
@@ -459,7 +465,7 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
             }
         }
         try {
-            Pp.h().a(moreBlockName, b2, moreBlockBlocks, true);
+            Pp.h().a(moreBlockName, b2, moreBlockBlocks != null ? moreBlockBlocks : new ArrayList<>(), true);
         } catch (Exception unused2) {
             bB.b(requireContext(), getString(R.string.common_error_failed_to_save), 0).show();
         }
@@ -467,7 +473,7 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
 
     private class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> {
         private ArrayList<EventBean> currentCategoryEvents = new ArrayList<>();
-        private ArrayList<EventBean> filteredEvents = new ArrayList<>();
+        private ArrayList<EventBean> displayedEvents = new ArrayList<>();
         private String searchQuery = "";
         private int sortMode = 0;
 
@@ -477,7 +483,7 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
         }
 
         private ArrayList<EventBean> getActiveList() {
-            return searchQuery.isEmpty() ? currentCategoryEvents : filteredEvents;
+            return displayedEvents;
         }
 
         @Override
@@ -557,18 +563,8 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
         }
 
         public void a(ArrayList<EventBean> arrayList) {
-            currentCategoryEvents = arrayList;
-            String previousQuery = searchQuery;
-            searchQuery = "";
-            filteredEvents.clear();
-
-            if (!previousQuery.isEmpty()) {
-                searchQuery = previousQuery;
-                applyFilterAndSort();
-            } else {
-                applySorting();
-                updateEmptyState();
-            }
+            currentCategoryEvents = arrayList != null ? arrayList : new ArrayList<>();
+            applyFilterAndSort();
         }
 
         public void filterEvents(String query) {
@@ -586,23 +582,20 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
         }
 
         public void refreshAfterDelete() {
-            if (!searchQuery.isEmpty()) {
-                applyFilterAndSort();
-            } else {
-                updateEmptyState();
-                notifyDataSetChanged();
-            }
+            applyFilterAndSort();
         }
 
         private void applyFilterAndSort() {
-            filteredEvents.clear();
+            displayedEvents.clear();
 
-            if (!searchQuery.isEmpty()) {
+            if (searchQuery.isEmpty()) {
+                displayedEvents.addAll(currentCategoryEvents);
+            } else {
                 for (EventBean event : currentCategoryEvents) {
                     String eventName = event.eventName.toLowerCase();
                     String targetId = event.targetId.toLowerCase();
                     if (eventName.contains(searchQuery) || targetId.contains(searchQuery)) {
-                        filteredEvents.add(event);
+                        displayedEvents.add(event);
                     }
                 }
             }
@@ -613,11 +606,10 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
         }
 
         private void applySorting() {
-            ArrayList<EventBean> listToSort = getActiveList();
-            if (listToSort.isEmpty()) return;
+            if (displayedEvents.isEmpty()) return;
 
             if (sortMode == 1) {
-                Collections.sort(listToSort, (a, b) ->
+                Collections.sort(displayedEvents, (a, b) ->
                         a.eventName.compareToIgnoreCase(b.eventName));
             }
         }
@@ -677,7 +669,7 @@ public class rs extends qA implements View.OnClickListener, MoreblockImporterDia
                                 eventBean.isConfirmation = false;
                                 eventBean.isCollapsed = false;
                                 notifyItemChanged(layoutPosition);
-                                showSaveMoreBlockToCollectionsDialog(layoutPosition);
+                                showSaveMoreBlockToCollectionsDialog(eventBean);
                             } else if (id == 3) {
                                 eventBean.buttonPressed = id;
                                 eventBean.isConfirmation = false;

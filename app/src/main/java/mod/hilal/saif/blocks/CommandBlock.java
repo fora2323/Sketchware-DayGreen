@@ -58,11 +58,11 @@ public class CommandBlock {
         ArrayList<String> a = new ArrayList<>(Arrays.asList(c.split("\n")));
         String res = "";
         String reference = (String) map.get("reference");
-        double distance = (double) map.get("distance");
-        double after = (double) map.get("after");
-        double before = (double) map.get("before");
-        String command = (String) map.get("command");
-        String input = getExceptFirstLine((String) map.get("input"));
+        double distance = map.get("distance") instanceof Number n ? n.doubleValue() : 0;
+        double after = map.get("after") instanceof Number n ? n.doubleValue() : 0;
+        double before = map.get("before") instanceof Number n ? n.doubleValue() : 0;
+        String command = String.valueOf(map.get("command"));
+        String input = getExceptFirstLine(String.valueOf(map.get("input")));
 
         if (command.equals("find-replace")) {
             return c.replace(reference, input);
@@ -339,11 +339,11 @@ public class CommandBlock {
         String res = "";
         for (int i = 0; i < arr.size(); i++) {
             String reference = (String) arr.get(i).get("reference");
-            int distance = (int) arr.get(i).get("distance");
-            int after = (int) arr.get(i).get("after");
-            int before = (int) arr.get(i).get("before");
-            String command = (String) arr.get(i).get("command");
-            String input = (String) arr.get(i).get("input");
+            int distance = arr.get(i).get("distance") instanceof Number n ? n.intValue() : 0;
+            int after = arr.get(i).get("after") instanceof Number n ? n.intValue() : 0;
+            int before = arr.get(i).get("before") instanceof Number n ? n.intValue() : 0;
+            String command = String.valueOf(arr.get(i).get("command"));
+            String input = String.valueOf(arr.get(i).get("input"));
 
             if (command.equals("find-replace")) {
                 String temp = assemble(a);
@@ -528,6 +528,9 @@ public class CommandBlock {
     }
 
     private static void aC(ArrayList<String> arr, ArrayList<HashMap<String, Object>> arr2, Pair<Integer, Integer> p) {
+        if (p.first + 5 >= arr.size() || p.second <= p.first + 5) {
+            return;
+        }
         String ref;
         int dis;
         int af;
@@ -538,19 +541,22 @@ public class CommandBlock {
         String v = arr.get(p.first + 1);
         String kk = v.substring(v.indexOf(">") + 1);
         ArrayList<String> aa = new Gson().fromJson(kk, Helper.TYPE_STRING);
+        if (aa == null || aa.isEmpty()) {
+            return;
+        }
         ref = aa.get(0);
 
         v = arr.get(p.first + 2);
-        dis = Integer.parseInt(v.substring(v.indexOf(">") + 1));
+        dis = Integer.parseInt(v.substring(v.indexOf(">") + 1).trim());
 
         v = arr.get(p.first + 3);
-        af = Integer.parseInt(v.substring(v.indexOf(">") + 1));
+        af = Integer.parseInt(v.substring(v.indexOf(">") + 1).trim());
 
         v = arr.get(p.first + 4);
-        be = Integer.parseInt(v.substring(v.indexOf(">") + 1));
+        be = Integer.parseInt(v.substring(v.indexOf(">") + 1).trim());
 
         v = arr.get(p.first + 5);
-        c = v.substring(v.indexOf(">") + 1);
+        c = v.substring(v.indexOf(">") + 1).trim();
 
         for (int i = 0; i < (p.second - p.first - 6); i++) {
             if (i == 0) {

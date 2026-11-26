@@ -187,7 +187,9 @@ public class PaletteBlock extends LinearLayout {
     public void setMinWidth(int minWidth) {
         binding.scroll.setMinimumWidth(minWidth - (int) (f * 5.0F));
         binding.scrollHorizontal.setMinimumWidth(minWidth - (int) (f * 5.0F));
-        getLayoutParams().width = minWidth;
+        if (getLayoutParams() != null) {
+            getLayoutParams().width = minWidth;
+        }
     }
 
     public void setUseScroll(boolean useScroll) {

@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Executors;
 
 import a.a.a.Vs;
 import mod.hey.studios.util.Helper;
@@ -53,9 +52,10 @@ public class PaletteSelector extends RecyclerView {
             0, 1, 2, 3, 4, 5, 6, 7, -1, -2, 8
     };
 
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private String searchValue = "";
     private PaletteSelectorAdapter paletteAdapter;
-    private List<paletteSelectorRecord> allPalettes;
+    private List<paletteSelectorRecord> allPalettes = new ArrayList<>();
 
     public PaletteSelector(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -65,14 +65,12 @@ public class PaletteSelector extends RecyclerView {
     private void initialize(Vs onBlockCategorySelectListener) {
         paletteAdapter = new PaletteSelectorAdapter(this, onBlockCategorySelectListener);
         setAdapter(paletteAdapter);
-
-        Executors.newSingleThreadExecutor().execute(() ->
-                new Handler(Looper.getMainLooper()).post(this::initializePalettes)
-        );
+        mainHandler.post(this::initializePalettes);
     }
 
     private void initializePalettes() {
         allPalettes = new ArrayList<>();
+        List<paletteSelectorRecord> filteredPalettes = new ArrayList<>();
 
         for (int i = 0; i < MainCategoriesNames.length; i++) {
             allPalettes.add(new paletteSelectorRecord(MainCategoriesIds[i], MainCategoriesNames[i], MainCategoriesColors[i]));
@@ -82,7 +80,13 @@ public class PaletteSelector extends RecyclerView {
                 .getPaletteSelector()
                 .forEach(this::addDynamicPalette);
 
-        paletteAdapter.setPalettes(allPalettes);
+        for (paletteSelectorRecord record : allPalettes) {
+            if (matchesSearch(record.text())) {
+                filteredPalettes.add(record);
+            }
+        }
+
+        paletteAdapter.setPalettes(filteredPalettes);
 
         if (paletteAdapter.getItemCount() > 0) {
             paletteAdapter.selectPosition(0);
@@ -95,11 +99,9 @@ public class PaletteSelector extends RecyclerView {
 
     private void addDynamicPalette(HashMap<String, Object> paletteMap) {
         String text = Objects.requireNonNull(paletteMap.get("text")).toString();
-        if (matchesSearch(text)) {
-            int index = Integer.parseInt(Objects.requireNonNull(paletteMap.get("index")).toString());
-            int color = Integer.parseInt(Objects.requireNonNull(paletteMap.get("color")).toString());
-            allPalettes.add(new paletteSelectorRecord(index, text, color));
-        }
+        int index = Integer.parseInt(Objects.requireNonNull(paletteMap.get("index")).toString());
+        int color = Integer.parseInt(Objects.requireNonNull(paletteMap.get("color")).toString());
+        allPalettes.add(new paletteSelectorRecord(index, text, color));
     }
 
     public boolean matchesSearch(String title) {
@@ -141,12 +143,10 @@ public class PaletteSelector extends RecyclerView {
 
     private void startSearch(DialogInterface dialog, String query) {
         searchValue = query;
-        Executors.newSingleThreadExecutor().execute(() ->
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    initializePalettes();
-                    dialog.dismiss();
-                })
-        );
+        mainHandler.post(() -> {
+            initializePalettes();
+            dialog.dismiss();
+        });
     }
 
     public void setOnBlockCategorySelectListener(Vs listener) {

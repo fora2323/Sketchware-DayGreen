@@ -149,28 +149,42 @@ public class MoreBlockBuilderView extends LinearLayout {
         blockArea.addView(rs);
 
         StringBuilder fullSpec = new StringBuilder(blockName);
-        for (Pair<String, String> parameter : variables) {
+        ArrayList<Integer> kaToVarIndex = new ArrayList<>();
+        if (!blockName.trim().isEmpty()) {
+            for (int k = 0; k < FB.c(blockName).size(); k++) {
+                kaToVarIndex.add(-1);
+            }
+        }
+        for (int vIdx = 0; vIdx < variables.size(); vIdx++) {
+            Pair<String, String> parameter = variables.get(vIdx);
             String parameterType = parameter.first;
             String parameterName = parameter.second;
 
             switch (parameter.first) {
                 case "b":
                     fullSpec.append(" %b.").append(parameterName);
+                    kaToVarIndex.add(vIdx);
                     break;
 
                 case "d":
                     fullSpec.append(" %d.").append(parameterName);
+                    kaToVarIndex.add(vIdx);
                     break;
 
                 case "s":
                     fullSpec.append(" %s.").append(parameterName);
+                    kaToVarIndex.add(vIdx);
                     break;
 
                 default:
                     if (parameterType.length() > 2 && parameterType.contains(".")) {
                         fullSpec.append(" %").append(parameterType).append(".").append(parameterName);
+                        kaToVarIndex.add(vIdx);
                     } else {
                         fullSpec.append(" ").append(parameterName);
+                        for (int k = 0; k < FB.c(parameterName).size(); k++) {
+                            kaToVarIndex.add(vIdx);
+                        }
                     }
                     break;
             }
@@ -205,19 +219,16 @@ public class MoreBlockBuilderView extends LinearLayout {
             removeIcon.setPadding(0, (int) wB.a(activity, 4.0F), 0, (int) wB.a(activity, 4.0F));
             removeIcon.setLayoutParams(new LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT));
             removeArea.addView(removeIcon);
-            if (i == 0 && binding.edName.getText().length() > 0) {
+            int varIndex = i < kaToVarIndex.size() ? kaToVarIndex.get(i) : -1;
+            if (varIndex < 0) {
                 removeIcon.setVisibility(View.INVISIBLE);
                 removeIcon.setEnabled(false);
             } else {
                 removeIcon.setOnClickListener(v -> {
-                    int indexOfChild;
-                    if (binding.edName.getText().length() > 0) {
-                        indexOfChild = removeArea.indexOfChild(v) - 1;
-                    } else {
-                        indexOfChild = removeArea.indexOfChild(v);
+                    if (varIndex >= variables.size()) {
+                        return;
                     }
-
-                    variables.remove(indexOfChild);
+                    variables.remove(varIndex);
                     ArrayList<String> reservedVariableNames = new ArrayList<>(Arrays.asList(uq.a()));
 
                     for (Pair<String, String> parameter : variables) {

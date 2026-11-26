@@ -31,7 +31,7 @@ public class BlockUtil {
             }
 
             var variable = getVariableBlock(blockArea.getContext(), id + 1, specPart, "getVar");
-            if (variable != null) {
+            if (variable != null && id < previewBlock.V.size()) {
                 blockArea.addView(variable);
                 previewBlock.a((Ts) previewBlock.V.get(id), variable);
                 id++;
@@ -47,13 +47,22 @@ public class BlockUtil {
      */
     @Nullable
     public static Rs getVariableBlock(Context context, int id, String spec, String opCode) {
+        if (spec == null || spec.length() < 2) {
+            return null;
+        }
         var type = spec.charAt(1);
         return switch (type) {
-            case 'b', 'd', 's' ->
-                    new Rs(context, id, spec.substring(3), Character.toString(type), opCode);
+            case 'b', 'd', 's' -> spec.length() >= 3
+                    ? new Rs(context, id, spec.substring(3), Character.toString(type), opCode)
+                    : null;
             case 'm' -> {
-                String specLast = spec.substring(spec.lastIndexOf(".") + 1);
-                String specFirst = spec.substring(spec.indexOf(".") + 1, spec.lastIndexOf("."));
+                int firstDot = spec.indexOf('.');
+                int lastDot = spec.lastIndexOf('.');
+                if (firstDot == -1 || lastDot <= firstDot) {
+                    yield null;
+                }
+                String specLast = spec.substring(lastDot + 1);
+                String specFirst = spec.substring(firstDot + 1, lastDot);
                 yield new Rs(context, id, specLast, kq.a(specFirst), kq.b(specFirst), opCode);
             }
             default -> null;

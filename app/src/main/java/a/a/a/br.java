@@ -189,7 +189,7 @@ public class br extends qA implements View.OnClickListener {
                             jC.a(sc_id).b(projectFile.getJavaName(), bean);
                             bean.isConfirmation = false;
                             notifyItemRemoved(lastSelectedItem);
-                            notifyItemRangeChanged(lastSelectedItem, getItemCount());
+                            notifyItemRangeChanged(lastSelectedItem, Math.max(0, getItemCount() - lastSelectedItem));
                         }
                     }
                 });

@@ -69,7 +69,9 @@ public class ViewDummy extends RelativeLayout {
     }
 
     public final Bitmap createBitmapOfView(View view) {
-        Bitmap bitmap = Bitmap.createBitmap(view.getMeasuredWidth(), view.getMeasuredHeight(), Bitmap.Config.ARGB_8888);
+        int width = Math.max(1, view.getMeasuredWidth());
+        int height = Math.max(1, view.getMeasuredHeight());
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         view.draw(new Canvas(bitmap));
         return bitmap;
     }

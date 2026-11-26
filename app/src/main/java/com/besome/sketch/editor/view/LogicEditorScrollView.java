@@ -64,7 +64,7 @@ public class LogicEditorScrollView extends FrameLayout {
             offsetX = x;
             offsetY = y;
             isDragged = false;
-        } else if (action == MotionEvent.ACTION_UP) {
+        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             isDragged = false;
         } else if (action == MotionEvent.ACTION_MOVE) {
             int abs = (int) Math.abs(offsetX - x);
@@ -90,9 +90,10 @@ public class LogicEditorScrollView extends FrameLayout {
         if (action == MotionEvent.ACTION_DOWN) {
             lastPosX = x;
             lastPosY = y;
-        } else if (action == MotionEvent.ACTION_UP) {
+        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             lastPosX = -1.0f;
             lastPosY = -1.0f;
+            isDragged = false;
         } else if (action == MotionEvent.ACTION_MOVE) {
             if (lastPosX < 0.0f) {
                 lastPosX = x;
