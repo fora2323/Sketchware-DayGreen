@@ -50,6 +50,7 @@ public class EventsHandler {
         array.add("onPause");
         array.add("onStop");
         array.add("onDestroy");
+        array.add("onDestroyView");
         array.add("onSaveInstanceState");
         array.add("onRestoreInstanceState");
         array.add("onCreateOptionsMenu");
@@ -58,6 +59,7 @@ public class EventsHandler {
         array.add("onContextItemSelected");
         array.add("onTabLayoutNewTabAdded");
         array.add("onCustomMethod");
+        array.add("onRequestPermissionsResult");
 
         for (int i = cachedCustomEvents.size() - 1; i >= 0; i--) {
             HashMap<String, Object> customEvent = cachedCustomEvents.get(i);
@@ -219,8 +221,8 @@ public class EventsHandler {
     public static int getIcon(String name) {
         return switch (name) {
             case "Import", "onActivityResult", "initializeLogic", "onBackPressed", "onPostCreate",
-                 "onStart", "onResume", "onPause", "onStop", "onDestroy",
-                 "onTabLayoutNewTabAdded", "onCustomMethod" -> R.drawable.ic_mtrl_code;
+                 "onStart", "onResume", "onPause", "onStop", "onDestroy", "onDestroyView",
+                 "onTabLayoutNewTabAdded", "onCustomMethod", "onRequestPermissionsResult" -> R.drawable.ic_mtrl_code;
             case " onLongClick" -> R.drawable.ic_mtrl_touch_long;
             case "onSwipeRefreshLayout" -> R.drawable.ic_mtrl_refresh;
             case "onPreExecute" -> R.drawable.ic_mtrl_track_started;
@@ -267,7 +269,9 @@ public class EventsHandler {
             case "onActivityResult" -> "onActivityResult";
             case "initializeLogic" -> "initializeLogic";
             case "onCustomMethod" -> "Add custom code inside class";
+            case "onDestroyView" -> "On activity destroyed";
             case "onRequestPermissionResult" -> "Shizuku onRequestPermissionResult";
+            case "onRequestPermissionsResult" -> "On activity request permissions result";
             case "onSwipeRefreshLayout" -> "On SwipeRefreshLayout swipe";
             case " onLongClick" -> "onLongClick";
             case "onTabLayoutNewTabAdded" -> "return the name of current tab";
@@ -317,6 +321,16 @@ public class EventsHandler {
                             "//3b5IqsVG57gNqLi7FBO2MeOW6iI7tOustUGwcA7HKXm0o7lovZ";
             case "onActivityResult", "initializeLogic" -> "";
             case "onCustomMethod" -> param;
+            case "onDestroyView" -> "@Override\r\n" +
+                    "public void onDestroyView() {\r\n" +
+                    "super.onDestroyView();\r\n" +
+                    param + "\r\n" +
+                    "}";
+            case "onRequestPermissionsResult" -> "@Override\r\n" +
+                    "public void onRequestPermissionsResult(int _requestCode, String[] _permissions, int[] _grantResults) {\r\n" +
+                    "super.onRequestPermissionsResult(_requestCode, _permissions, _grantResults);\r\n" +
+                    param + "\r\n" +
+                    "}";
             case "onSwipeRefreshLayout" ->
                 // Changed from: "@Override \npublic void..."
                     "@Override\r\n" +
@@ -386,11 +400,12 @@ public class EventsHandler {
     public static String getBlocks(String name) {
         return switch (name) {
             case "Import", "initializeLogic", "onSwipeRefreshLayout", " onLongClick",
-                 "onPreExecute", "onCustomMethod" -> "";
+                 "onPreExecute", "onCustomMethod", "onDestroyView" -> "";
             case "onActivityResult" -> "%d.requestCode %d.resultCode %m.intent";
             case "onTabLayoutNewTabAdded", "onProgressUpdate" -> "%d";
             case "doInBackground", "onPostExecute" -> "%s";
             case "onRequestPermissionResult" -> "%d.requestCode %d.grantResult";
+            case "onRequestPermissionsResult" -> "%d.requestCode %s.permissions %d.grantResults";
             default -> {
                 for (int i = 0, cachedCustomEventsSize = cachedCustomEvents.size(); i < cachedCustomEventsSize; i++) {
                     HashMap<String, Object> customEvent = cachedCustomEvents.get(i);
@@ -427,6 +442,7 @@ public class EventsHandler {
                     "OnActivityResult %d.requestCode %d.resultCode %m.intent.data";
             case "initializeLogic" -> "initializeLogic";
             case "onCustomMethod" -> "Add custom code inside class";
+            case "onDestroyView" -> "onDestroyView";
             case "onSwipeRefreshLayout" -> "when " + name + " refresh";
             case " onLongClick" -> "when " + name + " long clicked";
             case "onTabLayoutNewTabAdded" -> name + " return tab title %d.position";
@@ -435,6 +451,7 @@ public class EventsHandler {
             case "onProgressUpdate" -> name + " onProgressUpdate progress %d.value";
             case "onPostExecute" -> name + " onPostExecute result %s.result";
             case "onRequestPermissionResult" -> name + " onRequestPermissionResult requestCode %d.requestCode grantResult %d.grantResult";
+            case "onRequestPermissionsResult" -> "OnRequestPermissionsResult %d.requestCode %s.permissions %d.grantResults";
             default -> {
                 for (int i = 0, cachedCustomEventsSize = cachedCustomEvents.size(); i < cachedCustomEventsSize; i++) {
                     HashMap<String, Object> customEvent = cachedCustomEvents.get(i);
