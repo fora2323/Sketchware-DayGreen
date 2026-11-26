@@ -19,6 +19,7 @@ import dev.pranav.filepicker.SelectionMode
 import mod.alucard.tn.apksigner.ApkSigner
 import mod.hey.studios.code.SrcCodeEditor
 import mod.hey.studios.util.Helper
+import org.sketchware.daygreen.FileCheckUtils
 import pro.sketchware.R
 import pro.sketchware.databinding.DialogSelectApkToSignBinding
 import pro.sketchware.utility.FileUtil
@@ -28,6 +29,7 @@ import java.io.File
 object AppSettingsActions {
 
     fun openWorkingDirectory(activity: AppCompatActivity) {
+        FileCheckUtils.ensureLegacyAndroidJar(activity)
         val options = FilePickerOptions().apply {
             selectionMode = SelectionMode.BOTH
             multipleSelection = true

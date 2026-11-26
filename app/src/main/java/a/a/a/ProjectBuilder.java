@@ -1224,7 +1224,7 @@ public class ProjectBuilder {
         for (String libPath : allLibs) {
             if (libPath.trim().isEmpty()) continue;
             File libFile = new File(libPath);
-            if (libFile.getName().equals("android.jar")) {
+            if (libFile.getName().equals("android.jar") || (libFile.getName().startsWith("android-") && libFile.getName().endsWith(".jar"))) {
                 filteredLibs.add(libPath);
                 continue;
             }

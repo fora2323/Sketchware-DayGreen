@@ -237,7 +237,7 @@ object DownloadUtility {
         progressIndicator.isIndeterminate = false
         progressIndicator.progress = 0
         tvPercentage.text = "0%"
-        tvBytes.text = "0 MB / ${formatSize(totalArchiveSize)}"
+        tvBytes.text = "0 MB extracted"
 
         val progressDialog = MaterialAlertDialogBuilder(activity)
             .setTitle("Extracting ${archiveFile.name}...")
@@ -254,25 +254,45 @@ object DownloadUtility {
                 val tempExtractDir = File(parentPath, "temp_extract_" + System.currentTimeMillis())
                 tempExtractDir.mkdirs()
 
-                val progressCallback: (Int, Long, Long) -> Unit = { pct, readBytes, totalBytes ->
-                    handler.post {
-                        if (!activity.isFinishing) {
-                            progressIndicator.isIndeterminate = false
-                            progressIndicator.progress = pct.coerceIn(0, 100)
-                            tvPercentage.text = "$pct%"
-                            tvBytes.text = "${formatSize(readBytes)} / ${formatSize(totalBytes)}"
+                var currentPct = 0
+                val totalExtractedBytes = java.util.concurrent.atomic.AtomicLong(0L)
+                var lastUiUpdate = 0L
+
+                val updateUi: () -> Unit = {
+                    val now = System.currentTimeMillis()
+                    if (now - lastUiUpdate > 100) {
+                        lastUiUpdate = now
+                        val pct = currentPct
+                        val extracted = totalExtractedBytes.get()
+                        handler.post {
+                            if (!activity.isFinishing) {
+                                progressIndicator.isIndeterminate = false
+                                progressIndicator.progress = pct.coerceIn(0, 100)
+                                tvPercentage.text = "$pct%"
+                                tvBytes.text = "${formatSize(extracted)} extracted"
+                            }
                         }
                     }
                 }
 
+                val progressCallback: (Int, Long, Long) -> Unit = { pct, _, _ ->
+                    currentPct = pct
+                    updateUi()
+                }
+
+                val onExtractedBytes: (Int) -> Unit = { count ->
+                    totalExtractedBytes.addAndGet(count.toLong())
+                    updateUi()
+                }
+
                 if (name.endsWith(".zip")) {
-                    extractZip(archiveFile, tempExtractDir, totalArchiveSize, progressCallback)
+                    extractZip(archiveFile, tempExtractDir, totalArchiveSize, progressCallback, onExtractedBytes)
                 } else if (name.endsWith(".tar.xz")) {
-                    extractTarXz(archiveFile, tempExtractDir, totalArchiveSize, progressCallback)
+                    extractTarXz(archiveFile, tempExtractDir, totalArchiveSize, progressCallback, onExtractedBytes)
                 } else if (name.endsWith(".tar.gz") || name.endsWith(".tgz")) {
-                    extractTarGz(archiveFile, tempExtractDir, totalArchiveSize, progressCallback)
+                    extractTarGz(archiveFile, tempExtractDir, totalArchiveSize, progressCallback, onExtractedBytes)
                 } else {
-                    extractTarGeneric(archiveFile, tempExtractDir, totalArchiveSize, progressCallback)
+                    extractTarGeneric(archiveFile, tempExtractDir, totalArchiveSize, progressCallback, onExtractedBytes)
                 }
 
                 // Determine final target directory
@@ -343,7 +363,8 @@ object DownloadUtility {
         archiveFile: File,
         targetDir: File,
         totalSize: Long,
-        onProgress: (Int, Long, Long) -> Unit
+        onProgress: (Int, Long, Long) -> Unit,
+        onExtractedBytes: (Int) -> Unit
     ) {
         val symlinkList = mutableListOf<Pair<File, String>>()
         FileInputStream(archiveFile).use { fis ->
@@ -351,7 +372,7 @@ object DownloadUtility {
                 val progressIn = ProgressTrackingStream(bis, totalSize, onProgress)
                 XZInputStream(progressIn).use { xzIn ->
                     TarArchiveInputStream(xzIn).use { tarIn ->
-                        readTarStream(tarIn, targetDir, symlinkList)
+                        readTarStream(tarIn, targetDir, symlinkList, onExtractedBytes)
                     }
                 }
             }
@@ -363,7 +384,8 @@ object DownloadUtility {
         archiveFile: File,
         targetDir: File,
         totalSize: Long,
-        onProgress: (Int, Long, Long) -> Unit
+        onProgress: (Int, Long, Long) -> Unit,
+        onExtractedBytes: (Int) -> Unit
     ) {
         val symlinkList = mutableListOf<Pair<File, String>>()
         FileInputStream(archiveFile).use { fis ->
@@ -371,7 +393,7 @@ object DownloadUtility {
                 val progressIn = ProgressTrackingStream(bis, totalSize, onProgress)
                 GZIPInputStream(progressIn).use { gzIn ->
                     TarArchiveInputStream(gzIn).use { tarIn ->
-                        readTarStream(tarIn, targetDir, symlinkList)
+                        readTarStream(tarIn, targetDir, symlinkList, onExtractedBytes)
                     }
                 }
             }
@@ -383,14 +405,15 @@ object DownloadUtility {
         archiveFile: File,
         targetDir: File,
         totalSize: Long,
-        onProgress: (Int, Long, Long) -> Unit
+        onProgress: (Int, Long, Long) -> Unit,
+        onExtractedBytes: (Int) -> Unit
     ) {
         val symlinkList = mutableListOf<Pair<File, String>>()
         FileInputStream(archiveFile).use { fis ->
             BufferedInputStream(fis, 128 * 1024).use { bis ->
                 val progressIn = ProgressTrackingStream(bis, totalSize, onProgress)
                 TarArchiveInputStream(progressIn).use { tarIn ->
-                    readTarStream(tarIn, targetDir, symlinkList)
+                    readTarStream(tarIn, targetDir, symlinkList, onExtractedBytes)
                 }
             }
         }
@@ -400,7 +423,8 @@ object DownloadUtility {
     private fun readTarStream(
         tarIn: TarArchiveInputStream,
         targetDir: File,
-        symlinkList: MutableList<Pair<File, String>>
+        symlinkList: MutableList<Pair<File, String>>,
+        onExtractedBytes: (Int) -> Unit
     ) {
         var entry: TarArchiveEntry? = tarIn.nextEntry as? TarArchiveEntry
         val buffer = ByteArray(64 * 1024)
@@ -421,6 +445,7 @@ object DownloadUtility {
                     var n: Int
                     while (tarIn.read(buffer).also { n = it } != -1) {
                         fos.write(buffer, 0, n)
+                        onExtractedBytes(n)
                     }
                 }
                 if ((entry.mode and 0b001_000_000) != 0 || outFile.parentFile?.name == "bin" || outFile.name.endsWith(".so")) {
@@ -436,7 +461,8 @@ object DownloadUtility {
         archiveFile: File,
         targetDir: File,
         totalSize: Long,
-        onProgress: (Int, Long, Long) -> Unit
+        onProgress: (Int, Long, Long) -> Unit,
+        onExtractedBytes: (Int) -> Unit
     ) {
         FileInputStream(archiveFile).use { fis ->
             BufferedInputStream(fis, 128 * 1024).use { bis ->
@@ -454,6 +480,7 @@ object DownloadUtility {
                                 var n: Int
                                 while (zis.read(buffer).also { n = it } != -1) {
                                     fos.write(buffer, 0, n)
+                                    onExtractedBytes(n)
                                 }
                             }
                         }

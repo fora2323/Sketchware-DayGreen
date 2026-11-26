@@ -18,6 +18,7 @@ public class CodeEditorLanguages {
     public static final String SCOPE_NAME_JS = "source.javascript";
     public static final String SCOPE_NAME_CPP = "source.cpp";
     public static final String SCOPE_NAME_C = "source.c";
+    public static final String SCOPE_NAME_CMAKE = "source.cmake";
     private static final String TAG = "CodeEditorLanguages";
 
     static {

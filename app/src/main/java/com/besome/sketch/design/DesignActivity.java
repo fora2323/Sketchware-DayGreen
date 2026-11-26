@@ -933,9 +933,14 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         }
 
         DRProjectTracker.startNow(sc_id);
-        
+
         if (activeTabs != null && viewPager != null) {
             computeActiveTabs();
+        }
+
+        DesignDrawer designDrawer = findViewById(R.id.design_drawer);
+        if (designDrawer != null) {
+            designDrawer.refreshDrawerItems();
         }
 
         long freeMegabytes = GB.c();
@@ -1315,7 +1320,7 @@ private String fixPackage(String code, String pkg) {
     }
 
     /**
-     * Opens {@link ManageNativeActivity}.
+     * Opens {@link mod.hey.studios.activity.managers.native_code.ManageNativeActivity}.
      */
     void toNativeManager() {
         launchActivity(mod.hey.studios.activity.managers.native_code.ManageNativeActivity.class, null, new Pair<>("pkgName", q != null ? q.packageName : ""));

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "CMake",
+  "scopeName": "source.cmake",
+  "patterns": [
+    {
+      "name": "comment.line.number-sign.cmake",
+      "begin": "#",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.comment.cmake" }
+      },
+      "end": "$"
+    },
+    {
+      "name": "string.quoted.double.cmake",
+      "begin": "\"",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.string.begin.cmake" }
+      },
+      "end": "\"",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.cmake" }
+      },
+      "patterns": [
+        {
+          "name": "constant.character.escape.cmake",
+          "match": "\\\\."
+        },
+        {
+          "name": "variable.other.readwrite.cmake",
+          "match": "\\$\\{[^}]+\\}"
+        }
+      ]
+    },
+    {
+      "name": "variable.other.readwrite.cmake",
+      "match": "\\$(?:ENV)?\\{[^}]+\\}"
+    },
+    {
+      "name": "keyword.control.cmake",
+      "match": "\\b(?i:if|else|elseif|endif|foreach|endforeach|while|endwhile|function|endfunction|macro|endmacro|return|continue|break)\\b"
+    },
+    {
+      "name": "entity.name.function.cmake",
+      "match": "\\b(?i:cmake_minimum_required|project|set|option|add_library|add_executable|target_link_libraries|target_include_directories|target_compile_definitions|target_compile_options|target_compile_features|set_target_properties|get_target_property|add_subdirectory|find_package|find_library|find_path|find_file|include|include_directories|link_directories|add_definitions|list|string|file|configure_file|message|install|enable_testing|add_test)\\b"
+    },
+    {
+      "name": "keyword.operator.cmake",
+      "match": "\\b(?i:AND|OR|NOT|COMMAND|POLICY|TARGET|EXISTS|IS_DIRECTORY|IS_ABSOLUTE|IS_SYMLINK|IS_NEWER_THAN|LESS|GREATER|EQUAL|NOTEQUAL|LESS_EQUAL|GREATER_EQUAL|STRLESS|STRGREATER|STREQUAL|STRNOTEQUAL|STRLESS_EQUAL|STRGREATER_EQUAL|VERSION_LESS|VERSION_GREATER|VERSION_EQUAL|VERSION_NOTEQUAL|VERSION_LESS_EQUAL|VERSION_GREATER_EQUAL|MATCHES|DEFINED)\\b"
+    },
+    {
+      "name": "constant.language.cmake",
+      "match": "\\b(?i:ON|OFF|TRUE|FALSE|YES|NO|IGNORE|NOTFOUND|SHARED|STATIC|MODULE|OBJECT|INTERFACE|REQUIRED|COMPONENTS|PUBLIC|PRIVATE|PROPERTIES|SYSTEM|BEFORE|AFTER|GLOBAL|INTERNAL|CACHE|EXCLUDE_FROM_ALL|VERSION|LANGUAGES|CXX|C|ASM)\\b"
+    },
+    {
+      "name": "constant.numeric.cmake",
+      "match": "\\b\\d+(?:\\.\\d+)*\\b"
+    }
+  ]
+}

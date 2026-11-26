@@ -381,6 +381,8 @@ public class SrcCodeEditor extends BaseAppCompatActivity {
         } else if (title.endsWith(".c") || title.endsWith(".h")) {
             EditorUtils.loadCConfig(binding.editor);
             languageId = 4;
+        } else if (title.equalsIgnoreCase("CMakeLists.txt") || title.endsWith(".cmake") || title.contains("CMakeLists")) {
+            EditorUtils.loadCmakeConfig(binding.editor);
         } else if (title.endsWith(".html")) {
             EditorUtils.loadHtmlConfig(binding.editor);
         } else if (title.endsWith(".js")) {

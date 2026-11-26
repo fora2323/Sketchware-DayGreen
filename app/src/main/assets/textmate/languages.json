@@ -41,6 +41,12 @@
       "name": "c",
       "scopeName": "source.c",
       "languageConfiguration": "textmate/c/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/cmake/syntaxes/cmake.tmLanguage.json",
+      "name": "cmake",
+      "scopeName": "source.cmake",
+      "languageConfiguration": "textmate/cmake/language-configuration.json"
     }
   ]
 }

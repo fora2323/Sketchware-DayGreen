@@ -35,6 +35,10 @@ object FileCheckUtils {
 
     @JvmStatic
     fun isSdkDownloaded(context: Context): Boolean {
+        ensureLegacyAndroidJar(context)
+        val installedSdks = getInstalledSdks(context)
+        if (installedSdks.isNotEmpty()) return true
+
         val legacySdk = File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android.jar")
         if (legacySdk.exists() && legacySdk.length() > 0) return true
         
@@ -151,10 +155,6 @@ object FileCheckUtils {
 
     @JvmStatic
     fun getDefaultAndroidJar(context: Context): File? {
-        val legacy = File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android.jar")
-        if (legacy.exists() && legacy.length() > 0) {
-            return legacy
-        }
         val installedSdks = getInstalledSdks(context)
         if (installedSdks.isNotEmpty()) {
             val highestSdk = installedSdks.last()
@@ -162,6 +162,10 @@ object FileCheckUtils {
             if (fallbackJar.exists() && fallbackJar.length() > 0) {
                 return fallbackJar
             }
+        }
+        val legacy = File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android.jar")
+        if (legacy.exists() && legacy.length() > 0) {
+            return legacy
         }
         val libsDir = BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH
         if (libsDir.exists()) {
@@ -177,16 +181,26 @@ object FileCheckUtils {
 
     @JvmStatic
     fun ensureLegacyAndroidJar(context: Context) {
-        val defaultJar = getDefaultAndroidJar(context) ?: return
+        val installedSdks = getInstalledSdks(context)
         val legacy = File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android.jar")
-        if (!legacy.exists() || legacy.length() == 0L) {
-            try {
-                if (legacy.exists()) legacy.delete()
-                java.nio.file.Files.createSymbolicLink(legacy.toPath(), defaultJar.toPath())
-            } catch (e: Exception) {
+        if (installedSdks.isNotEmpty()) {
+            if (legacy.exists()) {
                 try {
-                    defaultJar.copyTo(legacy, overwrite = true)
+                    legacy.delete()
                 } catch (ignored: Exception) {
+                }
+            }
+        } else {
+            val defaultJar = getDefaultAndroidJar(context) ?: return
+            if (!legacy.exists() || legacy.length() == 0L) {
+                try {
+                    if (legacy.exists()) legacy.delete()
+                    java.nio.file.Files.createSymbolicLink(legacy.toPath(), defaultJar.toPath())
+                } catch (e: Exception) {
+                    try {
+                        defaultJar.copyTo(legacy, overwrite = true)
+                    } catch (ignored: Exception) {
+                    }
                 }
             }
         }

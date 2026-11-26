@@ -50,11 +50,7 @@ data class BuildToolItem(
 
 private const val NDK_BASE = "https://github.com/Apex-Studio-Dev/apex-toolchains/releases/download"
 
-private val NDK_VERSIONS = listOf(
-    "r30", "r29", "r28c", "r28b", "r28",
-    "r27d", "r27c", "r27b", "r27",
-    "r26d", "r26c", "r26b", "r26"
-)
+private val NDK_VERSIONS = listOf("r30", "r29", "r28", "r27")
 
 private fun ndkTriple(abi: String): String? = when (abi) {
     "arm64-v8a" -> "aarch64-linux-android"

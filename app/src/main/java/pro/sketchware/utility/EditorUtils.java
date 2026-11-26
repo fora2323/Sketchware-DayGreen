@@ -169,6 +169,14 @@ public class EditorUtils {
         loadConfigByLanguage(editor, language, true);
     }
 
+    public static void loadCmakeConfig(CodeEditor editor) {
+        Language language = CodeEditorLanguages.loadTextMateLanguage(CodeEditorLanguages.SCOPE_NAME_CMAKE);
+        if (language instanceof TextMateLanguage tm) {
+            tm.setCompleterKeywords(extractDocumentWords(editor).toArray(new String[0]));
+        }
+        loadConfigByLanguage(editor, language, true);
+    }
+
     private static ArrayList<String> extractDocumentWords(CodeEditor editor) {
         ArrayList<String> result = new ArrayList<>();
         try {

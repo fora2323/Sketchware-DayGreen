@@ -3,6 +3,7 @@ package com.besome.sketch.design;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.res.ColorStateList;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -33,9 +34,21 @@ import pro.sketchware.utility.UI;
 
 //DR
 public class DesignDrawer extends LinearLayout {
+
+    private LinearLayout content;
+
+    private static Activity findActivity(Context context) {
+        if (context == null) return null;
+        if (context instanceof Activity) return (Activity) context;
+        if (context instanceof ContextWrapper) {
+            return findActivity(((ContextWrapper) context).getBaseContext());
+        }
+        return null;
+    }
+
     @SuppressLint("NonConstantResourceId")
     private final View.OnClickListener drawerItemClickListener = v -> {
-        Activity activity = (Activity) getContext();
+        Activity activity = findActivity(getContext());
         if (!(activity instanceof DesignActivity designActivity)) return;
         int id = v.getId();
 
@@ -114,12 +127,23 @@ public class DesignDrawer extends LinearLayout {
         scrollView.setClipToPadding(false);
         addView(scrollView, new LayoutParams(LayoutParams.MATCH_PARENT, 0, 1));
 
-        LinearLayout content = new LinearLayout(getContext());
+        content = new LinearLayout(getContext());
         content.setOrientation(VERTICAL);
         scrollView.addView(content);
 
         UI.addSystemWindowInsetToPadding(scrollView, false, true, false, false);
         UI.addSystemWindowInsetToPadding(this, false, false, true, true);
+
+        refreshDrawerItems();
+
+        addDrawerDivider(this);
+        addDrawerItem(R.id.item_collection_manager, R.drawable.ic_mtrl_bookmark, R.string.design_drawer_menu_title_collection, R.string.design_drawer_menu_description_collection, this);
+        addDrawerItem(R.id.item_app_settings, R.drawable.ic_mtrl_settings, "Settings", "Sketchware app settings", this);
+    }
+
+    public void refreshDrawerItems() {
+        if (content == null) return;
+        content.removeAllViews();
 
         addDrawerSubheaderItem(R.string.design_drawer_menu_title, content);
         addDrawerItem(R.id.item_library_manager, R.drawable.ic_mtrl_category, R.string.design_drawer_menu_title_library, R.string.design_drawer_menu_description_library, content);
@@ -128,15 +152,15 @@ public class DesignDrawer extends LinearLayout {
         addDrawerItem(R.id.item_image_manager, R.drawable.ic_mtrl_image, R.string.design_drawer_menu_title_image, R.string.design_drawer_menu_description_image, content);
         addDrawerItem(R.id.item_sound_manager, R.drawable.ic_mtrl_music, R.string.design_drawer_menu_title_sound, R.string.design_drawer_menu_description_sound, content);
         addDrawerItem(R.id.item_font_manager, R.drawable.ic_mtrl_font, R.string.design_drawer_menu_title_font, R.string.design_drawer_menu_description_font, content);
-        //native
-        Activity activity = (Activity) getContext();
-        String drawerScId = activity instanceof DesignActivity ? DesignActivity.sc_id : null;
-        if (drawerScId != null) {
+
+        String drawerScId = DesignActivity.sc_id;
+        if (!TextUtils.isEmpty(drawerScId)) {
             ProjectSettings ps = new ProjectSettings(drawerScId);
-            if (ps.getValue(ProjectSettings.SETTING_ENABLE_NATIVE, "false").equals("true")) {
+            if ("true".equals(ps.getValue(ProjectSettings.SETTING_ENABLE_NATIVE, "false"))) {
                 addDrawerItem(R.id.item_native_manager, R.drawable.ic_mtrl_cpp, R.string.text_title_menu_native, R.string.text_subtitle_menu_native, content);
             }
         }
+
         addDrawerItem(R.id.item_aidl_manager, R.drawable.ic_mtrl_code, "AIDL Manager", "Manage AIDL interface files", content);
         addDrawerItem(R.id.item_resource_editor, R.drawable.ic_mtrl_folder_code, R.string.text_title_menu_resource_editor, R.string.text_subtitle_menu_resource_editor, content);
         addDrawerItem(R.id.item_assets_manager, R.drawable.ic_mtrl_file_present, R.string.text_title_menu_assets, R.string.text_subtitle_menu_assets, content);
@@ -149,10 +173,14 @@ public class DesignDrawer extends LinearLayout {
         addDrawerItem(R.id.item_show_src, R.drawable.ic_mtrl_frame_source, R.string.design_drawer_menu_title_source_code, R.string.design_drawer_menu_description_source_code, content);
         addDrawerItem(R.id.item_xml_command_manager, R.drawable.ic_mtrl_code, R.string.design_drawer_menu_title_xml_command, R.string.design_drawer_menu_description_xml_command, content);
         addDrawerItem(R.id.item_logcat_reader, R.drawable.ic_mtrl_article, R.string.design_drawer_menu_title_logcat_reader, R.string.design_drawer_menu_subtitle_logcat_reader, content);
+    }
 
-        addDrawerDivider(this);
-        addDrawerItem(R.id.item_collection_manager, R.drawable.ic_mtrl_bookmark, R.string.design_drawer_menu_title_collection, R.string.design_drawer_menu_description_collection, this);
-        addDrawerItem(R.id.item_app_settings, R.drawable.ic_mtrl_settings, "Settings", "Sketchware app settings", this);
+    @Override
+    protected void onWindowVisibilityChanged(int visibility) {
+        super.onWindowVisibilityChanged(visibility);
+        if (visibility == VISIBLE) {
+            refreshDrawerItems();
+        }
     }
 
     @Override
