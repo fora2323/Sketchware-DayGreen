@@ -18,6 +18,7 @@ import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
 
 public class CollapsibleComponentLayout extends CollapsibleLayout<CollapsibleButton> {
+    private CollapsibleButton edit;
     private CollapsibleButton delete;
 
     public CollapsibleComponentLayout(@NonNull Context context) {
@@ -30,12 +31,13 @@ public class CollapsibleComponentLayout extends CollapsibleLayout<CollapsibleBut
 
     @Override
     protected List<CollapsibleButton> initializeButtons(@NonNull Context context) {
-        delete = CollapsibleButton.create(context, 0, R.drawable.ic_mtrl_delete, R.string.common_word_delete);
+        edit = CollapsibleButton.create(context, 0, R.drawable.ic_mtrl_edit, R.string.common_word_edit);
+        delete = CollapsibleButton.create(context, 1, R.drawable.ic_mtrl_delete, R.string.common_word_delete);
         var colorError = MaterialColors.getColor(delete, R.attr.colorError);
         var iconFilter = new PorterDuffColorFilter(colorError, PorterDuff.Mode.SRC_ATOP);
         delete.getLabel().setTextColor(colorError);
         delete.getIcon().setColorFilter(iconFilter);
-        return List.of(delete);
+        return List.of(edit, delete);
     }
 
     @Override
@@ -51,6 +53,10 @@ public class CollapsibleComponentLayout extends CollapsibleLayout<CollapsibleBut
     @Override
     protected CharSequence getNoLabel() {
         return Helper.getResString(this, R.string.common_word_cancel);
+    }
+
+    public CollapsibleButton getEditButton() {
+        return edit;
     }
 
     public CollapsibleButton getDeleteButton() {

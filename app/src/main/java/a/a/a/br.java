@@ -34,6 +34,7 @@ import pro.sketchware.R;
 import pro.sketchware.databinding.FrComponentListBinding;
 import pro.sketchware.databinding.FrLogicListItemComponentBinding;
 import pro.sketchware.databinding.FrLogicListItemEventPreviewBinding;
+import pro.sketchware.dialogs.InnerAddComponentBottomSheet;
 
 public class br extends qA implements View.OnClickListener {
 
@@ -156,9 +157,25 @@ public class br extends qA implements View.OnClickListener {
                         .setText(R.string.component_context_menu_title_delete_component);
                 binding.componentOption.setButtonOnClickListener(v -> {
                     int lastSelectedItem = getLayoutPosition();
+                    if (lastSelectedItem < 0 || lastSelectedItem >= components.size()) {
+                        return;
+                    }
                     ComponentBean bean =
                             jC.a(sc_id).a(projectFile.getJavaName(), lastSelectedItem);
-                    if (v instanceof CollapsibleButton) {
+                    if (bean == null) {
+                        return;
+                    }
+                    if (v == binding.componentOption.getEditButton()) {
+                        if (!mB.a()) {
+                            InnerAddComponentBottomSheet editSheet =
+                                    InnerAddComponentBottomSheet.newInstanceForEdit(
+                                            sc_id, projectFile, bean, sheet -> {
+                                                sheet.dismiss();
+                                                refreshData();
+                                            });
+                            editSheet.show(getParentFragmentManager(), null);
+                        }
+                    } else if (v instanceof CollapsibleButton) {
                         bean.isConfirmation = true;
                         setAnimateNextTransformation(true);
                         notifyItemChanged(lastSelectedItem);
