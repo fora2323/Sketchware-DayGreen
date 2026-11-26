@@ -6,12 +6,17 @@
     <com.besome.sketch.lib.ui.CustomScrollView
         android:id="@+id/scv"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:fadingEdgeLength="14dp"
+        android:requiresFadingEdge="vertical"
+        android:scrollbars="none">
 
         <LinearLayout
             android:id="@+id/widget"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:orientation="vertical"
+            android:paddingTop="4dp"
+            android:paddingBottom="12dp" />
     </com.besome.sketch.lib.ui.CustomScrollView>
 </LinearLayout>

@@ -1,4 +1,4 @@
-(<resources>
+<resources>
     <dimen name="action_bar_height">48dp</dimen>
     <dimen name="action_button_margin">16dp</dimen>
     <dimen name="activity_horizontal_margin">16dp</dimen>
@@ -54,6 +54,7 @@
     <dimen name="recycler_view_item_spacing">6dp</dimen>
     
     <dimen name="dialog_action_size">100dp</dimen>
+    <dimen name="view_palette_width">144dp</dimen>
     <!--atribut new 2026-->
     <dimen name="size_card_radius">20dp</dimen>
 </resources>

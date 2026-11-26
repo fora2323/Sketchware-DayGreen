@@ -2,16 +2,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/group_item"
     android:layout_width="match_parent"
-    android:layout_height="24dp"
+    android:layout_height="30dp"
     android:background="@drawable/selector_palette_tab_round"
-    android:gravity="center_vertical"
+    android:gravity="center"
     android:orientation="horizontal"
-    android:padding="4dp">
+    android:padding="5dp">
 
     <ImageView
         android:id="@+id/img_group"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:scaleType="centerInside"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:scaleType="fitCenter"
         tools:src="@drawable/selector_palette_tab_ic_bookmark" />
 </LinearLayout>

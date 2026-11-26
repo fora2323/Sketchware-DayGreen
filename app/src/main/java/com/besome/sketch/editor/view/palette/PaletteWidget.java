@@ -3,6 +3,7 @@ package com.besome.sketch.editor.view.palette;
 import static pro.sketchware.utility.SketchwareUtil.dpToPx;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
@@ -179,10 +180,12 @@ public class PaletteWidget extends LinearLayout {
 
         TextView titleView = new TextView(getContext());
         LayoutParams layoutParams = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        layoutParams.setMargins(dpToPx(4), dpToPx(4), dpToPx(4), dpToPx(4));
+        layoutParams.setMargins(dpToPx(10), dpToPx(10), dpToPx(10), dpToPx(4));
         titleView.setLayoutParams(layoutParams);
         titleView.setText(title);
-        titleView.setTextSize(12);
+        titleView.setTextSize(11.5f);
+        titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        titleView.setLetterSpacing(0.02f);
         titleView.setTextColor(MaterialColors.getColor(titleView, R.attr.colorPrimary));
         target.addView(titleView);
     }

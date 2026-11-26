@@ -30,6 +30,7 @@
         android:requestLegacyExternalStorage="true"
         android:theme="@style/Theme.SketchwarePro"
         android:usesCleartextTraffic="true"
+        android:localeConfig="@xml/locales_config"
         tools:targetApi="p">
         <activity
             android:name="extensions.anbui.daydream.activity.project.settings.PerformanceSettingsActivity"

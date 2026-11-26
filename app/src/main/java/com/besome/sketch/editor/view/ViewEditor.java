@@ -156,6 +156,8 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         LinearLayout.LayoutParams paletteLayoutParams =
                 new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT);
         paletteLayoutParams.weight = 1f;
+        int tabGap = (int) wB.a(getContext(), 2f);
+        paletteLayoutParams.setMargins(tabGap, 0, tabGap, 0);
 
         PaletteGroupItem basicPalette = new PaletteGroupItem(getContext());
         basicPalette.setLayoutParams(paletteLayoutParams);
@@ -166,19 +168,19 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         favoritePalette.setLayoutParams(paletteLayoutParams);
         favoritePalette.setPaletteGroup(PaletteGroup.FAVORITE);
         favoritePalette.setSelected(false);
-        favoritePalette.animate().scaleX(0.9f).scaleY(0.9f).alpha(0.6f).start();
+        favoritePalette.animate().scaleX(0.92f).scaleY(0.92f).alpha(0.7f).start();
 
         basicPalette.setOnClickListener(v -> {
             showPaletteWidget();
             basicPalette.animate().scaleX(1).scaleY(1).alpha(1).start();
-            favoritePalette.animate().scaleX(0.9f).scaleY(0.9f).alpha(0.6f).start();
+            favoritePalette.animate().scaleX(0.92f).scaleY(0.92f).alpha(0.7f).start();
             basicPalette.setSelected(true);
             favoritePalette.setSelected(false);
         });
 
         favoritePalette.setOnClickListener(v -> {
             showPaletteFavorite();
-            basicPalette.animate().scaleX(0.9f).scaleY(0.9f).alpha(0.6f).start();
+            basicPalette.animate().scaleX(0.92f).scaleY(0.92f).alpha(0.7f).start();
             favoritePalette.animate().scaleX(1).scaleY(1).alpha(1).start();
             basicPalette.setSelected(false);
             favoritePalette.setSelected(true);
@@ -878,7 +880,8 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         int var5 = (int) (dip * (!isLandscapeMode ? 20.0F : 10.0F));
         int statusBarHeight = GB.f(getContext());
         int toolBarHeight = GB.a(getContext());
-        int var9 = displayWidth - (int) (120.0F * dip);
+        int paletteWidth = getResources().getDimensionPixelSize(R.dimen.view_palette_width) + (int) dip;
+        int var9 = displayWidth - paletteWidth;
         int var8 = displayHeight - statusBarHeight - toolBarHeight - (int) (dip * 48.0F) - (int) (dip * 48.0F);
         if (screenType == 0 && da) {
             Log.d("ViewEditor", "hmmm");
@@ -1134,7 +1137,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
 
         public void setPaletteGroup(PaletteGroup group) {
             imgGroup.setImageResource(group == PaletteGroup.BASIC ?
-                    R.drawable.selector_palette_tab_ic_sketchware :
+                    R.drawable.selector_palette_tab_ic_daygreen :
                     R.drawable.selector_palette_tab_ic_bookmark);
             setOnClickListener(this);
         }

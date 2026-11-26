@@ -21,6 +21,12 @@ public class SketchApplication extends Application {
     }
 
     @Override
+    protected void attachBaseContext(Context base) {
+        String langCode = pro.sketchware.dialogs.LanguagePickerDialog.getSavedLanguage(base);
+        super.attachBaseContext(pro.sketchware.dialogs.LanguagePickerDialog.attachBaseContext(base, langCode));
+    }
+
+    @Override
     public void onCreate() {
         mApplicationContext = getApplicationContext();
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
@@ -36,6 +42,7 @@ public class SketchApplication extends Application {
         });
         super.onCreate();
         ThemeManager.applyTheme(this, ThemeManager.getCurrentTheme(this));
+        pro.sketchware.dialogs.LanguagePickerDialog.applyOnStartup(this);
 
         DRSetup.startUp(this);
     }

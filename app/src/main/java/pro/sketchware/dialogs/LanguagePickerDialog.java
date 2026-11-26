@@ -65,7 +65,6 @@ public class LanguagePickerDialog {
                     String picked = LANGUAGES.get(checkedItem[0])[0];
                     saveLanguage(activity, picked);
                     applyLanguage(picked);
-                    activity.recreate();
                 })
                 .show();
     }
@@ -77,6 +76,33 @@ public class LanguagePickerDialog {
             LocaleListCompat localeList = LocaleListCompat.forLanguageTags(langCode);
             AppCompatDelegate.setApplicationLocales(localeList);
         }
+        // Also update Application context configuration for immediate effect on pre-33
+        updateApplicationContextLocale(pro.sketchware.SketchApplication.getContext(), langCode);
+    }
+
+    private static void updateApplicationContextLocale(Context context, String langCode) {
+        if (context == null) return;
+        java.util.Locale locale;
+        if (langCode.equals("system")) {
+            locale = android.content.res.Resources.getSystem().getConfiguration().getLocales().get(0);
+        } else {
+            locale = java.util.Locale.forLanguageTag(langCode);
+        }
+        java.util.Locale.setDefault(locale);
+        android.content.res.Configuration config = new android.content.res.Configuration(context.getResources().getConfiguration());
+        config.setLocale(locale);
+        context.getResources().updateConfiguration(config, context.getResources().getDisplayMetrics());
+    }
+
+    public static Context attachBaseContext(Context base, String langCode) {
+        if (langCode == null || langCode.equals("system")) {
+            return base;
+        }
+        java.util.Locale locale = java.util.Locale.forLanguageTag(langCode);
+        java.util.Locale.setDefault(locale);
+        android.content.res.Configuration config = new android.content.res.Configuration(base.getResources().getConfiguration());
+        config.setLocale(locale);
+        return base.createConfigurationContext(config);
     }
 
     public static void applyOnStartup(Context context) {
