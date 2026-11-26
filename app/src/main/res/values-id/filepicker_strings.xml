@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="no_file_selected">Tidak ada berkas yang dipilih</string>
+    <string name="no_folder_selected">Tidak ada folder yang dipilih</string>
+    <string name="no_item_selected">Tidak ada item yang dipilih</string>
+    <string name="pick_a_file">Pilih berkas</string>
+    <string name="pick_a_folder">Pilih folder</string>
+    <string name="pick_items">Pilih item</string>
+    <string name="select_file">Pilih Berkas</string>
+    <string name="select_folder">Pilih Folder</string>
+    <string name="select_items">Pilih Item</string>
+    <string name="sort_by">Urutkan berdasarkan</string>
+    <string name="sort_date_asc">Tanggal (terlama lebih dulu)</string>
+    <string name="sort_date_desc">Tanggal (terbaru lebih dulu)</string>
+    <string name="sort_name_asc">Nama (A ke Z)</string>
+    <string name="sort_name_desc">Nama (Z ke A)</string>
+    <string name="sort_size_asc">Ukuran (terkecil lebih dulu)</string>
+    <string name="sort_size_desc">Ukuran (terbesar lebih dulu)</string>
+</resources>

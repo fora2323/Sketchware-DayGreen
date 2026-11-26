@@ -8,18 +8,30 @@
     <string name="menu_manifest_manager_open_dec">Edit AndroidManifest.xml langsung di editor kode.</string>
     <string name="name_tag_discord_new">Discord</string>
     <string name="name_tag_github_new">Github</string>
+    <string name="name_tag_donation_new">Donasi</string>
     <string name="name_tag_create_new">Proyek Baru</string>
     <string name="title_sketchware">Sketchware-DayGreen</string>
     <string name="program_information_title_open_source_license">Lisensi Sumber Terbuka</string>
     <string name="settings_design_tabs_title">Tab desain</string>
     <string name="settings_design_tabs_desc">Pilih tab mana yang tampil di editor project</string>
     <string name="design_tabs_empty_error">Pilih minimal satu tab</string>
+    <string name="donation_title">Dukungan</string>
+    <string name="donation_subtitle">Bantu mendukung pengembang.</string>
+    <string name="component_description_shizuku">Shizuku memungkinkan aplikasi menggunakan API sistem dengan hak istimewa yang lebih tinggi. Memerlukan AppCompat dan min SDK 24 atau lebih baru.</string>
     <!--link new-->
     <string name="link_github_release">https://github.com/fora2323/Sketchware-DayGreen/releases</string>
+    <string name="link_whatsapp_channel">https://whatsapp.com/channel/0029VbB9HaBCnA7s3RCXsR1o</string>
     <string name="link_discord_invite">https://discord.gg/ukRxYdXVF</string>
     <string name="link_telegram_invite">https://t.me/sketchware_daygreen</string>
     <string name="link_github_url">https://github.com/fora2323/Sketchware-DayGreen.git</string>
-    <!--atribut lagecy-->
+    <!--support-->
+    <string name="donation_kofi_title">Ko-fi</string>
+    <string name="donation_kofi_url">https://ko-fi.com/fora23</string>
+    <string name="donation_saweria_title">Saweria</string>
+    <string name="donation_saweria_url">https://saweria.co/fora23</string>
+    <!--atribut legacy-->
+    <string name="shrink_resources_title">Kecilkan Sumber Daya</string>
+    <string name="shrink_resources_desc">Hapus sumber daya yang tidak digunakan dari APK akhir untuk mengurangi ukuran aplikasi. Memerlukan Pengecilan Kode diaktifkan.</string>
     <string name="appbar_scrolling_view_behavior">com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior</string>
     <string name="besome_blog_url">http://medium.com/sketchware</string>
     <string name="block_add_list_int_body_1">to</string>
@@ -1302,9 +1314,11 @@ You must enter the API key to operate the map normally."</string>
     <string name="design_cancel_build_desc">Are you sure you want to cancel building? This may take some time.</string>
     <string name="design_cancel_build_btn_stop">Stop building</string>
     <string name="design_cancel_build_btn_continue">Continue building</string>
-    <string name="design_tab_title_component">Component</string>
-    <string name="design_tab_title_event">Event</string>
-    <string name="design_tab_title_view">View</string>
+    <string name="design_tab_title_component">Komponen</string>
+    <string name="design_tab_title_event">Acara</string>
+    <string name="design_tab_title_view">Tampilan</string>
+    <string name="design_tab_title_java">Java &amp; Kotlin</string>
+    <string name="design_tab_title_resource">Sumber Daya</string>
     <string name="developer_tools_component_add_var">Additional Variables</string>
     <string name="developer_tools_component_build_class">Build Class</string>
     <string name="developer_tools_component_define_add_var">Define Additional Variables</string>
