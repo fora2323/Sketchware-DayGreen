@@ -2073,7 +2073,6 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         super.onResume();
         if (!super.isStoragePermissionGranted()) {
             finish();
-            return;
         }
     }
 
@@ -2564,7 +2563,7 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         public void b() {
             publishProgress("Now saving..");
             LogicEditorActivity act = activity.get();
-            if (act != null && !act.isFinishing() && !act.isDestroyed()) {
+            if (act != null) {
                 act.E();
             }
         }

@@ -110,6 +110,9 @@ public class MoreblockImporter {
             ArrayList<Gx> paramClassInfo = next.getParamClassInfo();
             if (!paramClassInfo.isEmpty()) {
                 for (int i = 0; i < paramClassInfo.size(); i++) {
+                    if (i >= next.parameters.size()) {
+                        break;
+                    }
                     Gx gx = paramClassInfo.get(i);
                     String str = next.parameters.get(i);
                     if (!str.isEmpty() && str.charAt(0) != '@') {

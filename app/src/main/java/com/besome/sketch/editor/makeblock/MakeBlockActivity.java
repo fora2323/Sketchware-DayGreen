@@ -81,6 +81,7 @@ public class MakeBlockActivity extends BaseAppCompatActivity {
         super.onCreate(savedInstanceState);
         if (!isStoragePermissionGranted()) {
             finish();
+            return;
         }
 
         setContentView(R.layout.make_block);
