@@ -147,6 +147,7 @@ import pro.sketchware.dialogs.BuildSettingsBottomSheet;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.ThemeUtils;
+import pro.sketchware.utility.XmlSyncHelper;
 import pro.sketchware.utility.apk.ApkSignatures;
 import pro.sketchware.utility.FilePathUtil;
 import rikka.shizuku.Shizuku;
@@ -394,6 +395,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                     xmlLayoutOrientation.setImageResource(R.drawable.ic_screen_rotation_grey600_24dp);
                 }
                 viewTabAdapter.initialize(projectFile);
+                viewTabAdapter.n();
                 lastRefreshedProjectFile = projectFile;
                 viewDirty = false;
             }
@@ -805,6 +807,10 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
                 
                 if (currentTabId.equals("view")) {
                     if (bottomMenu != null && bottomMenu.findItem(7) != null) bottomMenu.findItem(7).setVisible(true);
+                    if (XmlSyncHelper.consumePendingViewRefresh(sc_id)) {
+                        viewDirty = true;
+                        lastRefreshedProjectFile = null;
+                    }
                     if (viewTabAdapter != null) {
                         viewTabAdapter.showHidePropertyView(true);
                         xmlLayoutOrientation.setImageResource(R.drawable.ic_mtrl_screen);
@@ -950,6 +956,10 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
 
         if (needReloadProjectData) {
             reloadProjectFromDisk();
+        } else if (XmlSyncHelper.consumePendingViewRefresh(sc_id)) {
+            viewDirty = true;
+            lastRefreshedProjectFile = null;
+            refresh();
         }
 
         isFirstLaunch = false;

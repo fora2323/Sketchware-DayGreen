@@ -269,7 +269,7 @@ public class EventsHandler {
             case "onActivityResult" -> "onActivityResult";
             case "initializeLogic" -> "initializeLogic";
             case "onCustomMethod" -> "Add custom code inside class";
-            case "onDestroyView" -> "On activity destroyed";
+            case "onDestroyView" -> "On fragment view destroyed";
             case "onRequestPermissionResult" -> "Shizuku onRequestPermissionResult";
             case "onRequestPermissionsResult" -> "On activity request permissions result";
             case "onSwipeRefreshLayout" -> "On SwipeRefreshLayout swipe";

@@ -72,7 +72,9 @@ public class ViewCodeEditorActivity extends BaseAppCompatActivity {
 
                         dialog.setPositiveButton(Helper.getResString(R.string.common_word_exit), (v, which) -> {
                             v.dismiss();
-                            exitWithEditedContent();
+                            if (isEdited) {
+                                setResult(RESULT_OK);
+                            }
                             finish();
                         });
 
@@ -81,7 +83,7 @@ public class ViewCodeEditorActivity extends BaseAppCompatActivity {
                         dialog.show();
                     } else {
                         if (isEdited) {
-                            exitWithEditedContent();
+                            setResult(RESULT_OK);
                             finish();
                             return;
                         }
@@ -253,14 +255,16 @@ public class ViewCodeEditorActivity extends BaseAppCompatActivity {
         try {
             if (isContentModified()) {
                 String title = getIntent().getStringExtra("title");
+                String updatedContent = editor.getText().toString();
                 if (title != null && title.endsWith(".xml")) {
-                    XmlSyncHelper.syncXml(this, sc_id, title, editor.getText().toString());
+                    XmlSyncHelper.syncXml(this, sc_id, title, updatedContent);
+                } else if (title != null) {
+                    syncLayoutContent(title, updatedContent);
                 }
 
-                content = editor.getText().toString();
-                if (!isEdited) {
-                    isEdited = true;
-                }
+                content = updatedContent;
+                isEdited = true;
+                setResult(RESULT_OK);
                 SketchwareUtil.toast("Saved");
             } else {
                 SketchwareUtil.toast("No changes to save");
@@ -275,26 +279,25 @@ public class ViewCodeEditorActivity extends BaseAppCompatActivity {
         return !content.equals(editor.getText().toString());
     }
 
-    private void exitWithEditedContent() {
-        String filename = getIntent().getStringExtra("title");
-        try {
-            var parser = new ViewBeanParser(content);
-            parser.setSkipRoot(true);
-            var parsedLayout = parser.parse();
-            var root = parser.getRootAttributes();
+    private void syncLayoutContent(String filename, String xmlText) throws Exception {
+        var parser = new ViewBeanParser(xmlText);
+        parser.setSkipRoot(true);
+        parser.setScId(sc_id);
+        var parsedLayout = parser.parse();
+        var root = parser.getRootAttributes();
+        if (root != null) {
             rootLayoutManager.set(filename, InjectRootLayoutManager.toRoot(root));
-            HistoryViewBean bean = new HistoryViewBean();
-            bean.actionOverride(parsedLayout, jC.a(sc_id).d(filename));
-            var cc = cC.c(sc_id);
-            if (!cc.c.containsKey(filename)) {
-                cc.e(filename);
-            }
-            cc.a(filename);
-            cc.a(filename, bean);
-            jC.a(sc_id).c.put(filename, parsedLayout);
-            setResult(RESULT_OK);
-        } catch (Exception e) {
-            SketchwareUtil.toastError(e.toString());
         }
+        HistoryViewBean bean = new HistoryViewBean();
+        bean.actionOverride(parsedLayout, jC.a(sc_id).d(filename));
+        var cc = cC.c(sc_id);
+        if (!cc.c.containsKey(filename)) {
+            cc.e(filename);
+        }
+        cc.a(filename);
+        cc.a(filename, bean);
+        jC.a(sc_id).c.put(filename, parsedLayout);
+        jC.a(sc_id).k();
+        XmlSyncHelper.markPendingViewRefresh(sc_id);
     }
 }

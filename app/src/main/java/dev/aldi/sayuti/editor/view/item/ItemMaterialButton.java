@@ -1,10 +1,11 @@
 package dev.aldi.sayuti.editor.view.item;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 
 import com.besome.sketch.beans.ViewBean;
 import com.besome.sketch.editor.view.ItemView;
@@ -17,7 +18,8 @@ public class ItemMaterialButton extends MaterialButton implements ItemView {
     private final Paint paint;
     private final float paddingFactor;
     private final Rect rect;
-    private final Drawable background;
+    private final ColorStateList defaultBackgroundTint;
+    private final ColorStateList defaultTextColors;
     private ViewBean viewBean;
     private boolean hasSelection;
     private boolean hasFixed;
@@ -28,10 +30,19 @@ public class ItemMaterialButton extends MaterialButton implements ItemView {
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(0x9599d5d0);
         rect = new Rect();
-        background = getBackground();
+        defaultBackgroundTint = getBackgroundTintList();
+        defaultTextColors = getTextColors();
 
         setDrawingCacheEnabled(true);
         setFocusable(false);
+    }
+
+    public ColorStateList getDefaultBackgroundTint() {
+        return defaultBackgroundTint;
+    }
+
+    public ColorStateList getDefaultTextColors() {
+        return defaultTextColors;
     }
 
     @Override
@@ -66,19 +77,21 @@ public class ItemMaterialButton extends MaterialButton implements ItemView {
 
     @Override
     public void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
         if (hasSelection) {
             rect.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
             canvas.drawRect(rect, paint);
         }
-        super.onDraw(canvas);
     }
 
     @Override
     public void setBackgroundColor(int color) {
         if (color == 0xffffff) {
-            setBackground(background);
+            setBackgroundTintList(defaultBackgroundTint);
+        } else if (color == 0) {
+            setBackgroundTintList(ColorStateList.valueOf(Color.TRANSPARENT));
         } else {
-            super.setBackgroundColor(color);
+            setBackgroundTintList(ColorStateList.valueOf(color));
         }
     }
 

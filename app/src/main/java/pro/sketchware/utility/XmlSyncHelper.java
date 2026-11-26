@@ -19,21 +19,42 @@ import pro.sketchware.tools.ViewBeanParser;
 
 public class XmlSyncHelper {
 
+    private static volatile String pendingRefreshScId = null;
+
+    public static boolean consumePendingViewRefresh(String scId) {
+        if (scId != null && scId.equals(pendingRefreshScId)) {
+            pendingRefreshScId = null;
+            return true;
+        }
+        return false;
+    }
+
+    public static void markPendingViewRefresh(String scId) {
+        if (scId != null && !scId.isEmpty()) {
+            pendingRefreshScId = scId;
+        }
+    }
+
     public static void syncXml(Context context, String scId, String fileName, String xmlContent) {
-        if (fileName.endsWith(".xml")) {
-            if (isLayoutFile(context, fileName)) {
+        if (fileName != null && fileName.endsWith(".xml")) {
+            if (isLayoutFile(scId, fileName)) {
                 syncLayout(scId, fileName, xmlContent);
             } else if (fileName.equals("strings.xml")) {
                 syncStrings(scId, xmlContent);
             } else if (fileName.equals("colors.xml")) {
                 syncColors(scId, xmlContent);
+            } else {
+                markPendingViewRefresh(scId);
             }
         }
     }
 
-    private static boolean isLayoutFile(Context context, String fileName) {
+    private static boolean isLayoutFile(String scId, String fileName) {
         try {
-            return jC.b(context.getSharedPreferences("hsce", Context.MODE_PRIVATE).getString("sc_id", "")).e().contains(fileName);
+            if (scId == null || scId.isEmpty() || fileName == null) {
+                return false;
+            }
+            return jC.b(scId).e().contains(fileName);
         } catch (Exception e) {
             return false;
         }
@@ -43,25 +64,27 @@ public class XmlSyncHelper {
         try {
             ViewBeanParser parser = new ViewBeanParser(xmlContent);
             parser.setSkipRoot(true);
+            parser.setScId(scId);
             ArrayList<ViewBean> parsedLayout = parser.parse();
             Pair<String, Map<String, String>> rootAttrs = parser.getRootAttributes();
-            
+
             if (rootAttrs != null) {
                 new InjectRootLayoutManager(scId).set(fileName, InjectRootLayoutManager.toRoot(rootAttrs));
             }
 
             HistoryViewBean bean = new HistoryViewBean();
             bean.actionOverride(parsedLayout, jC.a(scId).d(fileName));
-            
+
             cC cc = cC.c(scId);
             if (!cc.c.containsKey(fileName)) {
                 cc.e(fileName);
             }
             cc.a(fileName);
             cc.a(fileName, bean);
-            
+
             jC.a(scId).c.put(fileName, parsedLayout);
-            jC.a(scId).h(); 
+            jC.a(scId).k();
+            markPendingViewRefresh(scId);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -73,10 +96,7 @@ public class XmlSyncHelper {
             manager.sc_id = scId;
             ArrayList<HashMap<String, Object>> listMap = new ArrayList<>();
             manager.convertXmlStringsToListMap(xmlContent, listMap);
-            // manager.convertXmlStringsToListMap already handles saving to file
-            // We just need to make sure internal project data is updated if needed.
-            // jC.a(scId).h() usually saves everything.
-            jC.a(scId).h();
+            markPendingViewRefresh(scId);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -86,7 +106,7 @@ public class XmlSyncHelper {
         try {
             ColorsEditorManager manager = new ColorsEditorManager(scId);
             manager.parseColorsXML(manager.getResColorsList(), xmlContent);
-            jC.a(scId).h();
+            markPendingViewRefresh(scId);
         } catch (Exception e) {
             e.printStackTrace();
         }

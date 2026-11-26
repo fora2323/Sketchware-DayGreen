@@ -1,6 +1,7 @@
 package com.besome.sketch.editor.view;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -8,11 +9,13 @@ import android.graphics.NinePatch;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.NinePatchDrawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.ContextThemeWrapper;
 import android.view.Gravity;
 import android.view.View;
@@ -31,6 +34,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.appcompat.widget.AppCompatImageView;
+import androidx.core.widget.ImageViewCompat;
 
 import com.besome.sketch.beans.ImageBean;
 import com.besome.sketch.beans.LayoutBean;
@@ -138,8 +142,8 @@ public class ViewPane extends RelativeLayout {
     private String sc_id;
     private SvgUtils svgUtils;
     private ColorsEditorManager colorsEditorManager;
-    private int defaultTextColor = 0;
-    private int defaultHintColor = 0;
+    private final java.util.WeakHashMap<TextView, ColorStateList> defaultTextColors = new java.util.WeakHashMap<>();
+    private final java.util.WeakHashMap<EditText, ColorStateList> defaultHintColors = new java.util.WeakHashMap<>();
     private Material3LibraryManager material3LibraryManager;
     
     public static final boolean PREVIEW_CARD_ANDROID_BACKGROUND = false;
@@ -177,6 +181,7 @@ public class ViewPane extends RelativeLayout {
         if (rootLayout != null) {
             rootLayout.removeAllViews();
         }
+        invalidate();
     }
 
     public void removeFabView() {
@@ -193,6 +198,7 @@ public class ViewPane extends RelativeLayout {
         if (viewGroup instanceof ScrollContainer) {
             ((ScrollContainer) viewGroup).reindexChildren();
         }
+        invalidate();
     }
 
     public ItemView g(ViewBean viewBean) {
@@ -372,15 +378,10 @@ public class ViewPane extends RelativeLayout {
         }
         if (rootLayout != null) {
             removeView(rootLayout);
-        } else {
-            rootLayout = (ViewGroup) rootView;
         }
-        if (rootLayout instanceof ItemView sy) {
-            if (!currentBean.isEqual(sy.getBean())) {
-                rootLayout = (ViewGroup) rootView;
-            }
-        }
+        rootLayout = (ViewGroup) rootView;
         addView(rootLayout);
+        invalidate();
     }
 
     public void setPreviewRoot(View rootView) {
@@ -566,9 +567,9 @@ public class ViewPane extends RelativeLayout {
             }
             var elevation = injectHandler.getAttributeValueOf("elevation");
             if (!elevation.isEmpty()) {
-                view.setElevation(PropertiesUtil.resolveSize(elevation, 0));
+                view.setElevation(resolveAttrSizePx(elevation, 0f));
             }
-            view.setVisibility(VISIBLE);
+            applyVisibility(view, injectHandler);
             return;
         }
 
@@ -585,7 +586,7 @@ public class ViewPane extends RelativeLayout {
         }
         if (classInfo.a("TextView") && view instanceof TextView) {
             TextView textView = (TextView) view;
-            updateTextView(textView, viewBean);
+            updateTextView(textView, viewBean, injectHandler);
             if (!classInfo.b("Button") && !classInfo.b("Switch")) {
                 textView.setGravity(viewBean.layout.gravity);
             } else {
@@ -600,16 +601,19 @@ public class ViewPane extends RelativeLayout {
         if (classInfo.a("EditText") && view instanceof EditText) {
             updateEditText((EditText) view, viewBean);
         }
-        if (classInfo.a("ImageView") && view instanceof ImageView) {
-            if (resourcesManager != null && resourcesManager.h(viewBean.image.resName) == ProjectResourceBean.PROJECT_RES_TYPE_RESOURCE) {
-                ((ImageView) view).setImageResource(getContext().getResources().getIdentifier(viewBean.image.resName, "drawable", getContext().getPackageName()));
+        if (classInfo.a("ImageView") && view instanceof ImageView imageView) {
+            String injectSrc = injectHandler.getAttributeValueOf("src");
+            if (!injectSrc.isEmpty() && (PropertiesUtil.isHexColor(injectSrc) || injectSrc.startsWith("@color/") || injectSrc.startsWith("?") || injectSrc.startsWith("@android:color/"))) {
+                imageView.setImageDrawable(new ColorDrawable(resolveAttrColor(injectSrc, Color.TRANSPARENT)));
+            } else if (resourcesManager != null && resourcesManager.h(viewBean.image.resName) == ProjectResourceBean.PROJECT_RES_TYPE_RESOURCE) {
+                imageView.setImageResource(getContext().getResources().getIdentifier(viewBean.image.resName, "drawable", getContext().getPackageName()));
             } else if (viewBean.image.resName.equals("default_image")) {
-                ((ImageView) view).setImageResource(R.drawable.default_image);
+                imageView.setImageResource(R.drawable.default_image);
             } else {
                 try {
                     Drawable customD = DrawablePreviewRenderer.getDrawableFromProject(sc_id, viewBean.image.resName, 0, material3LibraryManager.canUseNightVariantColors());
                     if (customD != null) {
-                        ((ImageView) view).setImageDrawable(customD);
+                        imageView.setImageDrawable(customD);
                     } else if (resourcesManager != null) {
                         String imagelocation = resourcesManager.f(viewBean.image.resName);
                         File file = new File(imagelocation);
@@ -617,25 +621,31 @@ public class ViewPane extends RelativeLayout {
                             int round3 = Math.round(getResources().getDisplayMetrics().density / 2.0f);
                             if (imagelocation.endsWith(".xml")) {
                                 FilePathUtil fpu = new FilePathUtil();
-                                svgUtils.loadScaledSvgIntoImageView((ImageView) view, fpu.getSvgFullPath(sc_id, viewBean.image.resName), round3);
+                                svgUtils.loadScaledSvgIntoImageView(imageView, fpu.getSvgFullPath(sc_id, viewBean.image.resName), round3);
                             } else {
                                 Bitmap decodeFile3 = BitmapFactory.decodeFile(imagelocation);
-                                ((ImageView) view).setImageBitmap(Bitmap.createScaledBitmap(decodeFile3, decodeFile3.getWidth() * round3, decodeFile3.getHeight() * round3, true));
+                                imageView.setImageBitmap(Bitmap.createScaledBitmap(decodeFile3, decodeFile3.getWidth() * round3, decodeFile3.getHeight() * round3, true));
                             }
                         } else {
                             VectorDrawableLoader vectorDrawableLoader = new VectorDrawableLoader();
-                            vectorDrawableLoader.setImageVectorFromFile((ImageView) view, vectorDrawableLoader.getVectorFullPath(DesignActivity.sc_id, viewBean.image.resName));
+                            vectorDrawableLoader.setImageVectorFromFile(imageView, vectorDrawableLoader.getVectorFullPath(DesignActivity.sc_id, viewBean.image.resName));
                         }
                     }
                 } catch (Exception unused2) {
                     viewBean.image.resName = "default_image";
-                    ((ImageView) view).setImageResource(R.drawable.default_image);
+                    imageView.setImageResource(R.drawable.default_image);
                 }
+            }
+            String imageTint = injectHandler.getAttributeValueOf("tint");
+            if (!imageTint.isEmpty()) {
+                ImageViewCompat.setImageTintList(imageView, ColorStateList.valueOf(resolveAttrColor(imageTint, Color.TRANSPARENT)));
+            } else {
+                ImageViewCompat.setImageTintList(imageView, null);
             }
             if (classInfo.b("CircleImageView")) {
                 updateCircleImageView((ItemCircleImageView) view, injectHandler);
             } else {
-                ((ImageView) view).setScaleType(ImageView.ScaleType.valueOf(viewBean.image.scaleType));
+                imageView.setScaleType(ImageView.ScaleType.valueOf(viewBean.image.scaleType));
             }
         }
         if (classInfo.a("CompoundButton") && view instanceof CompoundButton) {
@@ -667,8 +677,8 @@ public class ViewPane extends RelativeLayout {
         if (classInfo.b("TabLayout") && view instanceof ItemTabLayout) {
             updateTabLayout((ItemTabLayout) view, injectHandler);
         }
-        if (classInfo.b("MaterialButton") && view instanceof ItemMaterialButton) {
-            updateMaterialButton((ItemMaterialButton) view, injectHandler);
+        if ((classInfo.b("MaterialButton") || view instanceof ItemMaterialButton) && view instanceof ItemMaterialButton) {
+            updateMaterialButton((ItemMaterialButton) view, viewBean, injectHandler);
         }
         if (classInfo.b("SignInButton") && view instanceof ItemSignInButton) {
             ItemSignInButton button = (ItemSignInButton) view;
@@ -715,9 +725,9 @@ public class ViewPane extends RelativeLayout {
         }
         var elevation = injectHandler.getAttributeValueOf("elevation");
         if (!elevation.isEmpty()) {
-            view.setElevation(PropertiesUtil.resolveSize(elevation, 0));
+            view.setElevation(resolveAttrSizePx(elevation, 0f));
         }
-        view.setVisibility(VISIBLE);
+        applyVisibility(view, injectHandler);
         if (view instanceof EditorListItem listItem) {
             String listitem = injectHandler.getAttributeValueOf("listitem");
             String itemCount = injectHandler.getAttributeValueOf("itemCount");
@@ -1095,6 +1105,7 @@ public class ViewPane extends RelativeLayout {
                 }
             }
         }
+        invalidate();
     }
 
     private int getActualParentType(View view, int defaultValue) {
@@ -1423,13 +1434,87 @@ public class ViewPane extends RelativeLayout {
         }
     }
 
+    private void applyVisibility(View view, InjectAttributeHandler handler) {
+        String visibility = handler.getAttributeValueOf("visibility");
+        if ("gone".equalsIgnoreCase(visibility)) {
+            view.setVisibility(View.GONE);
+        } else if ("invisible".equalsIgnoreCase(visibility)) {
+            view.setVisibility(View.INVISIBLE);
+        } else {
+            view.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private float resolveAttrSizePx(String rawValue, float defaultDp) {
+        if (rawValue == null || rawValue.trim().isEmpty()) {
+            return wB.a(getContext(), defaultDp);
+        }
+        String trimmed = rawValue.trim();
+        if (trimmed.startsWith("@dimen/")) {
+            String dimenVal = getXmlDimen(trimmed);
+            if (dimenVal != null && !dimenVal.equals(trimmed)) {
+                trimmed = dimenVal.trim();
+            } else {
+                return wB.a(getContext(), defaultDp);
+            }
+        }
+        var unit = PropertiesUtil.getUnitOrPrefix(trimmed);
+        if (unit != null) {
+            try {
+                float val = Float.parseFloat(unit.second);
+                String suffix = unit.first.toLowerCase();
+                if ("px".equals(suffix)) {
+                    return val;
+                } else if ("sp".equals(suffix)) {
+                    return TypedValue.applyDimension(
+                            TypedValue.COMPLEX_UNIT_SP, val, getResources().getDisplayMetrics());
+                } else {
+                    return wB.a(getContext(), val);
+                }
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        try {
+            return wB.a(getContext(), Float.parseFloat(trimmed));
+        } catch (NumberFormatException ignored) {
+            return wB.a(getContext(), defaultDp);
+        }
+    }
+
+    private int resolveAttrColor(String rawValue, int defaultColor) {
+        if (rawValue == null || rawValue.trim().isEmpty()) {
+            return defaultColor;
+        }
+        String trimmed = rawValue.trim();
+        if (PropertiesUtil.isHexColor(trimmed)) {
+            return PropertiesUtil.parseColor(trimmed);
+        }
+        if ("@android:color/transparent".equals(trimmed)) {
+            return Color.TRANSPARENT;
+        }
+        if (colorsEditorManager != null && (trimmed.startsWith("@color/") || trimmed.startsWith("?") || trimmed.startsWith("@android:color/"))) {
+            String resolved = colorsEditorManager.getColorValue(context, trimmed, 3, material3LibraryManager.canUseNightVariantColors());
+            if (resolved != null && !resolved.equals(colorsEditorManager.defaultHexColor)) {
+                try {
+                    return PropertiesUtil.parseColor(resolved);
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return defaultColor;
+    }
+
     private void updateTextView(TextView textView, ViewBean viewBean) {
+        updateTextView(textView, viewBean, new InjectAttributeHandler(viewBean));
+    }
+
+    private void updateTextView(TextView textView, ViewBean viewBean, InjectAttributeHandler injectHandler) {
         String str = viewBean.text.text;
         if (str != null && str.contains("\\n")) {
             str = viewBean.text.text.replaceAll("\\\\n", "\n");
         }
-        textView.setText(str.startsWith(stringsStart) ? getXmlString(str) : str);
-        String textFont = new InjectAttributeHandler(viewBean).getAttributeValueOf("fontFamily");
+        textView.setText(str != null && str.startsWith(stringsStart) ? getXmlString(str) : str);
+        String textFont = injectHandler.getAttributeValueOf("fontFamily");
         if (textFont != null && !textFont.isEmpty()) {
             if (textFont.startsWith("@font/")) {
                 textFont = textFont.substring(6);
@@ -1443,20 +1528,34 @@ public class ViewPane extends RelativeLayout {
                                 : null,
                         viewBean.text.textType);
             } else {
-                textView.setTypeface(null, viewBean.text.textType);
+                Typeface baseTypeface = switch (textFont) {
+                    case "sans-serif-medium" -> Typeface.create("sans-serif-medium", viewBean.text.textType);
+                    case "sans-serif-light" -> Typeface.create("sans-serif-light", viewBean.text.textType);
+                    case "sans-serif-condensed" -> Typeface.create("sans-serif-condensed", viewBean.text.textType);
+                    case "serif" -> Typeface.SERIF;
+                    case "monospace" -> Typeface.MONOSPACE;
+                    case "sans-serif" -> Typeface.SANS_SERIF;
+                    default -> Typeface.create(textFont, viewBean.text.textType);
+                };
+                textView.setTypeface(baseTypeface, viewBean.text.textType);
             }
         } else {
             textView.setTypeface(null, viewBean.text.textType);
         }
-        if (defaultTextColor == 0) {
-            defaultTextColor = textView.getTextColors().getDefaultColor();
+        if (!defaultTextColors.containsKey(textView)) {
+            defaultTextColors.put(textView, textView.getTextColors());
         }
         if (viewBean.text.resTextColor == null) {
-            textView.setTextColor(
-                    viewBean.text.textColor == 0xffffff ? defaultTextColor : viewBean.text.textColor
-            );
+            if (viewBean.text.textColor == 0xffffff) {
+                ColorStateList defColors = defaultTextColors.get(textView);
+                if (defColors != null) {
+                    textView.setTextColor(defColors);
+                }
+            } else {
+                textView.setTextColor(viewBean.text.textColor);
+            }
         } else {
-            textView.setTextColor(PropertiesUtil.parseColor(colorsEditorManager.getColorValue(context, viewBean.text.resTextColor, 3, material3LibraryManager.canUseNightVariantColors())));
+            textView.setTextColor(resolveAttrColor(viewBean.text.resTextColor, textView.getCurrentTextColor()));
         }
         if (viewBean.text.resTextSize != null && !viewBean.text.resTextSize.isEmpty()) {
             try {
@@ -1469,8 +1568,43 @@ public class ViewPane extends RelativeLayout {
         } else {
             textView.setTextSize(viewBean.text.textSize);
         }
-        textView.setLines(viewBean.text.line);
         textView.setSingleLine(viewBean.text.singleLine != 0);
+        if (viewBean.text.line > 0) {
+            textView.setLines(viewBean.text.line);
+        }
+
+        String textAllCaps = injectHandler.getAttributeValueOf("textAllCaps");
+        if (!textAllCaps.isEmpty()) {
+            textView.setAllCaps(Boolean.parseBoolean(textAllCaps));
+        }
+        String maxLines = injectHandler.getAttributeValueOf("maxLines");
+        if (!maxLines.isEmpty()) {
+            try {
+                textView.setMaxLines(Integer.parseInt(maxLines));
+            } catch (NumberFormatException ignored) {}
+        }
+        String minLines = injectHandler.getAttributeValueOf("minLines");
+        if (!minLines.isEmpty()) {
+            try {
+                textView.setMinLines(Integer.parseInt(minLines));
+            } catch (NumberFormatException ignored) {}
+        }
+        String letterSpacing = injectHandler.getAttributeValueOf("letterSpacing");
+        if (!letterSpacing.isEmpty()) {
+            try {
+                textView.setLetterSpacing(Float.parseFloat(letterSpacing));
+            } catch (NumberFormatException ignored) {}
+        }
+        String ellipsize = injectHandler.getAttributeValueOf("ellipsize");
+        if (!ellipsize.isEmpty()) {
+            textView.setEllipsize(switch (ellipsize) {
+                case "start" -> TextUtils.TruncateAt.START;
+                case "middle" -> TextUtils.TruncateAt.MIDDLE;
+                case "end" -> TextUtils.TruncateAt.END;
+                case "marquee" -> TextUtils.TruncateAt.MARQUEE;
+                default -> null;
+            });
+        }
     }
 
     public String getXmlString(String key) {
@@ -1521,16 +1655,21 @@ public class ViewPane extends RelativeLayout {
 
     private void updateEditText(EditText editText, ViewBean viewBean) {
         String str = viewBean.text.hint;
-        editText.setHint(str.startsWith(stringsStart) ? getXmlString(str) : str);
-        if (defaultHintColor == 0) {
-            defaultHintColor = editText.getHintTextColors().getDefaultColor();
+        editText.setHint(str != null && str.startsWith(stringsStart) ? getXmlString(str) : str);
+        if (!defaultHintColors.containsKey(editText)) {
+            defaultHintColors.put(editText, editText.getHintTextColors());
         }
         if (viewBean.text.resHintColor == null) {
-            editText.setHintTextColor(
-                    viewBean.text.hintColor == 0xffffff ? defaultHintColor : viewBean.text.hintColor
-            );
+            if (viewBean.text.hintColor == 0xffffff) {
+                ColorStateList defHint = defaultHintColors.get(editText);
+                if (defHint != null) {
+                    editText.setHintTextColor(defHint);
+                }
+            } else {
+                editText.setHintTextColor(viewBean.text.hintColor);
+            }
         } else {
-            editText.setHintTextColor(PropertiesUtil.parseColor(colorsEditorManager.getColorValue(context, viewBean.text.resHintColor, 3, material3LibraryManager.canUseNightVariantColors())));
+            editText.setHintTextColor(resolveAttrColor(viewBean.text.resHintColor, editText.getCurrentHintTextColor()));
         }
     }
 
@@ -1545,19 +1684,19 @@ public class ViewPane extends RelativeLayout {
 
         if (cardBackgroundColor.isEmpty()) {
             if (bean.layout.backgroundResColor == null) {
-                cardView.setCardBackgroundColor(bean.layout.backgroundColor);
+                cardView.setBackgroundColor(bean.layout.backgroundColor);
             } else {
-                cardView.setCardBackgroundColor(PropertiesUtil.parseColor(colorsEditorManager.getColorValue(context, bean.layout.backgroundResColor, 3, material3LibraryManager.canUseNightVariantColors())));
+                cardView.setCardBackgroundColor(resolveAttrColor(bean.layout.backgroundResColor, Color.WHITE));
             }
         } else {
-            cardView.setCardBackgroundColor(PropertiesUtil.parseColor(colorsEditorManager.getColorValue(context, cardBackgroundColor, 3, material3LibraryManager.canUseNightVariantColors())));
+            cardView.setCardBackgroundColor(resolveAttrColor(cardBackgroundColor, Color.WHITE));
         }
-        
-        cardView.setCardElevation(PropertiesUtil.resolveSize(cardElevation, 2));
-        cardView.setRadius(PropertiesUtil.resolveSize(cardCornerRadius, bean.convert.contains("Material") ? 12 : 0));
+
+        cardView.setCardElevation(resolveAttrSizePx(cardElevation, 2f));
+        cardView.setRadius(resolveAttrSizePx(cardCornerRadius, bean.convert.contains("Material") ? 12f : 0f));
         cardView.setUseCompatPadding(Boolean.parseBoolean(TextUtils.isEmpty(compatPadding) ? "false" : compatPadding));
-        cardView.setStrokeWidth(PropertiesUtil.resolveSize(strokeWidth, 0));
-        cardView.setStrokeColor(PropertiesUtil.isHexColor(strokeColor) ? PropertiesUtil.parseColor(strokeColor) : Color.TRANSPARENT);
+        cardView.setStrokeWidth(Math.round(resolveAttrSizePx(strokeWidth, 0f)));
+        cardView.setStrokeColor(resolveAttrColor(strokeColor, Color.TRANSPARENT));
     }
 
     private void updateCircleImageView(ItemCircleImageView imageView, InjectAttributeHandler handler) {
@@ -1566,9 +1705,9 @@ public class ViewPane extends RelativeLayout {
         String borderWidth = handler.getAttributeValueOf("civ_border_width");
         String borderOverlay = handler.getAttributeValueOf("civ_border_overlay");
 
-        imageView.setBorderColor(PropertiesUtil.isHexColor(borderColor) ? PropertiesUtil.parseColor(borderColor) : 0xff008dcd);
-        imageView.setCircleBackgroundColor(PropertiesUtil.isHexColor(backgroundColor) ? PropertiesUtil.parseColor(backgroundColor) : 0xff008dcd);
-        imageView.setBorderWidth(PropertiesUtil.resolveSize(borderWidth, 3));
+        imageView.setBorderColor(resolveAttrColor(borderColor, 0xff008dcd));
+        imageView.setCircleBackgroundColor(resolveAttrColor(backgroundColor, 0xff008dcd));
+        imageView.setBorderWidth(Math.round(resolveAttrSizePx(borderWidth, 3f)));
         imageView.setBorderOverlay(Boolean.parseBoolean(TextUtils.isEmpty(borderOverlay) ? "false" : borderOverlay));
     }
 
@@ -1590,18 +1729,130 @@ public class ViewPane extends RelativeLayout {
             case "scrollable" -> TabLayout.MODE_SCROLLABLE;
             default -> TabLayout.MODE_FIXED;
         });
-        tabLayout.setSelectedTabIndicatorHeight(PropertiesUtil.resolveSize(indicatorHeight, 3));
-        tabLayout.setSelectedTabIndicatorColor(PropertiesUtil.isHexColor(indicatorColor) ? PropertiesUtil.parseColor(indicatorColor) : 0xffffc107);
-        int tabTextColor = PropertiesUtil.isHexColor(textColor) ? PropertiesUtil.parseColor(textColor) : 0xff57beee;
-        int tabSelectedTextColor = PropertiesUtil.isHexColor(selectedTextColor) ? PropertiesUtil.parseColor(selectedTextColor) : Color.WHITE;
+        tabLayout.setSelectedTabIndicatorHeight(Math.round(resolveAttrSizePx(indicatorHeight, 3f)));
+        tabLayout.setSelectedTabIndicatorColor(resolveAttrColor(indicatorColor, 0xffffc107));
+        int tabTextColor = resolveAttrColor(textColor, 0xff57beee);
+        int tabSelectedTextColor = resolveAttrColor(selectedTextColor, Color.WHITE);
         tabLayout.setTabTextColors(tabTextColor, tabSelectedTextColor);
     }
 
-    private void updateMaterialButton(ItemMaterialButton materialButton, InjectAttributeHandler handler) {
+    private void updateMaterialButton(ItemMaterialButton materialButton, ViewBean viewBean, InjectAttributeHandler handler) {
+        String style = handler.getAttributeValueOf("style");
         String radius = handler.getAttributeValueOf("cornerRadius");
         String stroke = handler.getAttributeValueOf("strokeWidth");
-        materialButton.setStrokeWidth(PropertiesUtil.resolveSize(stroke, 0));
-        materialButton.setCornerRadius(PropertiesUtil.resolveSize(radius, 8));
+        String strokeColor = handler.getAttributeValueOf("strokeColor");
+        String backgroundTint = handler.getAttributeValueOf("backgroundTint");
+        String rippleColor = handler.getAttributeValueOf("rippleColor");
+        String icon = handler.getAttributeValueOf("icon");
+        String iconTint = handler.getAttributeValueOf("iconTint");
+        String iconSize = handler.getAttributeValueOf("iconSize");
+        String iconPadding = handler.getAttributeValueOf("iconPadding");
+        String iconGravity = handler.getAttributeValueOf("iconGravity");
+
+        boolean hasExplicitBg = viewBean.layout.backgroundColor != 0xffffff
+                || viewBean.layout.backgroundResColor != null
+                || !backgroundTint.isEmpty();
+        boolean hasExplicitTextColor = viewBean.text.textColor != 0xffffff
+                || viewBean.text.resTextColor != null;
+
+        if (!style.isEmpty()) {
+            if (style.contains("OutlinedButton")) {
+                if (!hasExplicitBg) {
+                    materialButton.setBackgroundTintList(ColorStateList.valueOf(Color.TRANSPARENT));
+                }
+                if (stroke.isEmpty()) {
+                    materialButton.setStrokeWidth(Math.round(wB.a(getContext(), 1f)));
+                }
+                if (strokeColor.isEmpty()) {
+                    materialButton.setStrokeColor(ColorStateList.valueOf(ThemeUtils.getColor(context, R.attr.colorOutline)));
+                }
+                if (!hasExplicitTextColor) {
+                    materialButton.setTextColor(ThemeUtils.getColor(context, R.attr.colorPrimary));
+                }
+            } else if (style.contains("TextButton")) {
+                if (!hasExplicitBg) {
+                    materialButton.setBackgroundTintList(ColorStateList.valueOf(Color.TRANSPARENT));
+                }
+                if (stroke.isEmpty()) {
+                    materialButton.setStrokeWidth(0);
+                }
+                if (!hasExplicitTextColor) {
+                    materialButton.setTextColor(ThemeUtils.getColor(context, R.attr.colorPrimary));
+                }
+            } else if (style.contains("TonalButton")) {
+                if (!hasExplicitBg) {
+                    materialButton.setBackgroundTintList(ColorStateList.valueOf(ThemeUtils.getColor(context, R.attr.colorSecondaryContainer)));
+                }
+                if (!hasExplicitTextColor) {
+                    materialButton.setTextColor(ThemeUtils.getColor(context, R.attr.colorOnSecondaryContainer));
+                }
+            } else if (style.contains("ElevatedButton")) {
+                if (!hasExplicitBg) {
+                    materialButton.setBackgroundTintList(ColorStateList.valueOf(ThemeUtils.getColor(context, R.attr.colorSurfaceContainerLow)));
+                }
+                if (!hasExplicitTextColor) {
+                    materialButton.setTextColor(ThemeUtils.getColor(context, R.attr.colorPrimary));
+                }
+                if (handler.getAttributeValueOf("elevation").isEmpty()) {
+                    materialButton.setElevation(wB.a(getContext(), 2f));
+                }
+            }
+        } else if (!hasExplicitBg) {
+            materialButton.setBackgroundTintList(materialButton.getDefaultBackgroundTint());
+        }
+
+        if (!backgroundTint.isEmpty()) {
+            materialButton.setBackgroundTintList(ColorStateList.valueOf(resolveAttrColor(backgroundTint, Color.TRANSPARENT)));
+        }
+        if (!stroke.isEmpty()) {
+            materialButton.setStrokeWidth(Math.round(resolveAttrSizePx(stroke, 0f)));
+        } else if (!style.contains("OutlinedButton")) {
+            materialButton.setStrokeWidth(0);
+        }
+        if (!strokeColor.isEmpty()) {
+            materialButton.setStrokeColor(ColorStateList.valueOf(resolveAttrColor(strokeColor, Color.TRANSPARENT)));
+        }
+        materialButton.setCornerRadius(Math.round(resolveAttrSizePx(radius, 8f)));
+        if (!rippleColor.isEmpty()) {
+            materialButton.setRippleColor(ColorStateList.valueOf(resolveAttrColor(rippleColor, Color.TRANSPARENT)));
+        }
+
+        if (!icon.isEmpty()) {
+            String drawableName = PropertiesUtil.parseReferName(icon, "/");
+            Drawable iconDrawable = null;
+            if (drawableName != null && !drawableName.isEmpty()) {
+                int builtInId = getContext().getResources().getIdentifier(drawableName, "drawable", getContext().getPackageName());
+                if (builtInId != 0) {
+                    iconDrawable = AppCompatResources.getDrawable(getContext(), builtInId);
+                } else {
+                    iconDrawable = DrawablePreviewRenderer.getDrawableFromProject(sc_id, drawableName, 0, material3LibraryManager.canUseNightVariantColors());
+                }
+            }
+            materialButton.setIcon(iconDrawable);
+        } else {
+            materialButton.setIcon(null);
+        }
+        if (!iconTint.isEmpty()) {
+            materialButton.setIconTint(ColorStateList.valueOf(resolveAttrColor(iconTint, materialButton.getCurrentTextColor())));
+        } else {
+            materialButton.setIconTint(materialButton.getTextColors());
+        }
+        if (!iconSize.isEmpty()) {
+            materialButton.setIconSize(Math.round(resolveAttrSizePx(iconSize, 18f)));
+        }
+        if (!iconPadding.isEmpty()) {
+            materialButton.setIconPadding(Math.round(resolveAttrSizePx(iconPadding, 8f)));
+        }
+        if (!iconGravity.isEmpty()) {
+            materialButton.setIconGravity(switch (iconGravity) {
+                case "start" -> com.google.android.material.button.MaterialButton.ICON_GRAVITY_START;
+                case "end" -> com.google.android.material.button.MaterialButton.ICON_GRAVITY_END;
+                case "textEnd" -> com.google.android.material.button.MaterialButton.ICON_GRAVITY_TEXT_END;
+                case "top" -> com.google.android.material.button.MaterialButton.ICON_GRAVITY_TOP;
+                case "textTop" -> com.google.android.material.button.MaterialButton.ICON_GRAVITY_TEXT_TOP;
+                default -> com.google.android.material.button.MaterialButton.ICON_GRAVITY_TEXT_START;
+            });
+        }
     }
 
     private String extractAttrValue(String line, String attribute) {

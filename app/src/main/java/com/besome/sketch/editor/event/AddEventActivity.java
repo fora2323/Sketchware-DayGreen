@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Set;
 
 import extensions.anbui.daydream.library.DRFeatureManager;
+import extensions.anbui.daydream.settings.DayDreamProjectSettings;
 
 import a.a.a.Ox;
 import a.a.a.bB;
@@ -107,7 +108,11 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 		addableEtcEvents.clear();
 		eventsToAdd.clear();
 		
+		boolean isFragment = isFragmentFile();
 		for (var activityEvent : oq.getAllActivityEvents()) {
+			if (!isFragment && "onDestroyView".equals(activityEvent)) {
+				continue;
+			}
 			boolean exists = false;
 			for (var existingEvent : jC.a(sc_id).g(projectFile.getJavaName())) {
 				if (existingEvent.eventType == EventBean.EVENT_TYPE_ACTIVITY && activityEvent.equals(existingEvent.eventName)) {
@@ -215,6 +220,15 @@ public class AddEventActivity extends BaseAppCompatActivity implements View.OnCl
 		if (eventAdapter != null) {
 			eventAdapter.notifyDataSetChanged();
 		}
+	}
+
+	private boolean isFragmentFile() {
+		if (projectFile == null) {
+			return false;
+		}
+		return projectFile.fileType == ProjectFileBean.PROJECT_FILE_TYPE_FRAGMENT
+				|| (projectFile.fileName != null && projectFile.fileName.contains("_fragment"))
+				|| DayDreamProjectSettings.getActivityType(sc_id, projectFile.fileName).contains("_fragment");
 	}
 	
 	@Override

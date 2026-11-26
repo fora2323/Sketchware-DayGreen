@@ -22,6 +22,7 @@ public class ItemCardView extends MaterialCardView implements ItemView, ScrollCo
     private boolean isSelected;
     private boolean isFixed;
     private Paint paint;
+    private android.content.res.ColorStateList defaultCardBgColor;
 
     public ItemCardView(Context context) {
         super(context);
@@ -44,6 +45,7 @@ public class ItemCardView extends MaterialCardView implements ItemView, ScrollCo
         setMinimumWidth((int) wB.a(context, 32.0f));
         setMinimumHeight((int) wB.a(context, 32.0f));
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        defaultCardBgColor = getCardBackgroundColor();
     }
 
     @Override
@@ -102,7 +104,11 @@ public class ItemCardView extends MaterialCardView implements ItemView, ScrollCo
 
     @Override
     public void setBackgroundColor(int color) {
-        super.setCardBackgroundColor(color == 0x00FFFFFF ? 0xFFFFFFFF : color);
+        if (color == 0x00FFFFFF) {
+            super.setCardBackgroundColor(defaultCardBgColor);
+        } else {
+            super.setCardBackgroundColor(color);
+        }
     }
 
     @Override

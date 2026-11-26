@@ -71,6 +71,8 @@ public class ViewBeanFactory {
                 var size = resolveDimenSize(width);
                 if (size != null) {
                     layoutBean.width = Integer.parseInt(size);
+                } else if (width.startsWith("@dimen/")) {
+                    layoutBean.resWidth = width;
                 } else {
                     injectAttributes.put("android:layout_width", width);
                 }
@@ -86,6 +88,8 @@ public class ViewBeanFactory {
                 var size = resolveDimenSize(height);
                 if (size != null) {
                     layoutBean.height = Integer.parseInt(size);
+                } else if (height.startsWith("@dimen/")) {
+                    layoutBean.resHeight = height;
                 } else {
                     injectAttributes.put("android:layout_height", height);
                 }
@@ -106,18 +110,26 @@ public class ViewBeanFactory {
         var weight = attributes.getOrDefault("android:layout_weight", null);
         if (weight != null) {
             try {
-                layoutBean.weight = Integer.parseInt(weight);
+                layoutBean.weight = (int) Float.parseFloat(weight);
             } catch (Exception e) {
-                injectAttributes.put("android:layout_weight", weight);
+                if (weight.startsWith("@dimen/")) {
+                    layoutBean.resWeight = weight;
+                } else {
+                    injectAttributes.put("android:layout_weight", weight);
+                }
             }
         }
 
         var weightSum = attributes.getOrDefault("android:weightSum", null);
         if (weightSum != null) {
             try {
-                layoutBean.weightSum = Integer.parseInt(weightSum);
+                layoutBean.weightSum = (int) Float.parseFloat(weightSum);
             } catch (Exception e) {
-                injectAttributes.put("android:weightSum", weightSum);
+                if (weightSum.startsWith("@dimen/")) {
+                    layoutBean.resWeightSum = weightSum;
+                } else {
+                    injectAttributes.put("android:weightSum", weightSum);
+                }
             }
         }
         applyView(attributes, injectAttributes);
@@ -143,7 +155,12 @@ public class ViewBeanFactory {
         for (Map.Entry<String, String> entry : attributes.entrySet()) {
             var attrName = entry.getKey();
             var attrValue = entry.getValue();
-            if (attrName.equals("app:backgroundTint") && bean.getClassInfo().b("MaterialButton")) {
+            if (attrName.equals("app:backgroundTint") && isMaterialButton()) {
+                continue;
+            }
+            if (attrName.equals("app:srcCompat") && bean.getClassInfo().a("ImageView")
+                    && attributes.get("android:src") == null
+                    && attrValue != null && attrValue.startsWith("@drawable/")) {
                 continue;
             }
             
@@ -381,6 +398,27 @@ public class ViewBeanFactory {
         }
     }
 
+    private boolean isMaterialButton() {
+        return bean.getClassInfo().b("MaterialButton")
+                || (bean.convert != null && bean.convert.endsWith("MaterialButton"));
+    }
+
+    private void assignDimenOrRes(String attrName, String rawValue, java.util.function.IntConsumer intConsumer, java.util.function.Consumer<String> resConsumer, Map<String, String> injectAttributes) {
+        if (rawValue == null) return;
+        var size = resolveDimenSize(rawValue);
+        if (size != null) {
+            try {
+                intConsumer.accept(Integer.parseInt(size));
+                return;
+            } catch (NumberFormatException ignored) {}
+        }
+        if (rawValue.startsWith("@dimen/")) {
+            resConsumer.accept(rawValue);
+        } else {
+            injectAttributes.put(attrName, rawValue);
+        }
+    }
+
     private void applyPadding(Map<String, String> attributes, Map<String, String> injectAttributes) {
         if (resourceResolver != null) {
             applyPaddingPreview(attributes, injectAttributes);
@@ -390,23 +428,56 @@ public class ViewBeanFactory {
         var bean = this.bean.layout;
         String padding = attributes.getOrDefault("android:padding", null);
         if (padding != null) {
-            int paddingValue = getDimen("android:padding", attributes, injectAttributes);
-            if (paddingValue > -1) {
-                bean.paddingLeft = paddingValue;
-                bean.paddingTop = paddingValue;
-                bean.paddingRight = paddingValue;
-                bean.paddingBottom = paddingValue;
-            }
+            assignDimenOrRes("android:padding", padding, v -> {
+                bean.paddingLeft = v;
+                bean.paddingTop = v;
+                bean.paddingRight = v;
+                bean.paddingBottom = v;
+            }, res -> {
+                bean.resPaddingLeft = res;
+                bean.resPaddingTop = res;
+                bean.resPaddingRight = res;
+                bean.resPaddingBottom = res;
+            }, injectAttributes);
         } else {
-            int paddingLeft = getDimen("android:paddingLeft", attributes, injectAttributes);
-            int paddingTop = getDimen("android:paddingTop", attributes, injectAttributes);
-            int paddingRight = getDimen("android:paddingRight", attributes, injectAttributes);
-            int paddingBottom = getDimen("android:paddingBottom", attributes, injectAttributes);
-
-            if (paddingLeft > -1) bean.paddingLeft = paddingLeft;
-            if (paddingTop > -1) bean.paddingTop = paddingTop;
-            if (paddingRight > -1) bean.paddingRight = paddingRight;
-            if (paddingBottom > -1) bean.paddingBottom = paddingBottom;
+            String paddingH = attributes.getOrDefault("android:paddingHorizontal", null);
+            if (paddingH != null) {
+                assignDimenOrRes("android:paddingHorizontal", paddingH, v -> {
+                    bean.paddingLeft = v;
+                    bean.paddingRight = v;
+                }, res -> {
+                    bean.resPaddingLeft = res;
+                    bean.resPaddingRight = res;
+                }, injectAttributes);
+            }
+            String paddingV = attributes.getOrDefault("android:paddingVertical", null);
+            if (paddingV != null) {
+                assignDimenOrRes("android:paddingVertical", paddingV, v -> {
+                    bean.paddingTop = v;
+                    bean.paddingBottom = v;
+                }, res -> {
+                    bean.resPaddingTop = res;
+                    bean.resPaddingBottom = res;
+                }, injectAttributes);
+            }
+            String leftAttr = attributes.containsKey("android:paddingLeft") ? "android:paddingLeft" : "android:paddingStart";
+            String leftVal = attributes.getOrDefault(leftAttr, null);
+            if (leftVal != null) {
+                assignDimenOrRes(leftAttr, leftVal, v -> bean.paddingLeft = v, res -> bean.resPaddingLeft = res, injectAttributes);
+            }
+            String topVal = attributes.getOrDefault("android:paddingTop", null);
+            if (topVal != null) {
+                assignDimenOrRes("android:paddingTop", topVal, v -> bean.paddingTop = v, res -> bean.resPaddingTop = res, injectAttributes);
+            }
+            String rightAttr = attributes.containsKey("android:paddingRight") ? "android:paddingRight" : "android:paddingEnd";
+            String rightVal = attributes.getOrDefault(rightAttr, null);
+            if (rightVal != null) {
+                assignDimenOrRes(rightAttr, rightVal, v -> bean.paddingRight = v, res -> bean.resPaddingRight = res, injectAttributes);
+            }
+            String bottomVal = attributes.getOrDefault("android:paddingBottom", null);
+            if (bottomVal != null) {
+                assignDimenOrRes("android:paddingBottom", bottomVal, v -> bean.paddingBottom = v, res -> bean.resPaddingBottom = res, injectAttributes);
+            }
         }
 
         String contentPadding = attributes.getOrDefault("app:contentPadding", null);
@@ -487,23 +558,56 @@ public class ViewBeanFactory {
         var bean = this.bean.layout;
         String margin = attributes.getOrDefault("android:layout_margin", null);
         if (margin != null) {
-            int marginValue = getDimen("android:layout_margin", attributes, injectAttributes);
-            if (marginValue > -1) {
-                bean.marginLeft = marginValue;
-                bean.marginTop = marginValue;
-                bean.marginRight = marginValue;
-                bean.marginBottom = marginValue;
-            }
+            assignDimenOrRes("android:layout_margin", margin, v -> {
+                bean.marginLeft = v;
+                bean.marginTop = v;
+                bean.marginRight = v;
+                bean.marginBottom = v;
+            }, res -> {
+                bean.resMarginLeft = res;
+                bean.resMarginTop = res;
+                bean.resMarginRight = res;
+                bean.resMarginBottom = res;
+            }, injectAttributes);
         } else {
-            int marginLeft = getDimen("android:layout_marginLeft", attributes, injectAttributes);
-            int marginTop = getDimen("android:layout_marginTop", attributes, injectAttributes);
-            int marginRight = getDimen("android:layout_marginRight", attributes, injectAttributes);
-            int marginBottom = getDimen("android:layout_marginBottom", attributes, injectAttributes);
-
-            if (marginLeft > -1) bean.marginLeft = marginLeft;
-            if (marginTop > -1) bean.marginTop = marginTop;
-            if (marginRight > -1) bean.marginRight = marginRight;
-            if (marginBottom > -1) bean.marginBottom = marginBottom;
+            String marginH = attributes.getOrDefault("android:layout_marginHorizontal", null);
+            if (marginH != null) {
+                assignDimenOrRes("android:layout_marginHorizontal", marginH, v -> {
+                    bean.marginLeft = v;
+                    bean.marginRight = v;
+                }, res -> {
+                    bean.resMarginLeft = res;
+                    bean.resMarginRight = res;
+                }, injectAttributes);
+            }
+            String marginV = attributes.getOrDefault("android:layout_marginVertical", null);
+            if (marginV != null) {
+                assignDimenOrRes("android:layout_marginVertical", marginV, v -> {
+                    bean.marginTop = v;
+                    bean.marginBottom = v;
+                }, res -> {
+                    bean.resMarginTop = res;
+                    bean.resMarginBottom = res;
+                }, injectAttributes);
+            }
+            String leftAttr = attributes.containsKey("android:layout_marginLeft") ? "android:layout_marginLeft" : "android:layout_marginStart";
+            String leftVal = attributes.getOrDefault(leftAttr, null);
+            if (leftVal != null) {
+                assignDimenOrRes(leftAttr, leftVal, v -> bean.marginLeft = v, res -> bean.resMarginLeft = res, injectAttributes);
+            }
+            String topVal = attributes.getOrDefault("android:layout_marginTop", null);
+            if (topVal != null) {
+                assignDimenOrRes("android:layout_marginTop", topVal, v -> bean.marginTop = v, res -> bean.resMarginTop = res, injectAttributes);
+            }
+            String rightAttr = attributes.containsKey("android:layout_marginRight") ? "android:layout_marginRight" : "android:layout_marginEnd";
+            String rightVal = attributes.getOrDefault(rightAttr, null);
+            if (rightVal != null) {
+                assignDimenOrRes(rightAttr, rightVal, v -> bean.marginRight = v, res -> bean.resMarginRight = res, injectAttributes);
+            }
+            String bottomVal = attributes.getOrDefault("android:layout_marginBottom", null);
+            if (bottomVal != null) {
+                assignDimenOrRes("android:layout_marginBottom", bottomVal, v -> bean.marginBottom = v, res -> bean.resMarginBottom = res, injectAttributes);
+            }
         }
     }
 
@@ -557,7 +661,10 @@ public class ViewBeanFactory {
         var background = attributes.getOrDefault("android:background", null);
         applyBackground("android:background", background, injectAttributes);
         var cardBackgroundColor = attributes.getOrDefault("app:cardBackgroundColor", null);
-        if (bean.getClassInfo().b("MaterialButton")) {
+        if (cardBackgroundColor != null) {
+            applyBackground("app:cardBackgroundColor", cardBackgroundColor, injectAttributes);
+        }
+        if (isMaterialButton()) {
             var backgroundTint = attributes.getOrDefault("app:backgroundTint", null);
             applyBackground("app:backgroundTint", backgroundTint, injectAttributes);
         }
@@ -570,9 +677,19 @@ public class ViewBeanFactory {
             bean.text = text;
         }
 
-        var textSize = getDimen("android:textSize", attributes, injectAttributes);
-        if (textSize > 0) {
-            bean.textSize = textSize;
+        var rawTextSize = attributes.getOrDefault("android:textSize", null);
+        if (rawTextSize != null) {
+            var sizeStr = resolveDimenSize(rawTextSize);
+            if (sizeStr != null) {
+                try {
+                    int textSize = Integer.parseInt(sizeStr);
+                    if (textSize > 0) bean.textSize = textSize;
+                } catch (NumberFormatException ignored) {}
+            } else if (rawTextSize.startsWith("@dimen/")) {
+                bean.resTextSize = rawTextSize;
+            } else {
+                injectAttributes.put("android:textSize", rawTextSize);
+            }
         }
 
         var textStyle = attributes.getOrDefault("android:textStyle", null);
@@ -587,7 +704,7 @@ public class ViewBeanFactory {
         if (textColor != null) {
             if (PropertiesUtil.isHexColor(textColor)) {
                 bean.textColor = PropertiesUtil.parseColor(textColor);
-            } else if (textColor.startsWith("@color/") || textColor.startsWith("?")) {
+            } else if (textColor.startsWith("@color/") || textColor.startsWith("?") || textColor.startsWith("@android:color/")) {
                 bean.resTextColor = textColor;
             } else {
                 injectAttributes.put("android:textColor", textColor);
@@ -604,7 +721,7 @@ public class ViewBeanFactory {
                 if (hintColor != null) {
                     if (PropertiesUtil.isHexColor(hintColor)) {
                         bean.hintColor = PropertiesUtil.parseColor(hintColor);
-                    } else if (hintColor.startsWith("@color/") || hintColor.startsWith("?")) {
+                    } else if (hintColor.startsWith("@color/") || hintColor.startsWith("?") || hintColor.startsWith("@android:color/")) {
                         bean.resHintColor = hintColor;
                     } else {
                         injectAttributes.put("android:textColorHint", hintColor);
@@ -675,6 +792,12 @@ public class ViewBeanFactory {
     private void applyImage(Map<String, String> attributes, Map<String, String> injectAttributes) {
         var bean = this.bean.image;
         var src = attributes.getOrDefault("android:src", null);
+        if (src == null) {
+            var srcCompat = attributes.getOrDefault("app:srcCompat", null);
+            if (srcCompat != null && srcCompat.startsWith("@drawable/")) {
+                src = srcCompat;
+            }
+        }
         if (src != null) {
             if (src.startsWith("@drawable/")) {
                 bean.resName = parseReferName(src, "/");
@@ -726,13 +849,13 @@ public class ViewBeanFactory {
         if (background != null) {
             if (PropertiesUtil.isHexColor(background)) {
                 bean.backgroundColor = PropertiesUtil.parseColor(background);
-            } else if (background.startsWith("@color/") || background.startsWith("?")) {
+            } else if (background.equals("@android:color/transparent")) {
+                bean.backgroundColor = 0;
+            } else if (background.startsWith("@color/") || background.startsWith("?") || background.startsWith("@android:color/")) {
                 bean.backgroundResColor = background;
                 bean.backgroundColor = 0xFFFFFFFF;
             } else if (background.startsWith("@drawable/")) {
                 bean.backgroundResource = parseReferName(background, "/");
-            } else if (background.equals("@android:color/transparent")) {
-                bean.backgroundColor = 0;
             } else {
                 injectAttributes.put(name, background);
             }

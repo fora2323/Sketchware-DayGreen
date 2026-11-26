@@ -35,12 +35,16 @@ public class PropertiesUtil {
     }
 
     public static int resolveSize(String value, int defaultValue) {
+        return Math.round(resolveSizeFloat(value, (float) defaultValue));
+    }
+
+    public static float resolveSizeFloat(String value, float defaultValue) {
         try {
             var reference = getUnitOrPrefix(value);
             if (TextUtils.isEmpty(value) || reference == null) {
                 return defaultValue;
             }
-            return Integer.parseInt(reference.second);
+            return Float.parseFloat(reference.second);
         } catch (NumberFormatException e) {
             return defaultValue;
         }

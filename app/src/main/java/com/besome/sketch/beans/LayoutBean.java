@@ -190,13 +190,20 @@ public class LayoutBean extends nA implements Parcelable {
         if (width != layoutBean.width || height != layoutBean.height || orientation != layoutBean.orientation || gravity != layoutBean.gravity || paddingLeft != layoutBean.paddingLeft || paddingTop != layoutBean.paddingTop || paddingRight != layoutBean.paddingRight || paddingBottom != layoutBean.paddingBottom || marginLeft != layoutBean.marginLeft || marginTop != layoutBean.marginTop || marginRight != layoutBean.marginRight || marginBottom != layoutBean.marginBottom || weight != layoutBean.weight || weightSum != layoutBean.weightSum || layoutGravity != layoutBean.layoutGravity || backgroundColor != layoutBean.backgroundColor || borderColor != layoutBean.borderColor) {
             return false;
         }
-        if (backgroundResource != null) {
-            if (!backgroundResource.equals(layoutBean.backgroundResource)) return false;
-        } else if (layoutBean.backgroundResource != null) {
-            return false;
-        }
-        if (resWeight != null ? !resWeight.equals(layoutBean.resWeight) : layoutBean.resWeight != null) return false;
-        return resWeightSum != null ? resWeightSum.equals(layoutBean.resWeightSum) : layoutBean.resWeightSum == null;
+        if (!java.util.Objects.equals(backgroundResource, layoutBean.backgroundResource)) return false;
+        if (!java.util.Objects.equals(backgroundResColor, layoutBean.backgroundResColor)) return false;
+        if (!java.util.Objects.equals(resWidth, layoutBean.resWidth)) return false;
+        if (!java.util.Objects.equals(resHeight, layoutBean.resHeight)) return false;
+        if (!java.util.Objects.equals(resMarginLeft, layoutBean.resMarginLeft)) return false;
+        if (!java.util.Objects.equals(resMarginTop, layoutBean.resMarginTop)) return false;
+        if (!java.util.Objects.equals(resMarginRight, layoutBean.resMarginRight)) return false;
+        if (!java.util.Objects.equals(resMarginBottom, layoutBean.resMarginBottom)) return false;
+        if (!java.util.Objects.equals(resPaddingLeft, layoutBean.resPaddingLeft)) return false;
+        if (!java.util.Objects.equals(resPaddingTop, layoutBean.resPaddingTop)) return false;
+        if (!java.util.Objects.equals(resPaddingRight, layoutBean.resPaddingRight)) return false;
+        if (!java.util.Objects.equals(resPaddingBottom, layoutBean.resPaddingBottom)) return false;
+        if (!java.util.Objects.equals(resWeight, layoutBean.resWeight)) return false;
+        return java.util.Objects.equals(resWeightSum, layoutBean.resWeightSum);
     }
 
     public void print() {

@@ -129,40 +129,31 @@ public class TextBean extends nA implements Parcelable {
     }
 
     public boolean isEqual(TextBean textBean) {
-        String str = text;
-        if (str != null) {
-            String str2 = textBean.text;
-            if (!str.equals(str2)) {
-                return false;
-            }
-        } else if (textBean.text != null) {
+        if (!java.util.Objects.equals(text, textBean.text)) {
             return false;
         }
-        if (textSize != textBean.textSize || textColor != textBean.textColor || textType != textBean.textType || resTextColor != textBean.resTextColor || resHintColor != textBean.resHintColor || resTextSize != textBean.resTextSize) { //new
+        if (textSize != textBean.textSize
+                || textColor != textBean.textColor
+                || textType != textBean.textType
+                || !java.util.Objects.equals(resTextColor, textBean.resTextColor)
+                || !java.util.Objects.equals(resHintColor, textBean.resHintColor)
+                || !java.util.Objects.equals(resTextSize, textBean.resTextSize)) {
             return false;
         }
-        String str3 = textFont;
-        if (str3 != null) {
-            String str4 = textBean.textFont;
-            if (!str3.equals(str4)) {
-                return false;
-            }
-        } else if (textBean.textFont != null) {
+        if (!java.util.Objects.equals(textFont, textBean.textFont)) {
             return false;
         }
-        String str5 = hint;
-        if (str5 != null) {
-            String str6 = textBean.hint;
-            if (!str5.equals(str6)) {
-                return false;
-            }
-        } else if (textBean.hint != null) {
+        if (!java.util.Objects.equals(hint, textBean.hint)) {
             return false;
         }
-        if (resLine != null ? !resLine.equals(textBean.resLine) : textBean.resLine != null) {
+        if (!java.util.Objects.equals(resLine, textBean.resLine)) {
             return false;
         }
-        return (hintColor == textBean.hintColor && singleLine == textBean.singleLine && line == textBean.line && inputType == textBean.inputType && imeOption == textBean.imeOption) || (resTextColor != null && resTextColor.equals(textBean.resTextColor)) || (resHintColor != null && resHintColor.equals(textBean.resTextColor));
+        return hintColor == textBean.hintColor
+                && singleLine == textBean.singleLine
+                && line == textBean.line
+                && inputType == textBean.inputType
+                && imeOption == textBean.imeOption;
     }
 
     public void print() {
