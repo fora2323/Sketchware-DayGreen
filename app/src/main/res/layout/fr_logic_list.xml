@@ -11,90 +11,137 @@
 
         <com.google.android.material.navigationrail.NavigationRailView
             android:id="@+id/palette"
-            android:layout_width="wrap_content"
+            android:layout_width="84dp"
             android:layout_height="match_parent"
             android:background="@android:color/transparent"
             android:fitsSystemWindows="false"
-            app:itemPaddingBottom="28dp"
+            android:paddingTop="8dp"
+            app:itemPaddingBottom="12dp"
+            app:itemPaddingTop="6dp"
             app:labelVisibilityMode="labeled"
-            app:menu="@menu/logic_palette" />
+            app:menu="@menu/logic_palette"
+            app:menuGravity="top" />
 
-        <LinearLayout
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="12dp"
+            android:background="?attr/colorSurfaceContainerHighest" />
+
+        <RelativeLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:layout_weight="1">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/tv_import"
-                style="@style/Widget.Material3Expressive.Button.ElevatedButton"
+            <LinearLayout
+                android:id="@+id/top_controls"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="8dp"
-                android:layout_marginTop="8dp"
-                android:text="@string/logic_button_import_more_block"
-                android:textColor="?attr/colorOnSurface" />
+                android:layout_alignParentTop="true"
+                android:orientation="vertical">
 
-            <RelativeLayout
-                android:id="@+id/search_container"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp"
-                android:layout_marginTop="6dp"
-                android:visibility="gone">
-
-                <EditText
-                    android:id="@+id/search_events"
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/tv_import"
+                    style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_outline_edittext"
-                    android:drawableStart="@drawable/ic_mtrl_search"
-                    android:drawablePadding="8dp"
-                    android:hint="@string/logic_search_events"
-                    android:imeOptions="actionSearch"
-                    android:inputType="text"
-                    android:maxLines="1"
-                    android:paddingStart="10dp"
-                    android:paddingTop="10dp"
-                    android:paddingEnd="40dp"
-                    android:paddingBottom="10dp"
-                    android:textSize="14sp" />
+                    android:layout_marginHorizontal="12dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="2dp"
+                    android:text="@string/logic_button_import_more_block"
+                    app:cornerRadius="14dp"
+                    app:icon="@drawable/ic_mtrl_download"
+                    app:iconGravity="textStart" />
 
-                <ImageView
-                    android:id="@+id/sort_menu"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:layout_marginEnd="4dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/logic_sort_menu"
-                    android:padding="6dp"
-                    android:src="@drawable/ic_mtrl_more_vertical" />
-            </RelativeLayout>
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/search_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="12dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="4dp"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+                    app:cardCornerRadius="24dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="?attr/colorOutlineVariant"
+                    app:strokeWidth="1dp">
 
-            <TextView
-                android:id="@+id/tv_no_events"
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <EditText
+                            android:id="@+id/search_events"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@null"
+                            android:drawableStart="@drawable/ic_mtrl_search"
+                            android:drawablePadding="10dp"
+                            android:drawableTint="?attr/colorOnSurfaceVariant"
+                            android:hint="@string/logic_search_events"
+                            android:imeOptions="actionSearch"
+                            android:inputType="text"
+                            android:maxLines="1"
+                            android:paddingStart="14dp"
+                            android:paddingTop="11dp"
+                            android:paddingEnd="44dp"
+                            android:paddingBottom="11dp"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textColorHint="?attr/colorOnSurfaceVariant"
+                            android:textSize="14sp" />
+
+                        <ImageView
+                            android:id="@+id/sort_menu"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_alignParentEnd="true"
+                            android:layout_centerVertical="true"
+                            android:layout_marginEnd="6dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/logic_sort_menu"
+                            android:padding="6dp"
+                            android:src="@drawable/ic_mtrl_more_vertical"
+                            app:tint="?attr/colorOnSurfaceVariant" />
+                    </RelativeLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:gravity="center"
-                android:textAppearance="?attr/textAppearanceBodyMedium"
-                android:visibility="gone"
-                tools:text="No events to display" />
+                android:layout_below="@id/top_controls">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/event_list"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:clipToPadding="false"
-                android:paddingTop="8dp"
-                android:paddingBottom="64dp"
-                android:scrollbars="vertical"
-                android:splitMotionEvents="false"
-                tools:itemCount="5"
-                tools:listitem="@layout/fr_logic_list_item" />
-        </LinearLayout>
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/event_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="88dp"
+                    android:scrollbars="vertical"
+                    android:splitMotionEvents="false"
+                    tools:itemCount="5"
+                    tools:listitem="@layout/fr_logic_list_item" />
+
+                <TextView
+                    android:id="@+id/tv_no_events"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:alpha="0.75"
+                    android:drawablePadding="10dp"
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:visibility="gone"
+                    app:drawableTint="?attr/colorOnSurfaceVariant"
+                    app:drawableTopCompat="@drawable/ic_mtrl_code"
+                    tools:text="No events to display" />
+            </FrameLayout>
+        </RelativeLayout>
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -104,7 +151,8 @@
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:layout_margin="16dp"
-        app:srcCompat="@drawable/ic_add_white_36dp"
+        app:srcCompat="@drawable/ic_mtrl_add"
+        app:tint="?attr/colorOnPrimaryContainer"
         tools:ignore="ContentDescription" />
 
 </RelativeLayout>

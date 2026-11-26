@@ -8,7 +8,7 @@
         android:id="@+id/layout_palette"
         android:layout_width="@dimen/view_palette_width"
         android:layout_height="match_parent"
-        android:background="?attr/colorSurfaceContainerLow"
+        android:background="?attr/colorSurface"
         android:orientation="vertical">
 
         <LinearLayout
@@ -43,6 +43,8 @@
         android:id="@+id/palette_divider"
         android:layout_width="1dp"
         android:layout_height="match_parent"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="12dp"
         android:layout_toEndOf="@+id/layout_palette"
         android:background="?attr/colorSurfaceContainerHighest" />
 

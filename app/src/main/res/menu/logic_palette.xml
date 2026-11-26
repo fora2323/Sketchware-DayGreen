@@ -18,7 +18,6 @@
         android:title="@string/common_word_drawer" />
     <item
         android:id="@+id/moreblock"
-        android:icon="@drawable/more_block_96dp"
-        android:tint="?android:colorControlNormal"
+        android:icon="@drawable/ic_mtrl_block"
         android:title="@string/common_word_moreblock" />
 </menu>

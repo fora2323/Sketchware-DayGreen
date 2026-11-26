@@ -6,8 +6,12 @@ import static com.google.android.material.color.MaterialColors.isColorLight;
 import static pro.sketchware.utility.ThemeUtils.getColor;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -41,7 +45,7 @@ public class PaletteSelectorAdapter extends RecyclerView.Adapter<PaletteSelector
                 paletteList.add(palette);
             }
         }
-        if (!paletteList.isEmpty() && selectedPosition < 0) {
+        if (!paletteList.isEmpty() && (selectedPosition < 0 || selectedPosition >= paletteList.size())) {
             selectedPosition = 0;
         }
         notifyDataSetChanged();
@@ -60,17 +64,39 @@ public class PaletteSelectorAdapter extends RecyclerView.Adapter<PaletteSelector
         int id = item.index();
         String title = item.text();
         int color = harmonizeWithPrimary(context, item.color());
+        boolean isSelected = position == selectedPosition;
 
         holder.binding.tvCategory.setText(title);
-        holder.binding.bg.setBackgroundColor(color);
         holder.binding.tvCategory.setTextColor(
-                position == selectedPosition ?
-                        isColorLight(color) ? getColor(context, R.attr.colorOnSurface) : getColor(context, R.attr.colorOnSurfaceInverse)
+                isSelected ?
+                        (isColorLight(color) ? 0xFF1C1B1F : Color.WHITE)
                         : getColor(context, R.attr.colorOnSurface));
-        holder.binding.bg.getLayoutParams().width = position == selectedPosition ? ViewGroup.LayoutParams.MATCH_PARENT : (int) wB.a(context, 4f);
+        holder.binding.tvCategory.setTypeface(
+                isSelected ? Typeface.create("sans-serif-medium", Typeface.NORMAL) : Typeface.SANS_SERIF);
+
+        FrameLayout.LayoutParams bgParams = (FrameLayout.LayoutParams) holder.binding.bg.getLayoutParams();
+        GradientDrawable bgDrawable = new GradientDrawable();
+        bgDrawable.setColor(color);
+        if (isSelected) {
+            bgParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            bgParams.height = ViewGroup.LayoutParams.MATCH_PARENT;
+            bgParams.setMarginStart(0);
+            bgDrawable.setCornerRadius(wB.a(context, 8f));
+        } else {
+            bgParams.width = (int) wB.a(context, 4f);
+            bgParams.height = (int) wB.a(context, 16f);
+            bgParams.setMarginStart((int) wB.a(context, 4f));
+            bgDrawable.setCornerRadius(wB.a(context, 4f));
+        }
+        holder.binding.bg.setLayoutParams(bgParams);
+        holder.binding.bg.setBackground(bgDrawable);
 
         holder.itemView.setOnClickListener(v -> {
-            selectedPosition = holder.getAbsoluteAdapterPosition();
+            int adapterPos = holder.getAbsoluteAdapterPosition();
+            if (adapterPos == RecyclerView.NO_POSITION) {
+                return;
+            }
+            selectedPosition = adapterPos;
             notifyDataSetChanged();
             if (onBlockCategorySelectListener != null) {
                 onBlockCategorySelectListener.a(id, color);
@@ -89,8 +115,9 @@ public class PaletteSelectorAdapter extends RecyclerView.Adapter<PaletteSelector
             if (paletteId == tag) {
                 selectedPosition = i;
                 notifyDataSetChanged();
+                paletteSelector.scrollToPosition(i);
                 if (onBlockCategorySelectListener != null) {
-                    onBlockCategorySelectListener.a(paletteId, paletteList.get(i).color());
+                    onBlockCategorySelectListener.a(paletteId, harmonizeWithPrimary(context, paletteList.get(i).color()));
                 }
                 break;
             }
@@ -102,7 +129,7 @@ public class PaletteSelectorAdapter extends RecyclerView.Adapter<PaletteSelector
             selectedPosition = pos;
             notifyDataSetChanged();
             if (onBlockCategorySelectListener != null) {
-                onBlockCategorySelectListener.a(paletteList.get(pos).index(), paletteList.get(pos).color());
+                onBlockCategorySelectListener.a(paletteList.get(pos).index(), harmonizeWithPrimary(context, paletteList.get(pos).color()));
             }
         }
     }

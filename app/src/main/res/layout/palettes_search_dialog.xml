@@ -4,20 +4,22 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingHorizontal="20dp"
-    android:paddingTop="10dp">
+    android:paddingTop="12dp">
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/textInputLayout_search"
         android:layout_width="match_parent"
-        android:layout_marginTop="5dp"
         android:layout_height="wrap_content"
-        app:errorEnabled="true">
+        app:errorEnabled="true"
+        app:startIconDrawable="@drawable/ic_mtrl_search">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/edittext_search_value"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Search..."
+            android:hint="@string/search_header"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
             android:singleLine="true" />
     </com.google.android.material.textfield.TextInputLayout>
 </LinearLayout>

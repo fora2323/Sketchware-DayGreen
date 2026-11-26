@@ -1,10 +1,15 @@
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    style="?attr/materialCardViewElevatedStyle"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp">
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="5dp"
+    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeColor="?attr/colorSurfaceContainerHighest"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -13,8 +18,8 @@
 
         <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginVertical="8dp">
+            android:layout_height="wrap_content"
+            android:paddingVertical="12dp">
 
             <TextView
                 android:id="@+id/tv_event_type"
@@ -30,28 +35,41 @@
                 android:textSize="12sp"
                 android:visibility="gone" />
 
-            <ImageView
-                android:id="@+id/img_icon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+            <FrameLayout
+                android:id="@+id/icon_container"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_centerVertical="true"
-                android:layout_marginStart="16dp"
-                android:contentDescription="@null"
-                tools:src="@drawable/widget_button" />
+                android:layout_marginStart="14dp"
+                android:background="@drawable/bg_event_icon_container">
+
+                <ImageView
+                    android:id="@+id/img_icon"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:scaleType="fitCenter"
+                    tools:src="@drawable/widget_button" />
+            </FrameLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_centerVertical="true"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="40dp"
-                android:layout_toRightOf="@id/img_icon"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="4dp"
+                android:layout_toStartOf="@id/img_menu"
+                android:layout_toEndOf="@id/icon_container"
                 android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/tv_target_type"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.02"
+                    android:textColor="?attr/colorPrimary"
                     android:textSize="11sp"
                     tools:text="Button" />
 
@@ -59,10 +77,12 @@
                     android:id="@+id/tv_target_id"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginVertical="2dp"
+                    android:layout_marginTop="1dp"
                     android:ellipsize="end"
+                    android:fontFamily="sans-serif-medium"
                     android:maxLines="1"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="15sp"
                     tools:text="button1" />
 
                 <TextView
@@ -76,45 +96,51 @@
                     android:id="@+id/ll_preview"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <ImageView
                         android:id="@+id/img_preview"
-                        android:layout_width="12dp"
-                        android:layout_height="12dp"
-                        android:layout_marginRight="4dp"
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_marginEnd="5dp"
+                        android:scaleType="fitCenter"
                         tools:src="@drawable/event_on_click_48dp" />
 
                     <TextView
                         android:id="@+id/tv_event_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:ellipsize="end"
                         android:gravity="center_vertical"
-                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:maxLines="1"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="12.5sp"
                         tools:text="@string/event_onclick" />
                 </LinearLayout>
             </LinearLayout>
 
             <ImageView
                 android:id="@+id/img_menu"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_alignParentEnd="true"
-                android:layout_alignParentRight="true"
                 android:layout_centerVertical="true"
+                android:layout_marginEnd="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
                 android:contentDescription="@null"
                 android:focusable="true"
-                android:padding="14dp"
+                android:padding="8dp"
                 android:src="@drawable/ic_arrow_drop_down_24px"
-                app:tint="?attr/colorControlNormal" />
+                app:tint="?attr/colorOnSurfaceVariant" />
         </RelativeLayout>
 
         <LinearLayout
             android:id="@+id/event_option_layout"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
             android:visibility="gone"
             tools:visibility="visible">
@@ -122,8 +148,9 @@
             <com.google.android.material.divider.MaterialDivider
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:dividerInsetEnd="16dp"
-                app:dividerInsetStart="16dp" />
+                app:dividerColor="?attr/colorSurfaceContainerHighest"
+                app:dividerInsetEnd="14dp"
+                app:dividerInsetStart="14dp" />
 
             <com.besome.sketch.editor.event.CollapsibleEventLayout
                 android:id="@+id/event_option"

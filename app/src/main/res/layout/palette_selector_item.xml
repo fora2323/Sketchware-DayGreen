@@ -1,19 +1,24 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="24dp"
-    android:paddingTop="2dp"
-    android:paddingBottom="2dp">
+    android:layout_height="30dp"
+    android:layout_marginVertical="1.5dp"
+    android:foreground="?attr/selectableItemBackground">
 
     <View
         android:id="@+id/bg"
         android:layout_width="4dp"
-        android:layout_height="match_parent" />
+        android:layout_height="16dp"
+        android:layout_gravity="center_vertical|start" />
 
     <TextView
         android:id="@+id/tv_category"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerVertical="true"
-        android:layout_marginLeft="8dp"
-        android:textSize="13sp" />
-</RelativeLayout>
+        android:layout_gravity="center_vertical"
+        android:ellipsize="end"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:paddingStart="12dp"
+        android:paddingEnd="8dp"
+        android:textSize="12sp" />
+</FrameLayout>
