@@ -44,6 +44,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.FileProvider;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -86,7 +87,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import a.a.a.DB;
 import a.a.a.FB;
 import a.a.a.Fx;
-import a.a.a.GB;
 import a.a.a.MA;
 import a.a.a.Mp;
 import a.a.a.NB;
@@ -110,6 +110,7 @@ import a.a.a.wB;
 import a.a.a.xB;
 import a.a.a.yq;
 import dev.aldi.sayuti.block.ExtraPaletteBlock;
+import dev.chrisbanes.insetter.Insetter;
 import mod.bobur.VectorDrawableLoader;
 import mod.hey.studios.editor.view.IdGenerator;
 import mod.hey.studios.moreblock.ReturnMoreblockManager;
@@ -1627,9 +1628,8 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
             params.setMargins(dimension, dimension, dimension, dimension);
             openBlocksMenuButton.setLayoutParams(params);
             layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
-            layoutParams.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+            layoutParams.addRule(RelativeLayout.BELOW, R.id.app_bar_layout);
             layoutParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-            layoutParams.topMargin = GB.a(getContext());
             orientation = LinearLayout.HORIZONTAL;
         } else {
             K.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) wB.a(this, 240.0f)));
@@ -1913,8 +1913,12 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        enableEdgeToEdgeNoContrast();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.logic_editor);
+        Insetter.builder()
+                .padding(WindowInsetsCompat.Type.navigationBars())
+                .applyToView(findViewById(R.id.layout));
         if (!super.isStoragePermissionGranted()) {
             finish();
         }
@@ -1957,6 +1961,15 @@ public class LogicEditorActivity extends BaseAppCompatActivity implements View.O
         openBlocksMenuButton = findViewById(R.id.fab_toggle_palette);
         openBlocksMenuButton.setOnClickListener(v -> e(!X));
         logicTopMenu = findViewById(R.id.top_menu);
+        Insetter.builder()
+                .padding(WindowInsetsCompat.Type.statusBars())
+                .applyToView(logicTopMenu);
+        logicTopMenu.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (!ea && logicTopMenu.getHeight() > 0) {
+                logicTopMenu.setTranslationY(-logicTopMenu.getHeight());
+                da = false;
+            }
+        });
         O = findViewById(R.id.right_drawer);
         findViewById(R.id.search_header).setOnClickListener(v -> paletteSelector.showSearchDialog());
         extraPaletteBlock = new ExtraPaletteBlock(this, isViewBindingEnabled);

@@ -974,8 +974,10 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
         }
 
         if (!B) {
-            UnsavedChangesSaver unsavedChangesSaver = new UnsavedChangesSaver(this);
-            unsavedChangesSaver.execute();
+            eC ecInstance = jC.a(sc_id);
+            if (ecInstance != null) {
+                ecInstance.k();
+            }
         }
     }
 
@@ -1902,28 +1904,6 @@ private String fixPackage(String code, String pkg) {
                     activity.h();
                     activity.finish();
                 });
-            }
-        }
-    }
-
-    private static class UnsavedChangesSaver extends BaseTask {
-        private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-
-        public UnsavedChangesSaver(DesignActivity activity) {
-            super(activity);
-        }
-
-        public void execute() {
-            executorService.execute(this::doInBackground);
-        }
-
-        private void doInBackground() {
-            DesignActivity activity = getActivity();
-            if (activity != null) {
-                eC ecInstance = jC.a(sc_id);
-                synchronized (ecInstance) {
-                    ecInstance.k();
-                }
             }
         }
     }
