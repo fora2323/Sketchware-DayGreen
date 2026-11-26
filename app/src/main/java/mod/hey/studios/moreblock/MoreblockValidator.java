@@ -44,47 +44,59 @@ public class MoreblockValidator extends MB {
             if (i != null && !i.isEmpty() && name.equals(i)) {
                 b.setError(null);
                 d = true;
-            } else if (registeredVariables.contains(name)) {
-                b.setError(a.getString(R.string.common_message_name_unavailable, 0));
-                d = false;
             } else {
-                boolean z = false;
-                for (String eventsName : eventNames) {
-                    if (name.equals(eventsName)) {
-                        z = true;
-                        break;
+                String baseName = ReturnMoreblockManager.getMbName(name);
+                boolean isRegistered = registeredVariables.contains(name) || registeredVariables.contains(baseName);
+                if (!isRegistered) {
+                    for (String reg : registeredVariables) {
+                        if (ReturnMoreblockManager.getMbName(reg).equals(baseName)) {
+                            isRegistered = true;
+                            break;
+                        }
                     }
                 }
-                if (z) {
-                    b.setError(Helper.getResString(R.string.common_message_name_unavailable));
-                    d = false;
-                    return;
-                }
-                boolean isReservedKeyUsed = false;
-                for (String keyword : reservedKeywords) {
-                    if (name.equals(keyword)) {
-                        isReservedKeyUsed = true;
-                        break;
-                    }
-                }
-
-                if (isReservedKeyUsed) {
-                    b.setError(Helper.getResString(R.string.logic_editor_message_reserved_keywords));
-                    d = false;
-                } else if (!Character.isLetter(charSequence.charAt(0))) {
-                    b.setError(Helper.getResString(R.string.logic_editor_message_variable_name_must_start_letter));
+                if (isRegistered) {
+                    b.setError(a.getString(R.string.common_message_name_unavailable, 0));
                     d = false;
                 } else {
-                    if (j.matcher(name).matches()) {
-                        b.setError(null);
-                        d = true;
-                    } else {
-                        b.setError(Helper.getResString(R.string.invalid_value_rule_3));
-                        d = false;
+                    boolean z = false;
+                    for (String eventsName : eventNames) {
+                        if (name.equals(eventsName) || baseName.equals(eventsName)) {
+                            z = true;
+                            break;
+                        }
                     }
-                    if (name.trim().isEmpty()) {
-                        b.setError(a.getString(R.string.invalid_value_min_lenth, 1));
+                    if (z) {
+                        b.setError(Helper.getResString(R.string.common_message_name_unavailable));
                         d = false;
+                        return;
+                    }
+                    boolean isReservedKeyUsed = false;
+                    for (String keyword : reservedKeywords) {
+                        if (name.equals(keyword) || baseName.equals(keyword)) {
+                            isReservedKeyUsed = true;
+                            break;
+                        }
+                    }
+
+                    if (isReservedKeyUsed) {
+                        b.setError(Helper.getResString(R.string.logic_editor_message_reserved_keywords));
+                        d = false;
+                    } else if (!Character.isLetter(charSequence.charAt(0))) {
+                        b.setError(Helper.getResString(R.string.logic_editor_message_variable_name_must_start_letter));
+                        d = false;
+                    } else {
+                        if (j.matcher(name).matches()) {
+                            b.setError(null);
+                            d = true;
+                        } else {
+                            b.setError(Helper.getResString(R.string.invalid_value_rule_3));
+                            d = false;
+                        }
+                        if (name.trim().isEmpty()) {
+                            b.setError(a.getString(R.string.invalid_value_min_lenth, 1));
+                            d = false;
+                        }
                     }
                 }
             }
