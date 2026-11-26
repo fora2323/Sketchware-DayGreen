@@ -117,7 +117,8 @@ public class DefaultExtraMenuBean {
                 title = "Select a " + menuName;
                 if (menuName.equals("layout")) {
                     for (String name : jC.b(sc_id).e()) {
-                        menus.add(name.substring(0, name.indexOf(".xml")));
+                        int dotIdx = name.indexOf(".xml");
+                        menus.add(dotIdx >= 0 ? name.substring(0, dotIdx) : name);
                     }
                 }
                 for (String file : FileUtil.listFiles(path, ".xml")) {
@@ -128,11 +129,12 @@ public class DefaultExtraMenuBean {
                 String path = getPath(sc_id, "drawable-xhdpi");
                 title = "Select a image";
                 for (String drawable_xhdpi : FileUtil.listFiles(path, "")) {
-                    if (drawable_xhdpi.contains(".png") || drawable_xhdpi.contains(".jpg")) {
+                    String lower = drawable_xhdpi.toLowerCase();
+                    if (lower.contains(".png") || lower.contains(".jpg")) {
                         menus.add(
                                 getFilename(
                                         drawable_xhdpi,
-                                        drawable_xhdpi.contains(".png") ? ".png" : ".jpg"));
+                                        lower.contains(".png") ? ".png" : ".jpg"));
                     }
                 }
             }
@@ -221,6 +223,10 @@ public class DefaultExtraMenuBean {
 
     private String getFilename(String filePath, String filenameExtensionToCutOff) {
         String lastPathSegment = Uri.parse(filePath).getLastPathSegment();
-        return lastPathSegment.substring(0, lastPathSegment.indexOf(filenameExtensionToCutOff));
+        if (lastPathSegment == null) {
+            return "";
+        }
+        int extIdx = lastPathSegment.toLowerCase().indexOf(filenameExtensionToCutOff.toLowerCase());
+        return extIdx >= 0 ? lastPathSegment.substring(0, extIdx) : lastPathSegment;
     }
 }
