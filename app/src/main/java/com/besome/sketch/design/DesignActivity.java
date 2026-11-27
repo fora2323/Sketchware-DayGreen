@@ -178,6 +178,7 @@ public class DesignActivity extends BaseAppCompatActivity implements View.OnClic
     private Thread buildThread;
     private List<String> activeTabs;
     public static boolean needReloadProjectData = false;
+    private boolean projectLoaded = false;
     public static boolean isFirstLaunch = true;
     private Bundle mSavedInstanceState;
     private final ActivityResultLauncher<Intent> openCollectionManager = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -1804,6 +1805,7 @@ private String fixPackage(String code, String pkg) {
             if (activity != null) {
                 activity.loadProject(savedInstanceState != null);
                 activity.runOnUiThread(() -> {
+                    activity.projectLoaded = true;
                     activity.viewDirty = true;
                     activity.updateBottomMenu();
                     activity.refresh();
@@ -1963,6 +1965,9 @@ private String fixPackage(String code, String pkg) {
                 eventTabAdapter = (rs) fragment;
             } else if (tabId.equals("component")) {
                 componentTabAdapter = (br) fragment;
+            }
+            if (projectLoaded) {
+                handler.post(DesignActivity.this::refresh);
             }
             return fragment;
         }
