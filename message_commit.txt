@@ -5,6 +5,7 @@ COMMIT_MESSAGE: Add new features and changes
 2: changes to UI block logic
 3: UI changes DrawerDesign and list View Editor, and events and components
 4: animation adjustment on how many views gone and visible 
+5: add view hiden and zoom device preview in ViewEditor
 
 Fix Bugs And Crashes
 
