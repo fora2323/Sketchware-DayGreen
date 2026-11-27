@@ -500,7 +500,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     }
 
     private void setZoom(float percent) {
-        zoomPercent = Math.max(50f, Math.min(200f, percent));
+        zoomPercent = Math.max(50f, Math.min(100f, percent));
         zoomText.setText((int) zoomPercent + "%");
         isLayoutChanged = true;
         requestLayout();
@@ -947,7 +947,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         aa.setScaleY(var11);
         aa.setX(-((int) ((displayWidth - displayWidth * var11) / 2.0F)));
         aa.setY(-((int) ((displayHeight - displayHeight * var11) / 2.0F)));
-        int var10 = var4 - (int) ((displayWidth - displayWidth * var3) / 2.0F);
+        int var10 = (int) ((var9 - displayWidth) / 2.0F);
         int var13 = var5;
         if (bgStatus.getVisibility() == View.VISIBLE) {
             bgStatus.setLayoutParams(new FrameLayout.LayoutParams(displayWidth, statusBarHeight));
