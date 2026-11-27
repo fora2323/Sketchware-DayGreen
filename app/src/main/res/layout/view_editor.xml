@@ -102,16 +102,6 @@
             android:paddingHorizontal="6dp">
 
             <TextView
-                android:id="@+id/btn_zoom_fit"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:gravity="center"
-                android:paddingHorizontal="10dp"
-                android:text="Fit"
-                android:textColor="?colorOnSurfaceVariant" />
-
-            <TextView
                 android:id="@+id/btn_zoom_out"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"

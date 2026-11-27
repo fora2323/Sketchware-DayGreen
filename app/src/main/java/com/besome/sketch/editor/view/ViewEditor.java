@@ -475,6 +475,16 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         int visibility = isPaletteCollapsed ? View.GONE : View.VISIBLE;
         layoutPalette.setVisibility(visibility);
         paletteDivider.setVisibility(visibility);
+
+        RelativeLayout.LayoutParams shapeLp = (RelativeLayout.LayoutParams) findViewById(R.id.shape).getLayoutParams();
+        if (isPaletteCollapsed) {
+            shapeLp.removeRule(RelativeLayout.END_OF);
+            shapeLp.addRule(RelativeLayout.ALIGN_PARENT_START);
+        } else {
+            shapeLp.removeRule(RelativeLayout.ALIGN_PARENT_START);
+            shapeLp.addRule(RelativeLayout.END_OF, R.id.palette_divider);
+        }
+        findViewById(R.id.shape).setLayoutParams(shapeLp);
         updatePaletteToggle();
         isLayoutChanged = true;
         requestLayout();
@@ -557,7 +567,6 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         paletteToggle = findViewById(R.id.btn_toggle_palette);
         paletteToggle.setOnClickListener(v -> togglePalette());
         zoomText = findViewById(R.id.text_zoom);
-        findViewById(R.id.btn_zoom_fit).setOnClickListener(v -> setZoom(100f));
         findViewById(R.id.btn_zoom_out).setOnClickListener(v -> setZoom(zoomPercent - 10f));
         findViewById(R.id.btn_zoom_in).setOnClickListener(v -> setZoom(zoomPercent + 10f));
         updatePaletteToggle();
@@ -1178,9 +1187,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         }
 
         public void setPaletteGroup(PaletteGroup group) {
-            imgGroup.setImageResource(group == PaletteGroup.BASIC ?
-                    R.drawable.selector_palette_tab_ic_daygreen :
-                    R.drawable.selector_palette_tab_ic_bookmark);
+            imgGroup.setImageResource(group == PaletteGroup.BASIC ? R.drawable.selector_palette_tab_ic_daygreen : R.drawable.selector_palette_tab_ic_bookmark);
             setOnClickListener(this);
         }
     }
