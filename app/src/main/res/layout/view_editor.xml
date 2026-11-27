@@ -64,6 +64,86 @@
         android:layout_height="match_parent" />
 
 
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btn_toggle_palette"
+        android:layout_width="24dp"
+        android:layout_height="48dp"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        app:cardBackgroundColor="?colorSurfaceContainerHighest"
+        app:cardCornerRadius="12dp"
+        app:strokeWidth="1dp">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@null"
+            android:padding="4dp"
+            android:src="@drawable/ic_mtrl_chevron_right_24"
+            app:tint="?colorOnSurfaceVariant" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/zoom_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="12dp"
+        app:cardBackgroundColor="?colorSurfaceContainerHighest"
+        app:cardCornerRadius="20dp"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="6dp">
+
+            <TextView
+                android:id="@+id/btn_zoom_fit"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:gravity="center"
+                android:paddingHorizontal="10dp"
+                android:text="Fit"
+                android:textColor="?colorOnSurfaceVariant" />
+
+            <TextView
+                android:id="@+id/btn_zoom_out"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:text="-"
+                android:textColor="?colorOnSurfaceVariant"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/text_zoom"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:minWidth="52dp"
+                android:text="100%"
+                android:textColor="?colorOnSurfaceVariant" />
+
+            <TextView
+                android:id="@+id/btn_zoom_in"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:gravity="center"
+                android:paddingHorizontal="12dp"
+                android:text="+"
+                android:textColor="?colorOnSurfaceVariant"
+                android:textSize="18sp" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
     <com.besome.sketch.editor.view.ViewProperties
         android:id="@+id/properties"
         android:layout_width="match_parent"

@@ -125,6 +125,12 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
     private int colorError;
     private final Runnable longPressRunnable = this::e;
     private int colorErrorContainer;
+    private View layoutPalette;
+    private View paletteDivider;
+    private View paletteToggle;
+    private TextView zoomText;
+    private boolean isPaletteCollapsed = false;
+    private float zoomPercent = 100f;
 
     public ViewEditor(Context context) {
         this(context, null);
@@ -464,6 +470,32 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         b(b2, true);
     }
 
+    private void togglePalette() {
+        isPaletteCollapsed = !isPaletteCollapsed;
+        int visibility = isPaletteCollapsed ? View.GONE : View.VISIBLE;
+        layoutPalette.setVisibility(visibility);
+        paletteDivider.setVisibility(visibility);
+        updatePaletteToggle();
+        isLayoutChanged = true;
+        requestLayout();
+    }
+
+    private void updatePaletteToggle() {
+        float density = getResources().getDisplayMetrics().density;
+        int paletteWidth = getResources().getDimensionPixelSize(R.dimen.view_palette_width);
+        RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams) paletteToggle.getLayoutParams();
+        lp.setMarginStart(isPaletteCollapsed ? 0 : paletteWidth - (int) (12 * density));
+        paletteToggle.setLayoutParams(lp);
+        paletteToggle.setRotation(isPaletteCollapsed ? 0f : 180f);
+    }
+
+    private void setZoom(float percent) {
+        zoomPercent = Math.max(50f, Math.min(200f, percent));
+        zoomText.setText((int) zoomPercent + "%");
+        isLayoutChanged = true;
+        requestLayout();
+    }
+
     public void setFavoriteData(ArrayList<WidgetCollectionBean> arrayList) {
         clearCollectionWidget();
         for (WidgetCollectionBean next : arrayList) {
@@ -519,6 +551,16 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
 
         findViewById(R.id.btn_editproperties).setOnClickListener(this);
         findViewById(R.id.img_close).setOnClickListener(this);
+
+        layoutPalette = findViewById(R.id.layout_palette);
+        paletteDivider = findViewById(R.id.palette_divider);
+        paletteToggle = findViewById(R.id.btn_toggle_palette);
+        paletteToggle.setOnClickListener(v -> togglePalette());
+        zoomText = findViewById(R.id.text_zoom);
+        findViewById(R.id.btn_zoom_fit).setOnClickListener(v -> setZoom(100f));
+        findViewById(R.id.btn_zoom_out).setOnClickListener(v -> setZoom(zoomPercent - 10f));
+        findViewById(R.id.btn_zoom_in).setOnClickListener(v -> setZoom(zoomPercent + 10f));
+        updatePaletteToggle();
 
         dip = wB.a(context, 1.0f);
         defaultIconWidth = (int) (defaultIconWidth * dip);
@@ -880,7 +922,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         int var5 = (int) (dip * (!isLandscapeMode ? 20.0F : 10.0F));
         int statusBarHeight = GB.f(getContext());
         int toolBarHeight = GB.a(getContext());
-        int paletteWidth = getResources().getDimensionPixelSize(R.dimen.view_palette_width) + (int) dip;
+        int paletteWidth = isPaletteCollapsed ? 0 : getResources().getDimensionPixelSize(R.dimen.view_palette_width) + (int) dip;
         int var9 = displayWidth - paletteWidth;
         int var8 = displayHeight - statusBarHeight - toolBarHeight - (int) (dip * 48.0F) - (int) (dip * 48.0F);
         if (screenType == 0 && da) {
@@ -889,7 +931,7 @@ public class ViewEditor extends RelativeLayout implements View.OnClickListener, 
         }
 
         float var11 = Math.min((float) var9 / (float) displayWidth, (float) var8 / (float) displayHeight);
-        float var3 = Math.min((float) (var9 - var4 * 2) / (float) displayWidth, (float) (var8 - var5 * 2) / (float) displayHeight);
+        float var3 = Math.min((float) (var9 - var4 * 2) / (float) displayWidth, (float) (var8 - var5 * 2) / (float) displayHeight) * zoomPercent / 100f;
 
         aa.setLayoutParams(new FrameLayout.LayoutParams(displayWidth, displayHeight));
         aa.setScaleX(var11);
